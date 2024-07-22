@@ -75,5 +75,12 @@ class LegalMove:
 
 class VirtualMove:
 
-    def __init__(self):
-        pass
+    def __init__(self, from_square: str, to_square: str):
+        self.origin_square = from_square
+        self.destination_square = to_square
+
+    def get_origin_square(self) -> str:
+        return self.origin_square
+
+    def get_destination_square(self) -> str:
+        return self.destination_square
