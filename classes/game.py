@@ -88,6 +88,8 @@ class Game:
                     return 'White wins by checkmate.'
             else:
                 return 'Drawn by stalemate.'
+        else:
+            return 'None'
 
 
 
