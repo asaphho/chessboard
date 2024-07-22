@@ -11,6 +11,8 @@ for f in files:
     for r in ranks:
         ALL_SQUARES.append(f'{f}{r}')
 
+PIECE_SYMBOLS = {'king': 'K', 'queen': 'Q', 'rook': 'R', 'knight': 'N', 'bishop': 'B'}
+
 
 def opposite_color(color: str) -> str:
     return 'white' if color.lower().startswith('b') else 'black'
@@ -261,7 +263,6 @@ class Position:
     def process_legal_move(self, move: LegalMove) -> str:
         color_moved = move.get_color()
         notation_move_number = self.get_move_number()
-        notation_move_str = f'{notation_move_number}. '
         if move.piece_moved not in ('king', 'pawn'):
             disambiguation = self.check_for_disambiguation(color_moved, move.piece_moved,
                                                            move.origin_square, move.destination_square)
@@ -269,14 +270,11 @@ class Position:
             disambiguation = 'None'
         if color_moved == 'black':
             self.increment_move_number()
-            notation_move_str = f'{notation_move_number}... '
         if move.is_king_move():
             if color_moved == 'white':
                 self.white_pieces.disable_castling()
             else:
                 self.black_pieces.disable_castling()
-            if move.castling == 'None':
-                notation_move_str += 'K'
         if move.moved_king_rook_from_home_square():
             if color_moved == 'white':
                 self.white_pieces.disable_short_castling()
@@ -305,10 +303,8 @@ class Position:
             file = move.destination_square[0]
             if color_moved == 'white':
                 self.set_en_passant_square(f"{file}3")
-                notation_move_str += f'{file}4'
             else:
                 self.set_en_passant_square(f"{file}6")
-                notation_move_str += f'{file}5'
         else:
             self.remove_en_passant_square()
         if move.is_capture():
@@ -333,10 +329,12 @@ class Position:
                 self.white_pieces.move_piece('rook', 'a1', 'd1')
             else:
                 self.black_pieces.move_piece('rook', 'a8', 'd8')
+
         if color_moved == 'white':
             self.white_pieces.move_piece(move.piece_moved, move.origin_square, move.destination_square)
         else:
             self.black_pieces.move_piece(move.piece_moved, move.origin_square, move.destination_square)
+
         if move.pawn_promotion_required():
             if color_moved == 'white':
                 self.white_pieces.promote_pawn(move.destination_square, move.promotion_piece)
@@ -344,7 +342,44 @@ class Position:
                 self.black_pieces.promote_pawn(move.destination_square, move.promotion_piece)
         self.virtual_white_pieces = self.white_pieces.copy()
         self.virtual_black_pieces = self.black_pieces.copy()
+        notation_move_str = f'{notation_move_number}. ' if color_moved == 'white' else f'{notation_move_number}... '
+        if move.is_king_move():
+            if move.castling.lower().startswith('k') or move.castling.lower().startswith('short'):
+                notation_move_str += 'O-O'
+            elif move.castling.lower().startswith('q') or move.castling.lower().startswith('long'):
+                notation_move_str += 'O-O-O'
+            else:
+                notation_move_str += 'K'
+                if move.is_capture():
+                    notation_move_str += 'x'
+                notation_move_str += move.destination_square
+        elif move.is_pawn_move():
+            if move.is_capture():
+                notation_move_str += f'{move.origin_square[0]}x{move.destination_square}'
+            else:
+                notation_move_str += f'{move.destination_square}'
+            if move.pawn_promotion_required():
+                notation_move_str += PIECE_SYMBOLS[move.promotion_piece]
+        else:
+            notation_move_str += PIECE_SYMBOLS[move.piece_moved]
+            if disambiguation != 'None':
+                if disambiguation == 'file':
+                    notation_move_str += move.origin_square[0]
+                elif disambiguation == 'rank':
+                    notation_move_str += move.origin_square[1]
+                else:
+                    notation_move_str += move.origin_square
+            if move.is_capture():
+                notation_move_str += 'x'
+            notation_move_str += move.destination_square
         self.change_side_to_move()
+        if self.is_under_check(self.to_move()):
+            legal_moves_available = self.get_all_legal_moves_for_color(self.to_move())
+            if len(legal_moves_available) == 0:
+                notation_move_str += '#'
+            else:
+                notation_move_str += '+'
+        return notation_move_str
 
     def look_at_square(self, square: str) -> str:
         white_pieces_squares = self.white_pieces.get_square_piece_symbol_dict()
