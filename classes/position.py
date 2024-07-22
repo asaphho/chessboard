@@ -1,5 +1,5 @@
 from typing import List
-from classes.color_position import ColorPosition
+from classes.color_position import ColorPosition, generate_starting_position_for_color
 from classes.move import LegalMove, VirtualMove
 from utils.board_functions import (check_squares_in_line, get_intervening_squares, is_knight_move, LETTER_TO_NUM,
                                    NUM_TO_LETTER)
@@ -555,3 +555,9 @@ class Position:
                 else:
                     legal_moves.append(self.translate_virtual_move_to_legal(virtual_move))
         return legal_moves
+
+
+def generate_starting_position() -> Position:
+    white_pieces = generate_starting_position_for_color('white')
+    black_pieces = generate_starting_position_for_color('black')
+    return Position(white_pieces=white_pieces, black_pieces=black_pieces, side_to_move='white')
