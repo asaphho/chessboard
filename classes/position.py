@@ -247,11 +247,13 @@ class Position:
         if len(origin_squares_that_can_reach_destination) == 1:
             return 'None'
         origin_file = origin_square[0]
-        disambiguate_by_file = [square for square in origin_squares_that_can_reach_destination if square[0] == origin_file]
+        disambiguate_by_file = [square for square in origin_squares_that_can_reach_destination if
+                                square[0] == origin_file]
         if len(disambiguate_by_file) == 1:
             return 'file'
         origin_rank = origin_square[1]
-        disambiguate_by_rank = [square for square in origin_squares_that_can_reach_destination if square[1] == origin_rank]
+        disambiguate_by_rank = [square for square in origin_squares_that_can_reach_destination if
+                                square[1] == origin_rank]
         if len(disambiguate_by_rank) == 1:
             return 'rank'
         return 'square'
@@ -260,8 +262,11 @@ class Position:
         color_moved = move.get_color()
         notation_move_number = self.get_move_number()
         notation_move_str = f'{notation_move_number}. '
-        disambiguation = self.check_for_disambiguation(color_moved, move.piece_moved,
-                                                       move.origin_square, move.destination_square)
+        if move.piece_moved not in ('king', 'pawn'):
+            disambiguation = self.check_for_disambiguation(color_moved, move.piece_moved,
+                                                           move.origin_square, move.destination_square)
+        else:
+            disambiguation = 'None'
         if color_moved == 'black':
             self.increment_move_number()
             notation_move_str = f'{notation_move_number}... '
