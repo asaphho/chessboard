@@ -83,7 +83,6 @@ class Position:
         self.en_passant_square = en_passant_square
         self.half_move_clock = half_move_clock
         self.move_number = move_number
-        self.all_squares = []
         self.side_to_move = side_to_move.lower()
 
     def to_move(self) -> str:
