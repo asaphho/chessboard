@@ -3,6 +3,10 @@ from typing import Tuple
 SYMBOL_TO_PIECE = {'K': 'king', 'Q': 'queen', 'R': 'rook', 'B': 'bishop', 'N': 'knight'}
 
 
+def piece_to_symbol(piece: str) -> str:
+    return piece[0].upper() if piece != 'knight' else 'N'
+
+
 def find_piece_moved_and_destination_square(move_str: str) -> Tuple[str, str]:
     rank = 0
     file = 'z'
