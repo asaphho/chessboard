@@ -13,7 +13,7 @@ def find_destination_square(move_str: str) -> str:
                 raise ValueError
             break
     if rank == 0 or file == 'z':
-        print('Cannot interpret this move!')
+        print('Cannot interpret this move! If castling, use the letter O and not the number 0.')
         raise ValueError
     if rank > 8 or rank < 1:
         print(f'Square {file}{rank} does not exist.')
