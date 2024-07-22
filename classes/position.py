@@ -438,6 +438,34 @@ class Position:
                                             castling=castling,
                                             promotion_piece=promotion_piece)
 
-
+    def scrape_virtual_moves_for_color(self, color: str) -> List[VirtualMove]:
+        piece_position = self.white_pieces if color == 'white' else self.black_pieces
+        opposing_piece_position = self.black_pieces if color == 'white' else self.white_pieces
+        piece_types = piece_position.list_unique_piece_types()
+        virtual_moves = []
+        for piece in piece_types:
+            squares_occupied_by_that_piece_type = piece_position.get_piece_type_squares(piece)
+            for origin_square in squares_occupied_by_that_piece_type:
+                if piece != 'pawn':
+                    reachable_squares = self.scan_non_pawn_piece_moves(color, piece, origin_square)
+                    for reachable_square in reachable_squares:
+                        virtual_moves.append(VirtualMove(color, piece, origin_square, reachable_square))
+                    if piece == 'king' and color == 'white' and origin_square == 'e1':
+                        virtual_moves.extend([VirtualMove(color, piece, 'e1', 'g1'),
+                                              VirtualMove(color, piece, 'e1', 'c1')])
+                    elif piece == 'king' and color == 'black' and origin_square == 'e8':
+                        virtual_moves.extend([VirtualMove(color, piece, 'e8', 'g8'),
+                                              VirtualMove(color, piece, 'e8', 'c8')])
+                else:
+                    reachable_squares = self.scan_pawn_non_capture_moves(color, origin_square)
+                    for reachable_square in reachable_squares:
+                        virtual_moves.append(VirtualMove(color, piece, origin_square, reachable_square))
+                    attacked_squares = self.scan_pawn_attacked_squares(color, origin_square)
+                    for attacked_square in attacked_squares:
+                        if attacked_square in opposing_piece_position.get_occupied_squares():
+                            virtual_moves.append(VirtualMove(color, piece, origin_square, attacked_square))
+                        elif attacked_square == self.get_en_passant_square():
+                            virtual_moves.append(VirtualMove(color, piece, origin_square, attacked_square))
+        return virtual_moves
 
 
