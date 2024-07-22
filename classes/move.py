@@ -1,15 +1,15 @@
 class LegalMove:
 
-    def __init__(self, color: str, piece: str, origin_square: str, destination_square: str, is_capture: bool = False,
+    def __init__(self, color: str, piece_type: str, origin_square: str, destination_square: str, is_capture: bool = False,
                  is_en_passant_capture: bool = False, promotion_piece: str = None, castling: str = None):
         self.color = color.lower()
-        self.piece_moved = piece.lower()
+        self.piece_moved = piece_type.lower()
         self.origin_square = origin_square
         self.destination_square = destination_square
         self.capture = is_capture
         self.en_passant_capture = is_en_passant_capture
-        self.promotion_piece = promotion_piece
-        self.castling = castling
+        self.promotion_piece = promotion_piece if promotion_piece is not None else 'None'
+        self.castling = castling if castling is not None else 'None'
 
     def get_color(self) -> str:
         return self.color
@@ -75,12 +75,31 @@ class LegalMove:
 
 class VirtualMove:
 
-    def __init__(self, from_square: str, to_square: str):
+    def __init__(self, color: str, piece_type: str, from_square: str, to_square: str):
         self.origin_square = from_square
         self.destination_square = to_square
+        self.color = color
+        self.piece_type = piece_type
 
     def get_origin_square(self) -> str:
         return self.origin_square
 
     def get_destination_square(self) -> str:
         return self.destination_square
+
+    def get_color(self) -> str:
+        return self.color
+
+    def get_piece_type(self) -> str:
+        return self.piece_type
+
+    def make_legal_move(self, is_capture: bool, is_en_passant_capture: bool, castling: str = None,
+                        promotion_piece: str = None) -> LegalMove:
+        return LegalMove(color=self.get_color(),
+                         piece_type=self.get_piece_type(),
+                         origin_square=self.get_origin_square(),
+                         destination_square=self.get_destination_square(),
+                         is_capture=is_capture,
+                         is_en_passant_capture=is_en_passant_capture,
+                         castling=castling,
+                         promotion_piece=promotion_piece)
