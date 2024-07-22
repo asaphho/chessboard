@@ -329,6 +329,7 @@ class Position:
             else:
                 self.black_pieces.move_piece('rook', 'a8', 'd8')
 
+        # ACTUAL PIECE MOVEMENT HERE
         if color_moved == 'white':
             self.white_pieces.move_piece(move.piece_moved, move.origin_square, move.destination_square)
         else:
@@ -341,6 +342,8 @@ class Position:
                 self.black_pieces.promote_pawn(move.destination_square, move.promotion_piece)
         self.virtual_white_pieces = self.white_pieces.copy()
         self.virtual_black_pieces = self.black_pieces.copy()
+
+        # PRODUCE NOTATION
         notation_move_str = f'{notation_move_number}. ' if color_moved == 'white' else f'{notation_move_number}... '
         if move.is_king_move():
             if move.castling.lower().startswith('k') or move.castling.lower().startswith('short'):
