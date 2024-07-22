@@ -3,6 +3,7 @@ from classes.color_position import ColorPosition
 from classes.move import LegalMove, VirtualMove
 from utils.board_functions import (check_squares_in_line, get_intervening_squares, is_knight_move, LETTER_TO_NUM,
                                    NUM_TO_LETTER)
+from utils.parse_notation import piece_to_symbol
 
 ALL_SQUARES = []
 files = 'abcdefgh'
@@ -10,8 +11,6 @@ ranks = '12345678'
 for f in files:
     for r in ranks:
         ALL_SQUARES.append(f'{f}{r}')
-
-PIECE_SYMBOLS = {'king': 'K', 'queen': 'Q', 'rook': 'R', 'knight': 'N', 'bishop': 'B'}
 
 
 def opposite_color(color: str) -> str:
@@ -359,9 +358,9 @@ class Position:
             else:
                 notation_move_str += f'{move.destination_square}'
             if move.pawn_promotion_required():
-                notation_move_str += PIECE_SYMBOLS[move.promotion_piece]
+                notation_move_str += piece_to_symbol(move.promotion_piece)
         else:
-            notation_move_str += PIECE_SYMBOLS[move.piece_moved]
+            notation_move_str += piece_to_symbol(move.piece_moved)
             if disambiguation != 'None':
                 if disambiguation == 'file':
                     notation_move_str += move.origin_square[0]
