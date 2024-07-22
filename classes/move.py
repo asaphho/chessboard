@@ -78,7 +78,7 @@ class VirtualMove:
     def __init__(self, color: str, piece_type: str, from_square: str, to_square: str):
         self.origin_square = from_square
         self.destination_square = to_square
-        self.color = color
+        self.color = 'white' if color.lower().startswith('w') else 'black'
         self.piece_type = piece_type
 
     def get_origin_square(self) -> str:
@@ -92,6 +92,15 @@ class VirtualMove:
 
     def get_piece_type(self) -> str:
         return self.piece_type
+
+    def results_in_promotion(self) -> bool:
+        if self.get_color() == 'white':
+            if self.get_destination_square()[1] == '8' and self.get_piece_type() == 'pawn':
+                return True
+        else:
+            if self.get_destination_square()[1] == '1' and self.get_piece_type() == 'pawn':
+                return True
+        return False
 
     def make_legal_move(self, is_capture: bool, is_en_passant_capture: bool, castling: str = None,
                         promotion_piece: str = None) -> LegalMove:
