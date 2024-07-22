@@ -240,10 +240,10 @@ class Position:
         if len(squares_occupied_by_piece) == 1:
             return 'None'
         origin_squares_that_can_reach_destination = []
-        for origin_square in squares_occupied_by_piece:
-            reachable_squares = self.scan_non_pawn_piece_moves(color, piece, origin_square)
+        for occupied_square in squares_occupied_by_piece:
+            reachable_squares = self.scan_non_pawn_piece_moves(color, piece, occupied_square)
             if destination_square in reachable_squares:
-                origin_squares_that_can_reach_destination.append(origin_square)
+                origin_squares_that_can_reach_destination.append(occupied_square)
         if len(origin_squares_that_can_reach_destination) == 1:
             return 'None'
         origin_file = origin_square[0]
