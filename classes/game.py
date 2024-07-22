@@ -1,5 +1,7 @@
 from classes.position import generate_starting_position
 from classes.move import LegalMove
+from utils.parse_notation import check_for_castling, find_piece_moved_and_destination_square,\
+    check_for_disambiguating_string, piece_to_symbol
 
 
 class Game:
@@ -90,6 +92,29 @@ class Game:
                 return 'Drawn by stalemate.'
         else:
             return 'None'
+
+    def process_input_notation(self, notation_str: str) -> str:
+        castling = check_for_castling(notation_str)
+        if castling == 'None':
+            piece_moved, destination_square = find_piece_moved_and_destination_square(notation_str)
+        elif castling == 'kingside':
+            piece_moved = 'king'
+            if self.current_position.to_move() == 'white':
+                destination_square = 'g1'
+            else:
+                destination_square = 'g8'
+        else:
+            piece_moved = 'king'
+            if self.current_position.to_move() == 'white':
+                destination_square = 'c1'
+            else:
+                destination_square = 'c8'
+        if piece_moved not in ('king', 'pawn'):
+            disambiguating_string = check_for_disambiguating_string(notation_str, destination_square,
+                                                                    piece_to_symbol(piece_moved))
+        else:
+            disambiguating_string = 'None'
+
 
 
 
