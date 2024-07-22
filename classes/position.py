@@ -234,15 +234,20 @@ class Position:
             own_king_position = self.black_pieces.get_king_square() if not virtual else self.virtual_black_pieces.get_king_square()
             return own_king_position in self.scan_all_squares_attacked_by_color('white', virtual)
 
-    def process_legal_move(self, move: LegalMove):
+    def process_legal_move(self, move: LegalMove) -> str:
         color_moved = move.get_color()
+        notation_move_number = self.get_move_number()
+        notation_move_str = f'{notation_move_number}. '
         if color_moved == 'black':
             self.increment_move_number()
+            notation_move_str = f'{notation_move_number}... '
         if move.is_king_move():
             if color_moved == 'white':
                 self.white_pieces.disable_castling()
             else:
                 self.black_pieces.disable_castling()
+            if move.castling == 'None':
+                notation_move_str += 'K'
         if move.moved_king_rook_from_home_square():
             if color_moved == 'white':
                 self.white_pieces.disable_short_castling()
@@ -271,8 +276,10 @@ class Position:
             file = move.destination_square[0]
             if color_moved == 'white':
                 self.set_en_passant_square(f"{file}3")
+                notation_move_str += f'{file}4'
             else:
                 self.set_en_passant_square(f"{file}6")
+                notation_move_str += f'{file}5'
         else:
             self.remove_en_passant_square()
         if move.is_capture():
