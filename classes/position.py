@@ -1,6 +1,6 @@
 from typing import List
 from classes.color_position import ColorPosition
-from classes.move import LegalMove
+from classes.move import LegalMove, VirtualMove
 from utils.board_functions import (check_squares_in_line, get_intervening_squares, is_knight_move, LETTER_TO_NUM,
                                    NUM_TO_LETTER)
 
@@ -10,6 +10,10 @@ ranks = '12345678'
 for f in files:
     for r in ranks:
         ALL_SQUARES.append(f'{f}{r}')
+
+
+def opposite_color(color: str) -> str:
+    return 'white' if color.lower().startswith('b') else 'black'
 
 
 def collapse_rank_string(rank_str: str) -> str:
@@ -370,5 +374,70 @@ class Position:
                 if any([square in self.scan_all_squares_attacked_by_color('white') for square in ['d8', 'c8']]):
                     return False
                 return True
+
+    def virtual_move_is_legal(self, virtual_move: VirtualMove) -> bool:
+        side_attempting_move = 'white' if virtual_move.get_color().lower().startswith('w') else 'black'
+        piece_typed_moved = virtual_move.get_piece_type()
+        origin_square = virtual_move.get_origin_square()
+        destination_square = virtual_move.get_destination_square()
+        if piece_typed_moved == 'king':
+            if side_attempting_move == 'white' and origin_square == 'e1' and destination_square == 'g1':
+                return self.castling_legal_here(side_attempting_move, 'kingside')
+            elif side_attempting_move == 'white' and origin_square == 'e1' and destination_square == 'c1':
+                return self.castling_legal_here(side_attempting_move, 'queenside')
+            elif side_attempting_move == 'black' and origin_square == 'e8' and destination_square == 'g8':
+                return self.castling_legal_here(side_attempting_move, 'kingside')
+            elif side_attempting_move == 'black' and origin_square == 'e8' and destination_square == 'c8':
+                return self.castling_legal_here(side_attempting_move, 'queenside')
+        opposing_side = opposite_color(side_attempting_move)
+        opposing_piece_squares = self.virtual_black_pieces if opposing_side == 'black' else self.virtual_white_pieces
+        own_piece_squares = self.virtual_white_pieces if side_attempting_move == 'white' else self.virtual_black_pieces
+        if destination_square in opposing_piece_squares.get_occupied_squares():
+            opposing_piece_squares.remove_piece_on_square(destination_square)
+
+        own_piece_squares.move_piece(piece_typed_moved, virtual_move.get_origin_square(),
+                                     destination_square)
+        if destination_square == self.get_en_passant_square() and piece_typed_moved == 'pawn':
+            file = destination_square[0]
+            if side_attempting_move == 'white':
+                opposing_piece_squares.remove_piece_on_square(f'{file}5')
+            else:
+                opposing_piece_squares.remove_piece_on_square(f"{file}4")
+        results_in_check = self.is_under_check(side_attempting_move, virtual=True)
+        self.virtual_white_pieces = self.white_pieces.copy()
+        self.virtual_black_pieces = self.black_pieces.copy()
+        return not results_in_check
+
+    def translate_virtual_move_to_legal(self, virtual_move: VirtualMove, promotion_piece: str = None) -> LegalMove:
+        side_attempting_move = 'white' if virtual_move.get_color().lower().startswith('w') else 'black'
+        piece_typed_moved = virtual_move.get_piece_type()
+        origin_square = virtual_move.get_origin_square()
+        destination_square = virtual_move.get_destination_square()
+        opposing_side_pieces = self.black_pieces if side_attempting_move == 'white' else self.white_pieces
+        is_capture = destination_square in opposing_side_pieces.get_occupied_squares()
+        if destination_square == self.get_en_passant_square() and piece_typed_moved == 'pawn':
+            is_capture = True
+            is_en_passant_capture = True
+        else:
+            is_en_passant_capture = False
+        if piece_typed_moved == 'king':
+            if side_attempting_move == 'white' and origin_square == 'e1' and destination_square == 'g1':
+                castling = 'kingside'
+            elif side_attempting_move == 'white' and origin_square == 'e1' and destination_square == 'c1':
+                castling = 'queenside'
+            elif side_attempting_move == 'black' and origin_square == 'e8' and destination_square == 'g8':
+                castling = 'kingside'
+            elif side_attempting_move == 'black' and origin_square == 'e8' and destination_square == 'c8':
+                castling = 'queenside'
+            else:
+                castling = None
+        else:
+            castling = None
+        return virtual_move.make_legal_move(is_capture=is_capture,
+                                            is_en_passant_capture=is_en_passant_capture,
+                                            castling=castling,
+                                            promotion_piece=promotion_piece)
+
+
 
 
