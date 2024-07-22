@@ -471,4 +471,15 @@ class Position:
                             virtual_moves.append(VirtualMove(color, piece, origin_square, attacked_square))
         return virtual_moves
 
-
+    def get_all_legal_moves_for_color(self, color: str) -> List[LegalMove]:
+        virtual_moves = self.scrape_virtual_moves_for_color(color)
+        legal_moves = []
+        for virtual_move in virtual_moves:
+            move_is_legal = self.virtual_move_is_legal(virtual_move)
+            if move_is_legal:
+                if virtual_move.results_in_promotion():
+                    for promotion_piece in ['queen', 'rook', 'knight', 'bishop']:
+                        legal_moves.append(self.translate_virtual_move_to_legal(virtual_move, promotion_piece))
+                else:
+                    legal_moves.append(self.translate_virtual_move_to_legal(virtual_move))
+        return legal_moves
