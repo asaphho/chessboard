@@ -1,4 +1,9 @@
-def find_destination_square(move_str: str) -> str:
+from typing import Tuple
+
+SYMBOL_TO_PIECE = {'K': 'king', 'Q': 'queen', 'R': 'rook', 'B': 'bishop', 'N': 'knight'}
+
+
+def find_piece_moved_and_destination_square(move_str: str) -> Tuple[str, str]:
     rank = 0
     file = 'z'
     for i in range(len(move_str) - 1, -1, -1):
@@ -21,19 +26,20 @@ def find_destination_square(move_str: str) -> str:
     if file not in 'abcdefgh':
         print(f'Square {file}{rank} does not exist.')
         raise ValueError
-    return f'{file}{rank}'
-
-
-def find_piece_moved(move_str: str) -> str:
-    piece_symbols = {'K': 'king', 'Q': 'queen', 'R': 'rook', 'B': 'bishop', 'N': 'knight'}
-    first_char = move_str[0]
-    if first_char in piece_symbols:
-        return piece_symbols[first_char]
-    elif first_char.lower() in 'abcdefgh':
-        return 'pawn'
+    destination_square = f'{file}{rank}'
+    move_str_bef_destination_square = move_str.rsplit(destination_square, maxsplit=1)[0]
+    if move_str_bef_destination_square == '':
+        piece_moved = 'pawn'
     else:
-        print('Could not figure out which piece is to be moved. Piece symbols, except for pawns, must be given in uppercase. There is no piece symbol for pawn. For pawn moves, give the origin file in lowercase instead of a piece symbol.')
-        raise ValueError
+        first_char = move_str_bef_destination_square[0]
+        if first_char in SYMBOL_TO_PIECE:
+            piece_moved = SYMBOL_TO_PIECE[first_char]
+        elif first_char in 'abcdefgh':
+            piece_moved = 'pawn'
+        else:
+            print(f'Unrecognized piece symbol {first_char}. Non-pawn piece symbols must be given in uppercase. Allowed piece symbols: K, Q, R, B, N')
+            raise ValueError
+    return piece_moved, destination_square
 
 
 def check_for_castling(move_str: str) -> str:
@@ -43,4 +49,21 @@ def check_for_castling(move_str: str) -> str:
         return 'kingside'
     else:
         return 'None'
+
+
+def check_for_disambiguating_string(move_str: str, destination_square: str, piece_symbol: str) -> str:
+    piece_symbol_stripped = move_str.lstrip(piece_symbol)
+    bef_destination_square = piece_symbol_stripped.rsplit(destination_square, maxsplit=1)[0]
+    disambiguation_string = bef_destination_square.rstrip('x')
+    if len(disambiguation_string) == 1 and disambiguation_string in 'abcdefgh':
+        return disambiguation_string
+    elif len(disambiguation_string) == 1 and disambiguation_string in '12345678':
+        return disambiguation_string
+    elif len(disambiguation_string) == 2 and disambiguation_string[0] in 'abcdefgh' and disambiguation_string[1] in '12345678':
+        return disambiguation_string
+    elif disambiguation_string == '':
+        return 'None'
+    else:
+        print(f'Could not recognize {disambiguation_string} as a disambiguation string.')
+        raise ValueError
 
