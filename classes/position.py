@@ -226,10 +226,10 @@ class Position:
 
     def is_under_check(self, color: str, virtual: bool = False) -> bool:
         if color.lower() == 'white':
-            own_king_position = self.white_pieces.get_king_square() if not virtual else self.virtual_white_pieces
+            own_king_position = self.white_pieces.get_king_square() if not virtual else self.virtual_white_pieces.get_king_square()
             return own_king_position in self.scan_all_squares_attacked_by_color('black', virtual)
         else:
-            own_king_position = self.black_pieces.get_king_square() if not virtual else self.virtual_black_pieces
+            own_king_position = self.black_pieces.get_king_square() if not virtual else self.virtual_black_pieces.get_king_square()
             return own_king_position in self.scan_all_squares_attacked_by_color('white', virtual)
 
     def process_legal_move(self, move: LegalMove):
