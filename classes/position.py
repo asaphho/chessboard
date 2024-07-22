@@ -220,13 +220,13 @@ class Position:
                     attacked_squares.extend(self.scan_pawn_attacked_squares(color, square))
         return attacked_squares
 
-    def is_under_check(self, color: str) -> bool:
+    def is_under_check(self, color: str, virtual: bool = False) -> bool:
         if color.lower() == 'white':
-            own_king_position = self.white_pieces.get_king_square()
-            return own_king_position in self.scan_all_squares_attacked_by_color('black')
+            own_king_position = self.white_pieces.get_king_square() if not virtual else self.virtual_white_pieces
+            return own_king_position in self.scan_all_squares_attacked_by_color('black', virtual)
         else:
-            own_king_position = self.black_pieces.get_king_square()
-            return own_king_position in self.scan_all_squares_attacked_by_color('white')
+            own_king_position = self.black_pieces.get_king_square() if not virtual else self.virtual_black_pieces
+            return own_king_position in self.scan_all_squares_attacked_by_color('white', virtual)
 
     def process_legal_move(self, move: LegalMove):
         color_moved = move.get_color()
@@ -300,6 +300,8 @@ class Position:
                 self.white_pieces.promote_pawn(move.destination_square, move.promotion_piece)
             else:
                 self.black_pieces.promote_pawn(move.destination_square, move.promotion_piece)
+        self.virtual_white_pieces = self.white_pieces.copy()
+        self.virtual_black_pieces = self.black_pieces.copy()
         self.change_side_to_move()
 
     def look_at_square(self, square: str) -> str:
@@ -330,3 +332,43 @@ class Position:
         fen_str += f' {self.get_half_move_clock()}'
         fen_str += f' {self.get_move_number()}'
         return fen_str
+
+    def castling_legal_here(self, color: str, side: str) -> bool:
+        if self.is_under_check(color):
+            return False
+        if color == 'white':
+            if side.lower().startswith('k') or side.lower().startswith('short'):
+                if not self.white_pieces.can_short_castle():
+                    return False
+                if any([square in self.get_occupied_squares() for square in ['f1', 'g1']]):
+                    return False
+                if any([square in self.scan_all_squares_attacked_by_color('black') for square in ['f1', 'g1']]):
+                    return False
+                return True
+            else:
+                if not self.white_pieces.can_long_castle():
+                    return False
+                if any([square in self.get_occupied_squares() for square in ['d1', 'c1', 'b1']]):
+                    return False
+                if any([square in self.scan_all_squares_attacked_by_color('black')] for square in ['d1', 'c1']):
+                    return False
+                return True
+        else:
+            if side.lower().startswith('k') or side.lower().startswith('short'):
+                if not self.black_pieces.can_short_castle():
+                    return False
+                if any([square in self.get_occupied_squares() for square in ['f8', 'g8']]):
+                    return False
+                if any([square in self.scan_all_squares_attacked_by_color('white') for square in ['f8', 'g8']]):
+                    return False
+                return True
+            else:
+                if not self.black_pieces.can_long_castle():
+                    return False
+                if any([square in self.get_occupied_squares() for square in ['d8', 'c8', 'b8']]):
+                    return False
+                if any([square in self.scan_all_squares_attacked_by_color('white') for square in ['d8', 'c8']]):
+                    return False
+                return True
+
+
