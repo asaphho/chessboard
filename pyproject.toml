@@ -1,0 +1,18 @@
+[tool.poetry]
+name = "chessboard"
+version = "0.1.0"
+description = ""
+authors = ["Asaph Ho Canyang <asaph.ho-cy@venture.com.sg>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = ">=3.11,<3.13"
+chess-board = "^0.4.1"
+
+
+[tool.poetry.group.dev.dependencies]
+pyinstaller = "^6.9.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
