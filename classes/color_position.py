@@ -131,7 +131,7 @@ class ColorPosition:
         return square_piece_dict
 
 
-def generate_starting_position(color: str) -> ColorPosition:
+def generate_starting_position_for_color(color: str) -> ColorPosition:
     back_rank = 1 if color == 'white' else 8
     pawn_rank = 2 if color == 'white' else 7
     piece_file_dict = {'rook': ['a', 'h'], 'knight': ['b', 'g'], 'bishop': ['c', 'f'], 'queen': ['d'], 'king': ['e']}
