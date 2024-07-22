@@ -24,3 +24,15 @@ def find_destination_square(move_str: str) -> str:
     return f'{file}{rank}'
 
 
+def find_piece_moved(move_str: str) -> str:
+    piece_symbols = {'K': 'king', 'Q': 'queen', 'R': 'rook', 'B': 'bishop', 'N': 'knight'}
+    first_char = move_str[0]
+    if first_char in piece_symbols:
+        return piece_symbols[first_char]
+    elif first_char.lower() in 'abcdefgh':
+        return 'pawn'
+    else:
+        print('Could not figure out which piece is to be moved. Piece symbols, except for pawns, must be given in uppercase.')
+        raise ValueError
+
+
