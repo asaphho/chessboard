@@ -32,7 +32,7 @@ def find_piece_moved(move_str: str) -> str:
     elif first_char.lower() in 'abcdefgh':
         return 'pawn'
     else:
-        print('Could not figure out which piece is to be moved. Piece symbols, except for pawns, must be given in uppercase.')
+        print('Could not figure out which piece is to be moved. Piece symbols, except for pawns, must be given in uppercase. There is no piece symbol for pawn. For pawn moves, give the origin file in lowercase instead of a piece symbol.')
         raise ValueError
 
 
