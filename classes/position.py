@@ -145,8 +145,7 @@ class Position:
             own_piece_positions = self.black_pieces if not virtual else self.virtual_black_pieces
         occupied_squares = self.get_occupied_squares(virtual=virtual)
         own_pieces_squares = own_piece_positions.get_occupied_squares()
-        all_other_squares = [square for square in ALL_SQUARES
-                             if square != from_square and square not in own_pieces_squares]
+        all_other_squares = [square for square in ALL_SQUARES if square not in own_pieces_squares]
         reachable_squares = []
         for candidate_square in all_other_squares:
             check_line = check_squares_in_line(from_square, candidate_square)
@@ -155,6 +154,10 @@ class Position:
                 intervening_squares = get_intervening_squares(from_square, candidate_square, check_line)
                 if len(intervening_squares) == 0:
                     if piece == 'queen' or piece == 'king':
+                        reachable_squares.append(candidate_square)
+                    if piece == 'rook' and (check_line == 'file' or check_line == 'rank'):
+                        reachable_squares.append(candidate_square)
+                    if piece == 'bishop' and check_line == 'diagonal':
                         reachable_squares.append(candidate_square)
                 else:
                     blocked = any([square in occupied_squares for square in intervening_squares])
