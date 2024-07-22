@@ -36,3 +36,11 @@ def find_piece_moved(move_str: str) -> str:
         raise ValueError
 
 
+def check_for_castling(move_str: str) -> str:
+    if move_str.replace(' ', '').upper().startswith('O-O-O'):
+        return 'queenside'
+    elif move_str.replace(' ', '').upper().startswith('O-O'):
+        return 'kingside'
+    else:
+        return 'None'
+
