@@ -130,3 +130,15 @@ class ColorPosition:
                     square_piece_dict[square] = piece_symbols[piece_type]
         return square_piece_dict
 
+
+def generate_starting_position(color: str) -> ColorPosition:
+    back_rank = 1 if color == 'white' else 8
+    pawn_rank = 2 if color == 'white' else 7
+    piece_file_dict = {'rook': ['a', 'h'], 'knight': ['b', 'g'], 'bishop': ['c', 'f'], 'queen': ['d'], 'king': ['e']}
+    pieces = {}
+    for piece in piece_file_dict:
+        pieces[piece] = []
+        for file in piece_file_dict[piece]:
+            pieces[piece].append(f'{file}{back_rank}')
+    pieces['pawn'] = [f'{pfile}{pawn_rank}' for pfile in 'abcdefgh']
+    return ColorPosition(color=color, all_piece_squares=pieces)
