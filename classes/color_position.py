@@ -32,6 +32,12 @@ class ColorPosition:
     def can_long_castle(self) -> bool:
         return self.long_castle
 
+    def can_castle_on_side(self, side: str) -> bool:
+        if side == 'kingside':
+            return self.can_short_castle()
+        else:
+            return self.can_long_castle()
+
     def get_king_square(self) -> str:
         if type(king_square_val := self.all_piece_squares['king']) == str:
             return king_square_val
