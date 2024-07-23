@@ -160,14 +160,14 @@ class Game:
                     capture_origin_file = pawn_capture_origin_file(notation_str, destination_square)
                     if capture_origin_file == 'None':
                         for move in possible_legal_moves:
-                            if move.promotion_piece == promotion_piece:
+                            if move.promotion_piece == promotion_piece and not move.is_capture():
                                 return self.process_move(move)
                         print('Something went wrong. Pawn reached last rank but no pawn promotion LegalMove objects found to match promotion piece.')
                         h = input()
                         sys.exit(1)
                     else:
                         for move in possible_legal_moves:
-                            if move.origin_square[0] == capture_origin_file and move.promotion_piece == promotion_piece:
+                            if move.origin_square[0] == capture_origin_file and move.promotion_piece == promotion_piece and move.is_capture():
                                 return self.process_move(move)
                         print('Something went wrong. Pawn reached last rank but no pawn promotion LegalMove objects found to match promotion piece.')
                         h = input()
