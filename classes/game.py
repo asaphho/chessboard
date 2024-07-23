@@ -98,6 +98,7 @@ class Game:
         castling = check_for_castling(notation_str)
         if castling == 'None':
             piece_moved, destination_square = find_piece_moved_and_destination_square(notation_str)
+
         else:
             if self.current_position.castling_legal_here(side_to_move, castling):
                 back_rank = '1' if side_to_move == 'white' else '8'
@@ -105,6 +106,10 @@ class Game:
                                        origin_square=f'e{back_rank}',
                                        destination_square=f'g{back_rank}' if castling == 'kingside' else f'c{back_rank}',
                                        castling=castling)
+                return self.process_move(legal_move)
+            else:
+                print('Castling not legal here.')
+                raise ValueError
 
 
 
