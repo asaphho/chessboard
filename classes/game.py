@@ -98,7 +98,16 @@ class Game:
         castling = check_for_castling(notation_str)
         if castling == 'None':
             piece_moved, destination_square = find_piece_moved_and_destination_square(notation_str)
-
+            all_legal_moves = self.current_position.get_all_legal_moves_for_color(side_to_move)
+            possible_legal_moves = [move for move in all_legal_moves if move.piece_moved == piece_moved]
+            if len(possible_legal_moves) == 0:
+                print(f'No legal {piece_moved} moves available.')
+                raise ValueError
+            possible_legal_moves = [move for move in possible_legal_moves if move.destination_square == destination_square]
+            if len(possible_legal_moves) == 0:
+                print(f'No {piece_moved} able to move to {destination_square}')
+                raise ValueError
+            
         else:
             if self.current_position.castling_legal_here(side_to_move, castling):
                 back_rank = '1' if side_to_move == 'white' else '8'
