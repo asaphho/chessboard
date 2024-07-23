@@ -76,7 +76,7 @@ def check_for_promotion_piece(move_str: str, destination_square: str) -> str:
     str_after_destination_square = move_str.rsplit(destination_square, maxsplit=1)[1]
     if str_after_destination_square == '':
         return 'None'
-    elif str_after_destination_square[0] in ('Q', 'R', 'B', 'N'):
+    elif str_after_destination_square.lstrip('=')[0] in ('Q', 'R', 'B', 'N'):
         return SYMBOL_TO_PIECE[str_after_destination_square[0]]
     else:
         print(f'Could not recognize {str_after_destination_square[0]} as a promotion piece symbol. Must be given in uppercase. Allowed symbols: Q, R, B, N')
