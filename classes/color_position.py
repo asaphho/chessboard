@@ -46,7 +46,7 @@ class ColorPosition:
 
     def get_piece_type_squares(self, piece_type: str) -> List[str]:
         if piece_type.lower() not in self.all_piece_squares:
-            print(f"{self.color.replace(self.color[0], self.color.upper())} has no {piece_type}.")
+            print(f"{self.color.replace(self.color[0], self.color.upper(), 1)} has no {piece_type}.")
             raise ValueError('No such piece')
         if type(piece_square_val := self.all_piece_squares[piece_type.lower()]) == str:
             return [piece_square_val]
