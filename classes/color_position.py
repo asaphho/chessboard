@@ -1,4 +1,5 @@
 from typing import Dict, Union, List
+from copy import deepcopy
 
 
 class ColorPosition:
@@ -6,13 +7,13 @@ class ColorPosition:
     def __init__(self, color: str, all_piece_squares: Dict[str, Union[List[str], str]],
                  short_castle: bool = True, long_castle: bool = True):
         self.color = color.lower()
-        self.all_piece_squares = all_piece_squares
+        self.all_piece_squares = deepcopy(all_piece_squares)
         self.short_castle = short_castle
         self.long_castle = long_castle
 
     def copy(self):
         return ColorPosition(color=self.color,
-                             all_piece_squares=self.all_piece_squares.copy(),
+                             all_piece_squares=self.all_piece_squares,
                              short_castle=self.short_castle,
                              long_castle=self.long_castle)
 
