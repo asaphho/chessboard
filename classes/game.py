@@ -117,6 +117,37 @@ class Game:
                 if disambiguating_string == 'None' and len(possible_legal_moves) > 1:
                     print(f'Ambiguity detected. More than one {piece_moved} can move to {destination_square}.')
                     raise ValueError
+                elif disambiguating_string == 'None' and len(possible_legal_moves) == 1:
+                    return self.process_move(possible_legal_moves[0])
+                elif len(disambiguating_string) == 1 and disambiguating_string.isalpha():
+                    possible_legal_moves = [move for move in possible_legal_moves if move.origin_square[0] == disambiguating_string]
+                    if len(possible_legal_moves) > 1:
+                        print(f'Ambiguity detected more than one {piece_moved} can reach {destination_square} from the {disambiguating_string}-file.')
+                        raise ValueError
+                    elif len(possible_legal_moves) == 0:
+                        print(f'No {piece_moved} on {disambiguating_string}-file able to move to {destination_square}.')
+                        raise ValueError
+                    else:
+                        return self.process_move(possible_legal_moves[0])
+                elif len(disambiguating_string) == 1 and disambiguating_string.isnumeric():
+                    possible_legal_moves = [move for move in possible_legal_moves if move.origin_square[1] == disambiguating_string]
+                    if len(possible_legal_moves) > 1:
+                        print(f'Ambiguity detected. More than one {piece_moved} on rank {disambiguating_string} can reach {destination_square}.')
+                        raise ValueError
+                    elif len(possible_legal_moves) == 0:
+                        print(f'No {piece_moved} able to move to {destination_square} from rank {disambiguating_string}.')
+                    else:
+                        return self.process_move(possible_legal_moves[0])
+                elif len(disambiguating_string) == 2:
+                    possible_legal_moves = [move for move in possible_legal_moves if move.origin_square == disambiguating_string]
+                    if len(possible_legal_moves) == 0:
+                        print(f'No {piece_moved} on {disambiguating_string} to move to {destination_square}.')
+                        raise ValueError
+                    else:
+                        return self.process_move(possible_legal_moves[0])
+                else:
+                    print(f'Something went wrong: Unhandled disambiguation string {disambiguating_string}.')
+                    raise ValueError
         else:
             if self.current_position.castling_legal_here(side_to_move, castling):
                 back_rank = '1' if side_to_move == 'white' else '8'
