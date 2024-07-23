@@ -37,3 +37,36 @@ assert set(occupied_squares) == {'f3', 'c4', 'c8'}
 
 # test get_square_piece_symbol_dict
 assert p1.get_square_piece_symbol_dict() == {'f3': 'K', 'c4': 'B', 'c8': 'N'}
+
+# test get_occupied_squares
+assert set(p1.get_occupied_squares()) == {'f3', 'c4', 'c8'}
+assert len(p1.get_occupied_squares()) == 3
+p1.plant_piece('pawn', 'c5')
+p1.move_piece('king', 'f3', 'e2')
+assert set(p1.get_occupied_squares()) == {'e2', 'c4', 'c5', 'c8'}
+assert len(p1.get_occupied_squares()) == 4
+p1.move_piece('bishop', 'c4', 'e6')
+assert set(p1.get_occupied_squares()) == {'e2', 'e6', 'c5', 'c8'}
+assert len(p1.get_occupied_squares()) == 4
+
+# test list_unique_piece_types
+assert set(p1.list_unique_piece_types()) == {'king', 'pawn', 'bishop', 'knight'}
+assert len(p1.list_unique_piece_types()) == 4
+p1.plant_piece('bishop', 'e7')
+assert set(p1.list_unique_piece_types()) == {'king', 'pawn', 'bishop', 'knight'}
+assert len(p1.list_unique_piece_types()) == 4
+
+# test get_piece_type_squares
+assert p1.get_piece_type_squares('king') == ['e2']
+bishop_squares = p1.get_piece_type_squares('bishop')
+assert bishop_squares == ['e6', 'e7'] or bishop_squares == ['e7', 'e6']
+assert p1.get_piece_type_squares('pawn') == ['c5']
+assert p1.get_piece_type_squares('knight') == ['c8']
+
+# test copy
+p2 = p1.copy()
+p2.move_piece('bishop', 'e7', 'd8')
+print(p1.all_piece_squares)
+print(p1.get_occupied_squares())
+assert set(p1.get_occupied_squares()) == {'e2', 'e6', 'e7', 'c5', 'c8'}
+assert set(p2.get_occupied_squares()) == {'e2', 'e6', 'd8', 'c5', 'c8'}
