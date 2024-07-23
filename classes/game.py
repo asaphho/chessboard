@@ -94,26 +94,18 @@ class Game:
             return 'None'
 
     def process_input_notation(self, notation_str: str) -> str:
+        side_to_move = self.current_position.to_move()
         castling = check_for_castling(notation_str)
         if castling == 'None':
             piece_moved, destination_square = find_piece_moved_and_destination_square(notation_str)
-        elif castling == 'kingside':
-            piece_moved = 'king'
-            if self.current_position.to_move() == 'white':
-                destination_square = 'g1'
-            else:
-                destination_square = 'g8'
         else:
-            piece_moved = 'king'
-            if self.current_position.to_move() == 'white':
-                destination_square = 'c1'
-            else:
-                destination_square = 'c8'
-        if piece_moved not in ('king', 'pawn'):
-            disambiguating_string = check_for_disambiguating_string(notation_str, destination_square,
-                                                                    piece_to_symbol(piece_moved))
-        else:
-            disambiguating_string = 'None'
+            if self.current_position.castling_legal_here(side_to_move, castling):
+                back_rank = '1' if side_to_move == 'white' else '8'
+                legal_move = LegalMove(color=side_to_move, piece_type='king',
+                                       origin_square=f'e{back_rank}',
+                                       destination_square=f'g{back_rank}' if castling == 'kingside' else f'c{back_rank}',
+                                       castling=castling)
+
 
 
 
