@@ -107,7 +107,16 @@ class Game:
             if len(possible_legal_moves) == 0:
                 print(f'No {piece_moved} able to move to {destination_square}')
                 raise ValueError
-            
+            if piece_moved == 'king':
+                if check_for_disambiguating_string(notation_str, destination_square, 'K') != 'None':
+                    print('Disambiguation ignored for king move.')
+                return self.process_move(possible_legal_moves[0])
+            elif piece_moved != 'pawn':
+                disambiguating_string = check_for_disambiguating_string(notation_str, destination_square,
+                                                                        piece_to_symbol(piece_moved))
+                if disambiguating_string == 'None' and len(possible_legal_moves) > 1:
+                    print(f'Ambiguity detected. More than one {piece_moved} can move to {destination_square}.')
+                    raise ValueError
         else:
             if self.current_position.castling_legal_here(side_to_move, castling):
                 back_rank = '1' if side_to_move == 'white' else '8'
