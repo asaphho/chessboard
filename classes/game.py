@@ -209,6 +209,12 @@ class Game:
             else:
                 print(f'{move}. {whites_move}')
 
+    def restart_game(self) -> None:
+        self.current_position = generate_starting_position()
+        self.fen_record_dict = {self.current_position.generate_fen().rsplit(' ', maxsplit=2)[0]: 1}
+        self.moves_record = {}
+        print('Game restarted!')
+
 
 
 
