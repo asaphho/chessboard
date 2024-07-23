@@ -2,7 +2,7 @@ from classes.game import Game
 
 intro_text = ('Enter moves in standard algebraic notation. Always use uppercase for non-pawn pieces. '
               'Give all files in lowercase. \n '
-              'Commands: /showmoves /showfen /help')
+              'Commands: /showmoves /showfen /restart /help')
 
 
 def main(game: Game):
@@ -31,19 +31,28 @@ def main(game: Game):
                 print(end_game_check)
                 while True:
                     command = input().strip()
-                    handle_command(game, command)
+                    restart = handle_command(game, command)
+                    if restart:
+                        break
 
 
 def handle_command(game, input_str):
     if input_str.lower() == '/showmoves':
         game.show_moves()
+        return False
 
     elif input_str.lower() == '/showfen':
         fen = game.current_position.generate_fen()
         print(fen)
+        return False
 
     elif input_str.lower() == '/help':
         print(intro_text)
+        return False
+
+    elif input_str.lower() == '/restart':
+        game.restart_game()
+        return True
 
     else:
         print('Unrecognized command.')
