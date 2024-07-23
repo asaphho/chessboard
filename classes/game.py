@@ -1,7 +1,8 @@
 from classes.position import generate_starting_position
 from classes.move import LegalMove
 from utils.parse_notation import check_for_castling, find_piece_moved_and_destination_square,\
-    check_for_disambiguating_string, piece_to_symbol
+    check_for_disambiguating_string, piece_to_symbol, check_for_promotion_piece, pawn_capture_origin_file
+import sys
 
 
 class Game:
@@ -147,7 +148,46 @@ class Game:
                         return self.process_move(possible_legal_moves[0])
                 else:
                     print(f'Something went wrong: Unhandled disambiguation string {disambiguating_string}.')
-                    raise ValueError
+                    h = input()
+                    sys.exit(1)
+            else:
+                promotion_rank = '1' if side_to_move == 'black' else '8'
+                if destination_square[1] == promotion_rank:
+                    promotion_piece = check_for_promotion_piece(notation_str, destination_square)
+                    if promotion_piece == 'None':
+                        print(f'Promotion piece required as pawn has reached last rank. Add Q, R, B, or N right after the destination square.')
+                        raise ValueError
+                    capture_origin_file = pawn_capture_origin_file(notation_str, destination_square)
+                    if capture_origin_file == 'None':
+                        for move in possible_legal_moves:
+                            if move.promotion_piece == promotion_piece:
+                                return self.process_move(move)
+                        print('Something went wrong. Pawn reached last rank but no pawn promotion LegalMove objects found to match promotion piece.')
+                        h = input()
+                        sys.exit(1)
+                    else:
+                        for move in possible_legal_moves:
+                            if move.origin_square[0] == capture_origin_file and move.promotion_piece == promotion_piece:
+                                return self.process_move(move)
+                        print('Something went wrong. Pawn reached last rank but no pawn promotion LegalMove objects found to match promotion piece.')
+                        h = input()
+                        sys.exit(1)
+                else:
+                    capture_origin_file = pawn_capture_origin_file(notation_str, destination_square)
+                    if capture_origin_file == 'None':
+                        for move in possible_legal_moves:
+                            if not move.is_capture():
+                                return self.process_move(move)
+                        print(f'Something went wrong. Could not process pawn move to {destination_square}.')
+                        h = input()
+                        sys.exit(1)
+                    else:
+                        for move in possible_legal_moves:
+                            if move.origin_square[0] == capture_origin_file and move.is_capture():
+                                return self.process_move(move)
+                        print(f'Something went wrong. Could not process pawn capture from {capture_origin_file}-file to {destination_square}.')
+                        h = input()
+                        sys.exit(1)
         else:
             if self.current_position.castling_legal_here(side_to_move, castling):
                 back_rank = '1' if side_to_move == 'white' else '8'
