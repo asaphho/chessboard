@@ -200,6 +200,16 @@ class Game:
                 print('Castling not legal here.')
                 raise ValueError
 
+    def show_moves(self) -> None:
+        for move in self.moves_record:
+            whites_move = self.moves_record[move][0].split(' ', maxsplit=1)[1]
+            if len(self.moves_record[move]) == 2:
+                blacks_move = self.moves_record[move][1].split(' ', maxsplit=1)[1]
+                print(f'{move}. {whites_move} {blacks_move}')
+            else:
+                print(f'{move}. {whites_move}')
+
+
 
 
 
