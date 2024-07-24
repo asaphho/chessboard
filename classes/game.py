@@ -213,7 +213,7 @@ class Game:
         self.current_position = generate_starting_position()
         self.fen_record_dict = {self.current_position.generate_fen().rsplit(' ', maxsplit=2)[0]: 1}
         self.moves_record = {}
-        print('Game restarted!')
+
 
 
 

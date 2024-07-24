@@ -51,6 +51,7 @@ def handle_command(game, input_str):
         return False
 
     elif input_str.lower() == '/restart':
+        print('Restarting game.')
         game.restart_game()
         return True
 
