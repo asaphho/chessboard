@@ -287,10 +287,8 @@ class Position:
                 self.get_pieces_by_color(opposing_color).remove_piece_on_square(move.destination_square)
             else:
                 file = move.destination_square[0]
-                if color_moved == 'white':
-                    self.black_pieces.remove_piece_on_square(f"{file}5")
-                else:
-                    self.white_pieces.remove_piece_on_square(f"{file}4")
+                rank_to_remove = 5 if color_moved == 'white' else 4
+                self.get_pieces_by_color(opposite_color(color_moved)).remove_piece_on_square(f'{file}{rank_to_remove}')
         back_rank = '1' if color_moved == 'white' else '8'
         if str(move.castling).lower().startswith('k') or str(move.castling).lower().startswith('short'):
             self.get_pieces_by_color(color_moved).move_piece('rook', f'h{back_rank}', f'f{back_rank}')

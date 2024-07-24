@@ -52,24 +52,15 @@ class LegalMove:
 
     def is_pawn_2_square_move(self) -> bool:
         if self.piece_moved == 'pawn':
-            if self.color == 'white':
-                if self.origin_square[1] == '2':
-                    if self.destination_square[1] == '4':
-                        return True
-            else:
-                if self.origin_square[1] == '7':
-                    if self.destination_square[1] == '5':
-                        return True
+            home_rank = 2 if self.color == 'white' else 7
+            two_square_destination_rank = 4 if self.color == 'white' else 5
+            return int(self.origin_square[1]) == home_rank and int(self.destination_square[1]) == two_square_destination_rank
         return False
 
     def pawn_promotion_required(self) -> bool:
         if self.piece_moved == 'pawn':
-            if self.color == 'white':
-                if self.destination_square[1] == '8':
-                    return True
-            else:
-                if self.destination_square[1] == '1':
-                    return True
+            promotion_rank = '8' if self.color == 'white' else '1'
+            return self.destination_square[1] == promotion_rank
         return False
 
 
