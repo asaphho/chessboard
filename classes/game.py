@@ -186,9 +186,8 @@ class Game:
                         for move in possible_legal_moves:
                             if move.origin_square[0] == capture_origin_file and move.is_capture():
                                 return self.process_move(move)
-                        print(f'Something went wrong. Could not process pawn capture from {capture_origin_file}-file to {destination_square}.')
-                        h = input()
-                        sys.exit(1)
+                        print('Illegal move.')
+                        raise ValueError
         else:
             if self.current_position.castling_legal_here(side_to_move, castling):
                 back_rank = '1' if side_to_move == 'white' else '8'
