@@ -2,7 +2,7 @@ from classes.game import Game
 
 intro_text = ('Enter moves in standard algebraic notation. Always use uppercase for non-pawn pieces. '
               'Give all files in lowercase. \n '
-              'Commands: /showmoves /showfen /restart /help')
+              'Commands: /showmoves /showfen /restart /takeback /help')
 
 
 def main(game: Game):
