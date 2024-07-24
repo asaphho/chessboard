@@ -124,7 +124,7 @@ class Game:
                 elif len(disambiguating_string) == 1 and disambiguating_string.isalpha():
                     possible_legal_moves = [move for move in possible_legal_moves if move.origin_square[0] == disambiguating_string]
                     if len(possible_legal_moves) > 1:
-                        print(f'Ambiguity detected more than one {piece_moved} can reach {destination_square} from the {disambiguating_string}-file.')
+                        print(f'Ambiguity detected. More than one {piece_moved} can reach {destination_square} from the {disambiguating_string}-file.')
                         raise ValueError
                     elif len(possible_legal_moves) == 0:
                         print(f'No {piece_moved} on {disambiguating_string}-file able to move to {destination_square}.')
