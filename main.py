@@ -61,6 +61,7 @@ def handle_command(game, input_str):
 
     else:
         print('Unrecognized command.')
+        return False
 
 
 if __name__ == '__main__':
