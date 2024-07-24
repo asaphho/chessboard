@@ -3,6 +3,7 @@ from classes.move import LegalMove
 from utils.parse_notation import check_for_castling, find_piece_moved_and_destination_square,\
     check_for_disambiguating_string, piece_to_symbol, check_for_promotion_piece, pawn_capture_origin_file
 import sys
+from copy import deepcopy
 
 
 class Game:
@@ -102,11 +103,11 @@ class Game:
             all_legal_moves = self.current_position.get_all_legal_moves_for_color(side_to_move)
             possible_legal_moves = [move for move in all_legal_moves if move.piece_moved == piece_moved]
             if len(possible_legal_moves) == 0:
-                print(f'No legal {piece_moved} moves available.')
+                print(f'Illegal move.')
                 raise ValueError
             possible_legal_moves = [move for move in possible_legal_moves if move.destination_square == destination_square]
             if len(possible_legal_moves) == 0:
-                print(f'No {piece_moved} able to move to {destination_square}')
+                print(f'Illegal move.')
                 raise ValueError
             if piece_moved == 'king':
                 if check_for_disambiguating_string(notation_str, destination_square, 'K') != 'None':
@@ -178,9 +179,9 @@ class Game:
                         for move in possible_legal_moves:
                             if not move.is_capture():
                                 return self.process_move(move)
-                        print(f'Something went wrong. Could not process pawn move to {destination_square}.')
-                        h = input()
-                        sys.exit(1)
+                        # code can reach here in the case of a pawn attempting to move forward onto a square occupied by an enemy piece when another pawn is able to capture to that square.
+                        print(f'Illegal move.')
+                        raise ValueError
                     else:
                         for move in possible_legal_moves:
                             if move.origin_square[0] == capture_origin_file and move.is_capture():
@@ -214,6 +215,28 @@ class Game:
         self.fen_record_dict = {self.current_position.generate_fen().rsplit(' ', maxsplit=2)[0]: 1}
         self.moves_record = {}
 
+    def take_back_last_move(self) -> None:
+        if self.moves_record == {}:
+            print('Nothing to take back.')
+            return
+        current_moves = deepcopy(self.moves_record)
+        self.restart_game()
+        max_move_number = max(list(current_moves.keys()))
+        if len(current_moves[max_move_number]) == 2:
+            last_move_played = current_moves[max_move_number].pop(1)
+        else:
+            last_move_played = current_moves[max_move_number][0]
+            current_moves.pop(max_move_number)
+        if current_moves != {}:
+            new_last_move_number = max(list(current_moves.keys()))
+            for move_num in range(1, new_last_move_number + 1):
+                moves_list = current_moves[move_num]
+                whites_move_notation = moves_list[0].rsplit(' ', maxsplit=1)[1]
+                self.process_input_notation(whites_move_notation)
+                if len(moves_list) == 2:
+                    blacks_move_notation = moves_list[1].rsplit(' ', maxsplit=1)[1]
+                    self.process_input_notation(blacks_move_notation)
+        print(f'{last_move_played} taken back.')
 
 
 

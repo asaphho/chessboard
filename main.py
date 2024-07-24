@@ -31,8 +31,8 @@ def main(game: Game):
                 print(end_game_check)
                 while True:
                     command = input().strip()
-                    restart = handle_command(game, command)
-                    if restart:
+                    resume_game_loop = handle_command(game, command)
+                    if resume_game_loop:
                         break
 
 
@@ -53,6 +53,10 @@ def handle_command(game, input_str):
     elif input_str.lower() == '/restart':
         print('Restarting game.')
         game.restart_game()
+        return True
+
+    elif input_str.lower() == '/takeback':
+        game.take_back_last_move()
         return True
 
     else:
