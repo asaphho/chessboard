@@ -179,26 +179,17 @@ class Position:
         occupied_squares = self.get_occupied_squares()
         file = from_square[0]
         rank = int(from_square[1])
-        if color.lower() == 'white':
-            if rank == 2:
-                if f"{file}3" in occupied_squares:
-                    return []
-                elif f"{file}4" in occupied_squares:
-                    return [f"{file}3"]
-                else:
-                    return [f"{file}3", f"{file}4"]
+        home_rank = 2 if color == 'white' else 7
+        rank_delta = 1 if color == 'white' else -1
+        if rank == home_rank:
+            if f'{file}{home_rank + rank_delta}' in occupied_squares:
+                return []
+            elif f'{file}{home_rank + (2 * rank_delta)}' in occupied_squares:
+                return [f'{file}{home_rank + rank_delta}']
             else:
-                return [f"{file}{rank + 1}"] if f"{file}{rank + 1}" not in occupied_squares else []
+                return [f'{file}{home_rank + rank_delta}', f'{file}{home_rank + (2 * rank_delta)}']
         else:
-            if rank == 7:
-                if f"{file}6" in occupied_squares:
-                    return []
-                elif f"{file}5" in occupied_squares:
-                    return [f"{file}6"]
-                else:
-                    return [f"{file}6", f"{file}5"]
-            else:
-                return [f"{file}{rank - 1}"] if f"{file}{rank - 1}" not in occupied_squares else []
+            return [f'{file}{rank + rank_delta}'] if f'{file}{rank + rank_delta}' not in occupied_squares else []
 
     def scan_pawn_attacked_squares(self, color: str, from_square: str) -> List[str]:
         file = from_square[0]
