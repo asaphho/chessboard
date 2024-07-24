@@ -138,6 +138,7 @@ class Game:
                         raise ValueError
                     elif len(possible_legal_moves) == 0:
                         print(f'No {piece_moved} able to move to {destination_square} from rank {disambiguating_string}.')
+                        raise ValueError
                     else:
                         return self.process_move(possible_legal_moves[0])
                 elif len(disambiguating_string) == 2:
