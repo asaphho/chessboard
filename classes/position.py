@@ -86,6 +86,11 @@ class Position:
         self.move_number = move_number
         self.side_to_move = side_to_move.lower()
 
+    def copy(self):
+        return Position(white_pieces=self.white_pieces.copy(), black_pieces=self.black_pieces.copy(),
+                        side_to_move=self.to_move(), en_passant_square=self.get_en_passant_square(),
+                        half_move_clock=self.get_half_move_clock(), move_number=self.get_move_number())
+
     def to_move(self) -> str:
         return self.side_to_move
 
