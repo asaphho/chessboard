@@ -76,12 +76,6 @@ class Game:
             return True
 
     def check_game_end_conditions(self) -> str:
-        if self.drawn_by_repetition():
-            return 'Drawn by repetition.'
-        if self.drawn_by_50_move_rule():
-            return 'Drawn by 50-move rule.'
-        if self.drawn_by_reduction():
-            return 'Drawn by reduction.'
         side_to_move = self.current_position.to_move()
         legal_moves_available = self.current_position.get_all_legal_moves_for_color(side_to_move)
         if len(legal_moves_available) == 0:
@@ -92,8 +86,14 @@ class Game:
                     return 'White wins by checkmate.'
             else:
                 return 'Drawn by stalemate.'
-        else:
-            return 'None'
+
+        if self.drawn_by_repetition():
+            return 'Drawn by repetition.'
+        if self.drawn_by_50_move_rule():
+            return 'Drawn by 50-move rule.'
+        if self.drawn_by_reduction():
+            return 'Drawn by reduction.'
+        return 'None'
 
     def process_input_notation(self, notation_str: str) -> str:
         side_to_move = self.current_position.to_move()
