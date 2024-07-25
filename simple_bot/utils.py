@@ -27,14 +27,13 @@ def check_if_move_ends_game(current_position: Position, move: LegalMove) -> str:
     return 'stalemate'
 
 
-def look_for_mate_in_one(current_position: Position, to_move: str) -> Union[LegalMove, None]:
+def look_for_mate_in_one(current_position: Position) -> Union[LegalMove, None]:
     """
-    Looks for a mate in one in the current position for the side to move.
+    Looks for a mate in one in the current position for the current side to move.
     :param current_position:
-    :param to_move: 'white' or 'black'
     :return: a LegalMove object that delivers checkmate when played in the current position, or None if no mate exists.
     """
-    all_legal_moves = current_position.get_all_legal_moves_for_color(to_move)
+    all_legal_moves = current_position.get_all_legal_moves_for_color(current_position.to_move())
     for move in all_legal_moves:
         if check_if_move_ends_game(current_position, move) == 'checkmate':
             return move
@@ -49,6 +48,5 @@ def move_allows_mate_in_one(current_position: Position, move: LegalMove) -> bool
     :return: True if it allows a mate in one. False if not.
     """
     new_position = branch_from_position(current_position, move)
-    to_move = new_position.to_move()
-    mating_move = look_for_mate_in_one(new_position, to_move)
+    mating_move = look_for_mate_in_one(new_position)
     return mating_move is not None
