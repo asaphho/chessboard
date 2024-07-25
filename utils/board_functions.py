@@ -6,6 +6,17 @@ for letter in LETTER_TO_NUM:
     NUM_TO_LETTER[LETTER_TO_NUM[letter]] = letter
 
 
+def square_color_int(square: str) -> int:
+    """
+
+    :param square: str e.g. 'e5'
+    :return: int 0 for light square, 1 for dark square
+    """
+    file = LETTER_TO_NUM[square[0]]
+    rank = int(square[1])
+    return int((file % 2) == (rank % 2))
+
+
 def square_to_coordinate(square: str) -> str:
     file = square[0]
     file_num = LETTER_TO_NUM[file]
