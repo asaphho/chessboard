@@ -40,3 +40,15 @@ def look_for_mate_in_one(current_position: Position, to_move: str) -> Union[Lega
             return move
     return None
 
+
+def move_allows_mate_in_one(current_position: Position, move: LegalMove) -> bool:
+    """
+    Checks if the LegalMove played in the current position will allow a mate in one as an immediate reply.
+    :param current_position:
+    :param move:
+    :return: True if it allows a mate in one. False if not.
+    """
+    new_position = branch_from_position(current_position, move)
+    to_move = new_position.to_move()
+    mating_move = look_for_mate_in_one(new_position, to_move)
+    return mating_move is not None
