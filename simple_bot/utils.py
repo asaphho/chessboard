@@ -1,6 +1,8 @@
-from classes.position import Position
+from classes.position import Position, opposite_color
 from classes.move import LegalMove
 from typing import Union
+
+MATERIAL_DICT = {'king': 0, 'pawn': 1, 'knight': 3, 'bishop': 3, 'rook': 5, 'queen': 9}
 
 
 def branch_from_position(position: Position, move: LegalMove) -> Position:
@@ -50,3 +52,33 @@ def move_allows_mate_in_one(current_position: Position, move: LegalMove) -> bool
     new_position = branch_from_position(current_position, move)
     mating_move = look_for_mate_in_one(new_position)
     return mating_move is not None
+
+
+def count_material(position: Position, color: str) -> int:
+    """
+    Counts the number of pawns worth of material on the given side in the given position
+    :param position:
+    :param color: 'white' or 'black'
+    :return:
+    """
+    pieces = position.get_pieces_by_color(color)
+    piece_types = pieces.list_unique_piece_types()
+    total = 0
+    for piece_type in piece_types:
+        number_of_pieces_of_type = len(pieces.get_piece_type_squares(piece_type))
+        total += number_of_pieces_of_type * MATERIAL_DICT[piece_type]
+    return total
+
+
+def count_material_imbalance(position: Position, color: str) -> int:
+    """
+    Calculates the material imbalance in favor of the given color in the given position.
+    :param position:
+    :param color: 'white' or 'black'.
+    :return: e.g. returning 3 if color='white' means that white is up 3 pawns of material
+    """
+    own_material = count_material(position, color)
+    opponents_material = count_material(position, opposite_color(color))
+    return own_material - opponents_material
+
+
