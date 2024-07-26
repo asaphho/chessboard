@@ -1,6 +1,6 @@
 from classes.position import Position, opposite_color
 from classes.move import LegalMove
-from typing import Union, List, Set
+from typing import Union, List, Set, Iterable
 
 MATERIAL_DICT = {'king': 0, 'pawn': 1, 'knight': 3, 'bishop': 3, 'rook': 5, 'queen': 9}
 
@@ -107,5 +107,18 @@ def squares_controlled_by_pawns(position: Position, color: str) -> Set[str]:
     for square in squares_with_pawns:
         squares_attacked.extend(position.scan_pawn_attacked_squares(color, square))
     return set(squares_attacked)
+
+
+def piece_moves_reduced_by_enemy_pawn_control(unreduced_piece_moves: List[LegalMove],
+                                              squares_controlled: Iterable[str]) -> List[LegalMove]:
+    """
+    Returns the subset of unreduced_piece_moves that do not put a piece on a square controlled by an enemy pawn
+    (pins are ignored).
+    :param unreduced_piece_moves: The legal piece moves (knight, bishop, rook, queen) in the current position of one
+    side
+    :param squares_controlled: An iterable containing all the squares attacked by enemy pawns in the same position
+    :return:
+    """
+    return [move for move in unreduced_piece_moves if move.destination_square not in squares_controlled]
 
 
