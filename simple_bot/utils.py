@@ -1,6 +1,6 @@
 from classes.position import Position, opposite_color
 from classes.move import LegalMove
-from typing import Union
+from typing import Union, List, Set
 
 MATERIAL_DICT = {'king': 0, 'pawn': 1, 'knight': 3, 'bishop': 3, 'rook': 5, 'queen': 9}
 
@@ -80,5 +80,32 @@ def count_material_imbalance(position: Position, color: str) -> int:
     own_material = count_material(position, color)
     opponents_material = count_material(position, opposite_color(color))
     return own_material - opponents_material
+
+
+def all_legal_piece_moves(position: Position, color: str) -> List[LegalMove]:
+    """
+    Returns all the legal piece moves (knight, bishop, rook, or queen) in the given position with the given color to
+    move
+    :param position:
+    :param color: 'white' or 'black'
+    :return:
+    """
+    all_legal_moves = position.get_all_legal_moves_for_color(color)
+    legal_piece_moves = [move for move in all_legal_moves if move.piece_moved in ('rook', 'queen', 'bishop', 'knight')]
+    return legal_piece_moves
+
+
+def squares_controlled_by_pawns(position: Position, color: str) -> Set[str]:
+    """
+    Returns all the squares attacked by pawns (ignoring any pins) by the given color in the given position.
+    :param position:
+    :param color: 'white' or 'black'
+    :return: the set of all squares attacked by white pawns if color='white'. Pins are ignored.
+    """
+    squares_attacked = []
+    squares_with_pawns = position.get_pieces_by_color(color).get_piece_type_squares('pawn')
+    for square in squares_with_pawns:
+        squares_attacked.extend(position.scan_pawn_attacked_squares(color, square))
+    return set(squares_attacked)
 
 
