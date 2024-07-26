@@ -66,18 +66,12 @@ class ColorPosition:
             squares = self.all_piece_squares[piece]
             if type(squares) == str:
                 if squares == square:
-                    if piece == 'king':
-                        print('Cannot remove king!')
-                        raise ValueError
                     self.all_piece_squares.pop(piece)
                     return
             else:
                 for i in range(len(squares)):
                     curr_square = squares[i]
                     if curr_square == square:
-                        if piece == 'king':
-                            print('Cannot remove king!')
-                            raise ValueError
                         self.all_piece_squares[piece].pop(i)
                         if len(self.all_piece_squares[piece]) == 0:
                             self.all_piece_squares.pop(piece)
