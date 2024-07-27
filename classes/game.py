@@ -223,9 +223,10 @@ class Game:
         self.fen_record_dict = {self.current_position.generate_fen().rsplit(' ', maxsplit=2)[0]: 1}
         self.moves_record = {}
 
-    def take_back_last_move(self) -> None:
+    def take_back_last_move(self, silent: bool = False) -> None:
         if self.moves_record == {}:
-            print('Nothing to take back.')
+            if not silent:
+                print('Nothing to take back.')
             return
         current_moves = deepcopy(self.moves_record)
         self.restart_game()
@@ -244,7 +245,8 @@ class Game:
                 if len(moves_list) == 2:
                     blacks_move_notation = moves_list[1].rsplit(' ', maxsplit=1)[1]
                     self.process_input_notation(blacks_move_notation)
-        print(f'{last_move_played} taken back.')
+        if not silent:
+            print(f'{last_move_played} taken back.')
 
 
 
