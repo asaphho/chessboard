@@ -1,3 +1,5 @@
+from typing import Union
+
 from classes.position import generate_starting_position
 from classes.move import LegalMove
 from utils.parse_notation import check_for_castling, find_piece_moved_and_destination_square,\
@@ -201,14 +203,20 @@ class Game:
                 print('Castling not legal here.')
                 raise ValueError
 
-    def show_moves(self) -> None:
+    def show_moves(self, return_string_for_window: bool = False) -> Union[str, None]:
+        ret_str = '' if return_string_for_window else None
         for move in self.moves_record:
             whites_move = self.moves_record[move][0].split(' ', maxsplit=1)[1]
             if len(self.moves_record[move]) == 2:
                 blacks_move = self.moves_record[move][1].split(' ', maxsplit=1)[1]
-                print(f'{move}. {whites_move} {blacks_move}')
+                line = f'{move}. {whites_move} {blacks_move}'
             else:
-                print(f'{move}. {whites_move}')
+                line = f'{move}. {whites_move}'
+            if not return_string_for_window:
+                print(line)
+            else:
+                ret_str += f'{line}\n'
+        return ret_str
 
     def restart_game(self) -> None:
         self.current_position = generate_starting_position()
