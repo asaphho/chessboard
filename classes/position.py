@@ -76,7 +76,7 @@ class Position:
 
     def __init__(self, white_pieces: ColorPosition, black_pieces: ColorPosition, side_to_move: str,
                  en_passant_square: str = '-',
-                 half_move_clock: int = 0, move_number: int = 1):
+                 half_move_clock: int = 0, move_number: int = 1, flipped: bool = False):
         self.white_pieces = white_pieces
         self.virtual_white_pieces = white_pieces.copy()
         self.black_pieces = black_pieces
@@ -85,9 +85,20 @@ class Position:
         self.half_move_clock = half_move_clock
         self.move_number = move_number
         self.side_to_move = side_to_move.lower()
+        self.flipped = flipped  # for rendering on the gui
 
     def to_move(self) -> str:
         return self.side_to_move
+
+    def is_flipped(self) -> bool:
+        return self.flipped
+
+    def flip_position(self) -> None:
+        """
+        Flipping position for rendering on the window
+        :return:
+        """
+        self.flipped = not self.is_flipped()
 
     def change_side_to_move(self) -> None:
         if self.to_move().lower().startswith('w'):
