@@ -14,22 +14,22 @@ def find_piece_moved_and_destination_square(move_str: str) -> Tuple[str, str]:
         if move_str[i].isnumeric():
             rank = int(move_str[i])
             if i == 0:
-                print('Cannot interpret this move!')
-                raise ValueError
+                # print('Cannot interpret this move!')
+                raise ValueError('Cannot interpret this move!')
             file = move_str[i-1].lower()
             if not file.isalpha():
-                print('Cannot interpret this move!')
-                raise ValueError
+                # print('Cannot interpret this move!')
+                raise ValueError('Cannot interpret this move!')
             break
     if rank == 0 or file == 'z':
-        print('Cannot interpret this move! If castling, use the letter O and not the number 0.')
-        raise ValueError
+        # print('Cannot interpret this move! If castling, use the letter O and not the number 0.')
+        raise ValueError('Cannot interpret this move! If castling, use the letter O and not the number 0.')
     if rank > 8 or rank < 1:
-        print(f'Square {file}{rank} does not exist.')
-        raise ValueError
+        # print(f'Square {file}{rank} does not exist.')
+        raise ValueError(f'Square {file}{rank} does not exist.')
     if file not in 'abcdefgh':
-        print(f'Square {file}{rank} does not exist.')
-        raise ValueError
+        # print(f'Square {file}{rank} does not exist.')
+        raise ValueError(f'Square {file}{rank} does not exist.')
     destination_square = f'{file}{rank}'
     move_str_bef_destination_square = move_str.rsplit(destination_square, maxsplit=1)[0]
     if move_str_bef_destination_square == '':
@@ -41,8 +41,8 @@ def find_piece_moved_and_destination_square(move_str: str) -> Tuple[str, str]:
         elif first_char in 'abcdefgh':
             piece_moved = 'pawn'
         else:
-            print(f'Unrecognized piece symbol {first_char}. Non-pawn piece symbols must be given in uppercase. Allowed piece symbols: K, Q, R, B, N')
-            raise ValueError
+            # print(f'Unrecognized piece symbol {first_char}. Non-pawn piece symbols must be given in uppercase. Allowed piece symbols: K, Q, R, B, N')
+            raise ValueError(f'Unrecognized piece symbol {first_char}. Non-pawn piece symbols must be given in uppercase. Allowed piece symbols: K, Q, R, B, N')
     return piece_moved, destination_square
 
 
@@ -68,8 +68,8 @@ def check_for_disambiguating_string(move_str: str, destination_square: str, piec
     elif disambiguation_string == '':
         return 'None'
     else:
-        print(f'Could not recognize {disambiguation_string} as a disambiguation string.')
-        raise ValueError
+        # print(f'Could not recognize {disambiguation_string} as a disambiguation string.')
+        raise ValueError(f'Could not recognize {disambiguation_string} as a disambiguation string.')
 
 
 def check_for_promotion_piece(move_str: str, destination_square: str) -> str:
@@ -79,8 +79,8 @@ def check_for_promotion_piece(move_str: str, destination_square: str) -> str:
     elif str_after_destination_square[0] in ('Q', 'R', 'B', 'N'):
         return SYMBOL_TO_PIECE[str_after_destination_square[0]]
     else:
-        print(f'Could not recognize {str_after_destination_square[0]} as a promotion piece symbol. Must be given in uppercase. Allowed symbols: Q, R, B, N')
-        raise ValueError
+        # print(f'Could not recognize {str_after_destination_square[0]} as a promotion piece symbol. Must be given in uppercase. Allowed symbols: Q, R, B, N')
+        raise ValueError(f'Could not recognize {str_after_destination_square[0]} as a promotion piece symbol. Must be given in uppercase. Allowed symbols: Q, R, B, N')
 
 
 def pawn_capture_origin_file(move_str: str, destination_square: str) -> str:
@@ -92,10 +92,10 @@ def pawn_capture_origin_file(move_str: str, destination_square: str) -> str:
                            'e': ('d', 'f'), 'f': ('e', 'g'), 'g': ('f', 'h'), 'h': ('g',)}
     destination_file = destination_square[0]
     if first_char not in valid_file_captures:
-        print('Could not interpret this move! If you are using uppercase for a file from which a pawn captures from, use lowercase instead.')
-        raise ValueError
+        # print('Could not interpret this move! If you are using uppercase for a file from which a pawn captures from, use lowercase instead.')
+        raise ValueError('Could not interpret this move! If you are using uppercase for a file from which a pawn captures from, use lowercase instead.')
     elif destination_file not in valid_file_captures[first_char]:
-        print(f'Pawn cannot capture from {first_char}-file to {destination_file}-file!')
-        raise ValueError
+        # print(f'Pawn cannot capture from {first_char}-file to {destination_file}-file!')
+        raise ValueError(f'Pawn cannot capture from {first_char}-file to {destination_file}-file!')
     else:
         return first_char
