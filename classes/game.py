@@ -105,77 +105,71 @@ class Game:
             all_legal_moves = self.current_position.get_all_legal_moves_for_color(side_to_move)
             possible_legal_moves = [move for move in all_legal_moves if move.piece_moved == piece_moved]
             if len(possible_legal_moves) == 0:
-                print(f'Illegal move.')
-                raise ValueError
+                # print(f'Illegal move.')
+                raise ValueError('Illegal move')
             possible_legal_moves = [move for move in possible_legal_moves if move.destination_square == destination_square]
             if len(possible_legal_moves) == 0:
-                print(f'Illegal move.')
-                raise ValueError
-            if piece_moved == 'king':
-                if check_for_disambiguating_string(notation_str, destination_square, 'K') != 'None':
-                    print('Disambiguation ignored for king move.')
-                return self.process_move(possible_legal_moves[0])
+                # print(f'Illegal move.')
+                raise ValueError('Illegal move')
+            # if piece_moved == 'king':
+            #     if check_for_disambiguating_string(notation_str, destination_square, 'K') != 'None':
+            #         print('Disambiguation ignored for king move.')
+            #     return self.process_move(possible_legal_moves[0])
             elif piece_moved != 'pawn':
                 disambiguating_string = check_for_disambiguating_string(notation_str, destination_square,
                                                                         piece_to_symbol(piece_moved))
                 if disambiguating_string == 'None' and len(possible_legal_moves) > 1:
-                    print(f'Ambiguity detected. More than one {piece_moved} can move to {destination_square}.')
-                    raise ValueError
+                    # print(f'Ambiguity detected. More than one {piece_moved} can move to {destination_square}.')
+                    raise ValueError(f'Ambiguity detected. More than one {piece_moved} can move to {destination_square}.')
                 elif disambiguating_string == 'None' and len(possible_legal_moves) == 1:
                     return self.process_move(possible_legal_moves[0])
                 elif len(disambiguating_string) == 1 and disambiguating_string.isalpha():
                     possible_legal_moves = [move for move in possible_legal_moves if move.origin_square[0] == disambiguating_string]
                     if len(possible_legal_moves) > 1:
-                        print(f'Ambiguity detected. More than one {piece_moved} can reach {destination_square} from the {disambiguating_string}-file.')
-                        raise ValueError
+                        # print(f'Ambiguity detected. More than one {piece_moved} can reach {destination_square} from the {disambiguating_string}-file.')
+                        raise ValueError(f'Ambiguity detected. More than one {piece_moved} can reach {destination_square} from the {disambiguating_string}-file.')
                     elif len(possible_legal_moves) == 0:
-                        print(f'No {piece_moved} on {disambiguating_string}-file able to move to {destination_square}.')
-                        raise ValueError
+                        # print(f'No {piece_moved} on {disambiguating_string}-file able to move to {destination_square}.')
+                        raise ValueError(f'No {piece_moved} on {disambiguating_string}-file able to move to {destination_square}.')
                     else:
                         return self.process_move(possible_legal_moves[0])
                 elif len(disambiguating_string) == 1 and disambiguating_string.isnumeric():
                     possible_legal_moves = [move for move in possible_legal_moves if move.origin_square[1] == disambiguating_string]
                     if len(possible_legal_moves) > 1:
-                        print(f'Ambiguity detected. More than one {piece_moved} on rank {disambiguating_string} can reach {destination_square}.')
-                        raise ValueError
+                        # print(f'Ambiguity detected. More than one {piece_moved} on rank {disambiguating_string} can reach {destination_square}.')
+                        raise ValueError(f'Ambiguity detected. More than one {piece_moved} on rank {disambiguating_string} can reach {destination_square}.')
                     elif len(possible_legal_moves) == 0:
-                        print(f'No {piece_moved} able to move to {destination_square} from rank {disambiguating_string}.')
-                        raise ValueError
+                        # print(f'No {piece_moved} able to move to {destination_square} from rank {disambiguating_string}.')
+                        raise ValueError(f'No {piece_moved} able to move to {destination_square} from rank {disambiguating_string}.')
                     else:
                         return self.process_move(possible_legal_moves[0])
                 elif len(disambiguating_string) == 2:
                     possible_legal_moves = [move for move in possible_legal_moves if move.origin_square == disambiguating_string]
                     if len(possible_legal_moves) == 0:
-                        print(f'No {piece_moved} on {disambiguating_string} to move to {destination_square}.')
-                        raise ValueError
+                        # print(f'No {piece_moved} on {disambiguating_string} to move to {destination_square}.')
+                        raise ValueError(f'No {piece_moved} on {disambiguating_string} to move to {destination_square}.')
                     else:
                         return self.process_move(possible_legal_moves[0])
                 else:
-                    print(f'Something went wrong: Unhandled disambiguation string {disambiguating_string}.')
-                    h = input()
-                    sys.exit(1)
+                    raise ValueError(f'Something went wrong: Unhandled disambiguation string {disambiguating_string}.')
             else:
                 promotion_rank = '1' if side_to_move == 'black' else '8'
                 if destination_square[1] == promotion_rank:
                     promotion_piece = check_for_promotion_piece(notation_str, destination_square)
                     if promotion_piece == 'None':
-                        print(f'Promotion piece required as pawn has reached last rank. Add Q, R, B, or N right after the destination square.')
-                        raise ValueError
+                        # print(f'Promotion piece required as pawn has reached last rank. Add Q, R, B, or N right after the destination square.')
+                        raise ValueError(f'Promotion piece required as pawn has reached last rank. Add Q, R, B, or N right after the destination square.')
                     capture_origin_file = pawn_capture_origin_file(notation_str, destination_square)
                     if capture_origin_file == 'None':
                         for move in possible_legal_moves:
                             if move.promotion_piece == promotion_piece and not move.is_capture():
                                 return self.process_move(move)
-                        print('Something went wrong. Pawn reached last rank but no pawn promotion LegalMove objects found to match promotion piece.')
-                        h = input()
-                        sys.exit(1)
+                        raise ValueError('Something went wrong. Pawn reached last rank but no pawn promotion LegalMove objects found to match promotion piece.')
                     else:
                         for move in possible_legal_moves:
                             if move.origin_square[0] == capture_origin_file and move.promotion_piece == promotion_piece and move.is_capture():
                                 return self.process_move(move)
-                        print('Something went wrong. Pawn reached last rank but no pawn promotion LegalMove objects found to match promotion piece.')
-                        h = input()
-                        sys.exit(1)
+                        raise ValueError('Something went wrong. Pawn reached last rank but no pawn promotion LegalMove objects found to match promotion piece.')
                 else:
                     capture_origin_file = pawn_capture_origin_file(notation_str, destination_square)
                     if capture_origin_file == 'None':
@@ -183,14 +177,14 @@ class Game:
                             if not move.is_capture():
                                 return self.process_move(move)
                         # code can reach here in the case of a pawn attempting to move forward onto a square occupied by an enemy piece when another pawn is able to capture to that square.
-                        print(f'Illegal move.')
-                        raise ValueError
+                        # print(f'Illegal move.')
+                        raise ValueError('Illegal move.')
                     else:
                         for move in possible_legal_moves:
                             if move.origin_square[0] == capture_origin_file and move.is_capture():
                                 return self.process_move(move)
-                        print('Illegal move.')
-                        raise ValueError
+                        # print('Illegal move.')
+                        raise ValueError('Illegal move.')
         else:
             if self.current_position.castling_legal_here(side_to_move, castling):
                 back_rank = '1' if side_to_move == 'white' else '8'
@@ -200,8 +194,8 @@ class Game:
                                        castling=castling)
                 return self.process_move(legal_move)
             else:
-                print('Castling not legal here.')
-                raise ValueError
+                # print('Castling not legal here.')
+                raise ValueError('Castling not legal here.')
 
     def show_moves(self, return_string_for_window: bool = False) -> Union[str, None]:
         ret_str = '' if return_string_for_window else None
