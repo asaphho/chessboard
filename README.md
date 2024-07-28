@@ -47,11 +47,18 @@ Once these are settled, navigate to the project folder:
 cd /.../chessboard
 ```
 
-and run the following command:
+For Windows, run the following command:
 ```bash
-pyinstaller --onefile --windowed --add-data "./images:images" --icon ./images/icon.ico gui_main.py
+pyinstaller --onefile --windowed --add-data ".\images:images" --icon .\images\icon.ico gui_main.py
 ```
-If the compilation is successful, the executable file should appear in the dist folder in the project folder.
+If the compilation is successful, the file gui_main.exe should appear in the dist folder in the project folder.
+
+For MacOS, the command is
+```bash
+pyinstaller --onefile --windowed --add-data "./images:images" --icon ./images/icon.icns gui_main.py
+```
+
+If the compilation is successful, the executable gui_main.app should appear in the dist folder in the project folder.
 
 ## Usage
 
