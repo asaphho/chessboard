@@ -1,9 +1,11 @@
 import PySimpleGUI as sg
 import PySimpleGUI.PySimpleGUI
-
+from version import software_version
 from classes.game import Game
 from typing import List
 from gui.utils import generate_position_layout
+
+TITLE = f'chessboard v{software_version}'
 
 intro_text = ('Enter moves in standard algebraic notation. Always use uppercase for non-pawn pieces.\n '
               'Give all files in lowercase. Do not include any spaces.\n ')
@@ -35,7 +37,7 @@ def generate_layout(game: Game, output_from_prev_input: str = '', game_end_text:
 
 
 layout = generate_layout(game)
-window = sg.Window('chessboard', layout, element_padding=(0, 0))
+window = sg.Window(TITLE, layout, element_padding=(0, 0))
 
 
 def flip_board(game: Game, window: PySimpleGUI.PySimpleGUI.Window, game_end_text: str = None) -> PySimpleGUI.PySimpleGUI.Window:
@@ -43,7 +45,7 @@ def flip_board(game: Game, window: PySimpleGUI.PySimpleGUI.Window, game_end_text
     text_value = window['-TEXT-'].DisplayText
     new_layout = generate_layout(game, text_value, game_end_text)
     window.close()
-    new_window = sg.Window('chessboard', new_layout, element_padding=(0, 0))
+    new_window = sg.Window(TITLE, new_layout, element_padding=(0, 0))
     return new_window
 
 
@@ -57,7 +59,7 @@ def perform_restart(game: Game, window: PySimpleGUI.PySimpleGUI.Window) -> PySim
     game.restart_game()
     new_layout = generate_layout(game, 'Game restarted.')
     window.close()
-    new_window = sg.Window('chessboard', new_layout, element_padding=(0, 0))
+    new_window = sg.Window(TITLE, new_layout, element_padding=(0, 0))
     return new_window
 
 
@@ -65,7 +67,7 @@ def perform_takeback(game: Game, window: PySimpleGUI.PySimpleGUI.Window) -> PySi
     takeback_result = game.take_back_last_move(silent=True)
     new_layout = generate_layout(game, takeback_result)
     window.close()
-    new_window = sg.Window('chessboard', new_layout, element_padding=(0, 0))
+    new_window = sg.Window(TITLE, new_layout, element_padding=(0, 0))
     return new_window
 
 
@@ -97,11 +99,11 @@ while True:
         if game_end_check == 'None':
             new_layout = generate_layout(game, res)
             window.close()
-            window = sg.Window('chessboard', new_layout, element_padding=(0, 0))
+            window = sg.Window(TITLE, new_layout, element_padding=(0, 0))
         else:
             new_layout = generate_layout(game, res, game_end_check)
             window.close()
-            window = sg.Window('chessboard', new_layout, element_padding=(0, 0))
+            window = sg.Window(TITLE, new_layout, element_padding=(0, 0))
             exit_signal = False
             while True:
                 event, values = window.read()
