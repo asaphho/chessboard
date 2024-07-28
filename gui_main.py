@@ -2,9 +2,8 @@ from os import path
 
 import PySimpleGUI as sg
 import PySimpleGUI.PySimpleGUI
-
+import sys
 from classes.position import Position
-from images import IMAGES_FOLDER_PATH
 from utils.board_functions import square_color_int
 from version import software_version
 from classes.game import Game
@@ -33,7 +32,10 @@ def generate_position_layout(position: Position) -> List[List]:
             square_color = 'light' if square_color_bit == 0 else 'dark'
             piece_at_square = position.look_at_square(curr_square)
             filename = f'{square_color}_{FEN_SYMBOL_TO_PIECE[piece_at_square]}.png'
-            filepath = path.join(IMAGES_FOLDER_PATH, filename)
+            try:
+                filepath = path.join(sys._MEIPASS, 'images', filename)
+            except Exception:
+                filepath = path.join('.', 'images', filename)
             rank_layout.append(sg.Image(filepath, key=curr_square))
         layout.append(rank_layout)
     return layout
