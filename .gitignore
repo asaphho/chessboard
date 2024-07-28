@@ -6,3 +6,4 @@ gui/__pycache__
 gui_main.spec
 build
 dist
+version/__pycache__
