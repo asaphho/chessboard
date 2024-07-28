@@ -4,7 +4,6 @@ from classes.position import generate_starting_position
 from classes.move import LegalMove
 from utils.parse_notation import check_for_castling, find_piece_moved_and_destination_square,\
     check_for_disambiguating_string, piece_to_symbol, check_for_promotion_piece, pawn_capture_origin_file
-import sys
 from copy import deepcopy
 
 
