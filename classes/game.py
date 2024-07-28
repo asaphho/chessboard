@@ -195,7 +195,7 @@ class Game:
                 return self.process_move(legal_move)
             else:
                 # print('Castling not legal here.')
-                raise ValueError('Castling not legal here.')
+                raise ValueError(f'Castling {castling} not legal here.')
 
     def show_moves(self, return_string_for_window: bool = False) -> Union[str, None]:
         ret_str = '' if return_string_for_window else None
