@@ -218,6 +218,7 @@ class Game:
         self.moves_record = {}
 
     def take_back_last_move(self, silent: bool = False) -> Union[None, str]:
+        flipped = self.current_position.is_flipped()
         if self.moves_record == {}:
             if not silent:
                 print('Nothing to take back.')
@@ -226,6 +227,8 @@ class Game:
                 return 'Nothing to take back.'
         current_moves = deepcopy(self.moves_record)
         self.restart_game()
+        if flipped:
+            self.current_position.flip_position()
         max_move_number = max(list(current_moves.keys()))
         if len(current_moves[max_move_number]) == 2:
             last_move_played = current_moves[max_move_number].pop(1)
