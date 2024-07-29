@@ -121,25 +121,30 @@ def generate_layout(game: Game, output_from_prev_input: str = '', game_end_text:
     if game_end_text is None:
         side_to_move = position.to_move()
         side_to_move = side_to_move.replace(side_to_move[0], side_to_move[0].upper(), 1)
-        layout += [[sg.Text(f"{side_to_move} to move.")]]
+        layout += [[sg.Text(f"{side_to_move} to move.", key='-TOMOVE-')]]
     else:
         layout += [[sg.Text('Game is over.')]]
     position_layout = generate_position_layout(position)
     layout += position_layout
     layout += [[sg.Text(output_from_prev_input, key='-TEXT-')]]
     if game_end_text is None:
-        to_move = game.current_position.to_move()
-        move_number = game.current_position.get_move_number()
-        prompt = f'{move_number}'
-        if to_move == 'white':
-            prompt += '. '
-        else:
-            prompt += '... '
-        layout += [[sg.Text(prompt), sg.InputText(key='-INPUT-', focus=True), sg.Button('Enter move', bind_return_key=True)]]
+        prompt = create_input_move_prompt(game)
+        layout += [[sg.Text(prompt, key='-INPUTPROMPT-'), sg.InputText(key='-INPUT-', focus=True), sg.Button('Enter move', bind_return_key=True)]]
     else:
         layout += [[sg.Text(game_end_text)]]
     layout += [[sg.Button('Flip board'), sg.Button('Show moves'), sg.Button('Show FEN'), sg.Button('Restart game'), sg.Button('Take back last move')]]
     return layout
+
+
+def create_input_move_prompt(game):
+    to_move = game.current_position.to_move()
+    move_number = game.current_position.get_move_number()
+    prompt = f'{move_number}'
+    if to_move == 'white':
+        prompt += '. '
+    else:
+        prompt += '... '
+    return prompt
 
 
 def flip_board(game: Game, window: PySimpleGUI.PySimpleGUI.Window, game_end_text: str = None) -> PySimpleGUI.PySimpleGUI.Window:
@@ -205,6 +210,10 @@ while True:
             update_position_layout_in_window(window, move)
             window['-TEXT-'].update(res)
             window['-INPUT-'].update('')
+            window['-INPUTPROMPT-'].update(create_input_move_prompt(game))
+            side_to_move = game.current_position.to_move()
+            side_to_move = side_to_move.replace(side_to_move[0], side_to_move[0].upper(), 1)
+            window['-TOMOVE-'].update(f'{side_to_move} to move.')
             # new_layout = generate_layout(game, res)
             # window.close()
             # window = sg.Window(TITLE, new_layout, element_padding=(0, 0))
