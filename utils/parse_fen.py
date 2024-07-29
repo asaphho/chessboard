@@ -11,7 +11,7 @@ def parse_piece_positions_part(piece_positions_part: str) -> Dict[str, str]:
     squares and the pieces occupying them. Raises ValueError if the following conditions are not all met:
         - There are exactly 8 ranks in the input. Ranks are separated by forward slashes.
         - There are exactly 8 squares accounted for in each of the 8 ranks.
-        - Each has side has exactly one king.
+        - Each side has exactly one king.
         - No pawns are on either of the extreme ranks.
         DOES NOT CHECK WHETHER BOTH KINGS ARE UNDER CHECK OR NOT. Does not check for other impossible positions,
         e.g. One side having more than 8 pawns, white pawns on a2, a3, and b2, etc.
