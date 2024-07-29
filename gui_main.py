@@ -21,6 +21,15 @@ game = Game()
 
 
 def generate_position_layout(position: Position) -> List[List]:
+    """
+    Generates the chessboard part of the layout parameter to be passed into sg.Window when rendering the window.
+    Returns a list of 8 lists. Each list in this list corresponds to a rank on the board, while each of the 8
+    elements in that list corresponds to a specific square in that rank, and is an sg.Image object, rendering one of the
+    26 possible individual square images. Reads the 'flipped' property of the Position object to determine the orientation
+    of the rendered board.
+    :param position: The Position object to be rendered.
+    :return: The chessboard part of the layout of the window, as a list of lists.
+    """
     ranks = '87654321' if not position.is_flipped() else '12345678'
     files = 'abcdefgh'if not position.is_flipped() else 'hgfedcba'
     layout = []
@@ -42,21 +51,40 @@ def generate_position_layout(position: Position) -> List[List]:
 
 
 def generate_layout(game: Game, output_from_prev_input: str = '', game_end_text: str = None) -> List[List]:
+    """
+    Generates the layout to be passed to the sg.Window constructor to render the window. Has the following sections,
+    from top to bottom:
+        - Intro text.
+        - Side to move. If game is over, shows "Game is over" instead.
+        - The chessboard showing the current position.
+        - output_from_prev_input: Depending on the last action, it could be the last move played, the FEN of the current position, or an error message from an invalid input.
+        - Field to input the move in standard algebraic notation, followed by the button 'Enter move'. If the game is over, this section is replaced by a text line showing game_end_text.
+        - The row of buttons: Flip board, Show moves, Show FEN, Restart game, Take back last move.
+
+    :param game:
+    :param output_from_prev_input:
+    :param game_end_text: should be None if the game is not over yet.
+    :return: The full layout object to be passed to the sg.Window constructor.
+    """
     position = game.current_position
     layout = [[sg.Text(intro_text)]]
-    side_to_move = position.to_move()
-    side_to_move = side_to_move.replace(side_to_move[0], side_to_move[0].upper(), 1)
-    layout += [[sg.Text(f"{side_to_move} to move.")]]
-    position_layout = generate_position_layout(position)
-    layout += position_layout + [[sg.Text(output_from_prev_input, key='-TEXT-')]]
-    to_move = game.current_position.to_move()
-    move_number = game.current_position.get_move_number()
-    prompt = f'{move_number}'
-    if to_move == 'white':
-        prompt += '. '
-    else:
-        prompt += '... '
     if game_end_text is None:
+        side_to_move = position.to_move()
+        side_to_move = side_to_move.replace(side_to_move[0], side_to_move[0].upper(), 1)
+        layout += [[sg.Text(f"{side_to_move} to move.")]]
+    else:
+        layout += [[sg.Text('Game is over.')]]
+    position_layout = generate_position_layout(position)
+    layout += position_layout
+    layout += [[sg.Text(output_from_prev_input, key='-TEXT-')]]
+    if game_end_text is None:
+        to_move = game.current_position.to_move()
+        move_number = game.current_position.get_move_number()
+        prompt = f'{move_number}'
+        if to_move == 'white':
+            prompt += '. '
+        else:
+            prompt += '... '
         layout += [[sg.Text(prompt), sg.InputText(key='-INPUT-'), sg.Button('Enter move')]]
     else:
         layout += [[sg.Text(game_end_text)]]
@@ -65,7 +93,7 @@ def generate_layout(game: Game, output_from_prev_input: str = '', game_end_text:
 
 
 layout = generate_layout(game)
-window = sg.Window(TITLE, layout, element_padding=(0, 0))
+window = sg.Window(TITLE, layout, element_padding=(0, 0), return_keyboard_events=True, use_default_focus=False)
 
 
 def flip_board(game: Game, window: PySimpleGUI.PySimpleGUI.Window, game_end_text: str = None) -> PySimpleGUI.PySimpleGUI.Window:
@@ -73,7 +101,8 @@ def flip_board(game: Game, window: PySimpleGUI.PySimpleGUI.Window, game_end_text
     text_value = window['-TEXT-'].DisplayText
     new_layout = generate_layout(game, text_value, game_end_text)
     window.close()
-    new_window = sg.Window(TITLE, new_layout, element_padding=(0, 0))
+    new_window = sg.Window(TITLE, new_layout, element_padding=(0, 0), return_keyboard_events=(game_end_text is None),
+                           use_default_focus=False)
     return new_window
 
 
@@ -87,7 +116,8 @@ def perform_restart(game: Game, window: PySimpleGUI.PySimpleGUI.Window) -> PySim
     game.restart_game()
     new_layout = generate_layout(game, 'Game restarted.')
     window.close()
-    new_window = sg.Window(TITLE, new_layout, element_padding=(0, 0))
+    new_window = sg.Window(TITLE, new_layout, element_padding=(0, 0), return_keyboard_events=True,
+                           use_default_focus=False)
     return new_window
 
 
@@ -95,7 +125,8 @@ def perform_takeback(game: Game, window: PySimpleGUI.PySimpleGUI.Window) -> PySi
     takeback_result = game.take_back_last_move(silent=True)
     new_layout = generate_layout(game, takeback_result)
     window.close()
-    new_window = sg.Window(TITLE, new_layout, element_padding=(0, 0))
+    new_window = sg.Window(TITLE, new_layout, element_padding=(0, 0), return_keyboard_events=True,
+                           use_default_focus=False)
     return new_window
 
 
@@ -114,7 +145,7 @@ while True:
             window = perform_restart(game, window)
     elif event == 'Take back last move':
         window = perform_takeback(game, window)
-    elif event == 'Enter move':
+    elif event == 'Enter move' or event.split(':')[0] == 'Return':
         input_notation = values['-INPUT-'].strip()
         if input_notation == '':
             continue
@@ -127,7 +158,8 @@ while True:
         if game_end_check == 'None':
             new_layout = generate_layout(game, res)
             window.close()
-            window = sg.Window(TITLE, new_layout, element_padding=(0, 0))
+            window = sg.Window(TITLE, new_layout, element_padding=(0, 0), return_keyboard_events=True,
+                               use_default_focus=False)
         else:
             new_layout = generate_layout(game, res, game_end_check)
             window.close()
