@@ -3,11 +3,11 @@ from classes.move import LegalMove
 import PySimpleGUI as sg
 import PySimpleGUI.PySimpleGUI
 import sys
-from classes.position import Position
+from classes.position import Position, ALL_SQUARES
 from utils.board_functions import square_color_int
 from version import software_version
 from classes.game import Game
-from typing import List
+from typing import List, Dict
 
 TITLE = f'chessboard v{software_version}'
 FEN_SYMBOL_TO_PIECE = {'P': 'wpawn', 'K': 'wking', 'Q': 'wqueen', 'B': 'wbishop', 'N': 'wknight', 'R': 'wrook',
@@ -17,7 +17,6 @@ FEN_SYMBOL_TO_PIECE = {'P': 'wpawn', 'K': 'wking', 'Q': 'wqueen', 'B': 'wbishop'
 intro_text = ('Enter moves in standard algebraic notation. Always use uppercase for non-pawn pieces.\n '
               'Give all files in lowercase. Do not include any spaces.\n ')
 # buttons: 'Flip board' 'Show moves' 'Show FEN' 'Restart game' 'Take back last move'
-game = Game()
 
 
 def generate_position_layout(position: Position) -> List[List]:
@@ -33,17 +32,30 @@ def generate_position_layout(position: Position) -> List[List]:
     ranks = '87654321' if not position.is_flipped() else '12345678'
     files = 'abcdefgh'if not position.is_flipped() else 'hgfedcba'
     layout = []
-    for r in ranks:
+    for i in range(len(ranks)):
         rank_layout = []
-        for f in files:
-            curr_square = f'{f}{r}'
-            square_color = get_square_color(curr_square)
-            piece_at_square = position.look_at_square(curr_square)
-            filename = f'{square_color}_{FEN_SYMBOL_TO_PIECE[piece_at_square]}.png'
-            filepath = get_path_to_image(filename)
-            rank_layout.append(sg.Image(filepath, key=curr_square))
+        for j in range(len(files)):
+            curr_square = f'{files[j]}{ranks[i]}'
+            filepath = get_image_path_from_square(position, curr_square)
+            rank_layout.append(sg.Image(filepath, key=f'{i}{j}'))
         layout.append(rank_layout)
     return layout
+
+
+def square_to_key(flipped: bool) -> Dict[str, str]:
+    """
+    Takes in the flipped property of the current position and returns a dictionary mapping each square to its
+    corresponding key in the window layout.
+    :param flipped: whether the position is flipped.
+    :return:
+    """
+    ranks = '87654321' if not flipped else '12345678'
+    files = 'abcdefgh' if not flipped else 'hgfedcba'
+    square_to_key_dict = {}
+    for i in range(len(ranks)):
+        for j in range(len(files)):
+            square_to_key_dict[f'{files[j]}{ranks[i]}'] = f'{i}{j}'
+    return square_to_key_dict
 
 
 def get_square_color(curr_square: str) -> str:
@@ -60,7 +72,29 @@ def get_path_to_image(filename: str) -> str:
     return filepath
 
 
-def update_position_layout_in_window(window: PySimpleGUI.PySimpleGUI.Window, move: LegalMove) -> None:
+def get_image_path_from_square(position: Position, square: str) -> str:
+    square_color = get_square_color(square)
+    square_occupant = position.look_at_square(square)
+    piece = FEN_SYMBOL_TO_PIECE[square_occupant]
+    filename = f'{square_color}_{piece}.png'
+    return get_path_to_image(filename)
+
+
+def side_to_move_text(position: Position) -> str:
+    side_to_move = position.to_move()
+    side_to_move = side_to_move.replace(side_to_move[0], side_to_move[0].upper(), 1)
+    return f'{side_to_move} to move.'
+
+
+def update_position_layout_in_window(window: PySimpleGUI.PySimpleGUI.Window, move: LegalMove, flipped: bool) -> None:
+    """
+    For updating the position part of the layout after a legal move is played.
+    :param window:
+    :param move:
+    :param flipped:
+    :return:
+    """
+    square_to_key_mapping = square_to_key(flipped)
     origin_square = move.origin_square
     piece_color = move.get_color().lower()[0]
     piece_type = move.piece_moved
@@ -69,13 +103,13 @@ def update_position_layout_in_window(window: PySimpleGUI.PySimpleGUI.Window, mov
     origin_square_color = get_square_color(origin_square)
     origin_square_filename = f'{origin_square_color}_empty.png'
     origin_square_filepath = get_path_to_image(origin_square_filename)
-    window[origin_square].update(filename=origin_square_filepath)
+    window[square_to_key_mapping[origin_square]].update(filename=origin_square_filepath)
     if not move.pawn_promotion_required():
         destination_square_filename = f'{destination_square_color}_{piece_color}{piece_type}.png'
     else:
         destination_square_filename = f'{destination_square_color}_{piece_color}{move.promotion_piece}.png'
     destination_square_filepath = get_path_to_image(destination_square_filename)
-    window[destination_square].update(filename=destination_square_filepath)
+    window[square_to_key_mapping[destination_square]].update(filename=destination_square_filepath)
     if move.castling != 'None':
         rook_home_file = 'h' if move.castling == 'kingside' else 'a'
         back_rank = '1' if piece_color == 'w' else '8'
@@ -84,19 +118,19 @@ def update_position_layout_in_window(window: PySimpleGUI.PySimpleGUI.Window, mov
         rook_home_square_color = get_square_color(rook_home_square)
         rook_home_square_filename = f'{rook_home_square_color}_empty.png'
         rook_home_square_filepath = get_path_to_image(rook_home_square_filename)
-        window[rook_home_square].update(filename=rook_home_square_filepath)
+        window[square_to_key_mapping[rook_home_square]].update(filename=rook_home_square_filepath)
         rook_destination_square = rook_destination_file + back_rank
         rook_destination_square_color = get_square_color(rook_destination_square)
         rook_destination_square_filename = f'{rook_destination_square_color}_{piece_color}rook.png'
         rook_destination_square_filepath = get_path_to_image(rook_destination_square_filename)
-        window[rook_destination_square].update(filename=rook_destination_square_filepath)
+        window[square_to_key_mapping[rook_destination_square]].update(filename=rook_destination_square_filepath)
     if move.is_en_passant_capture():
         captured_pawn_rank = '5' if piece_color == 'w' else '4'
         captured_pawn_square = destination_square[0] + captured_pawn_rank
         captured_pawn_square_color = get_square_color(captured_pawn_square)
         captured_pawn_square_filename = f'{captured_pawn_square_color}_empty.png'
         captured_pawn_square_filepath = get_path_to_image(captured_pawn_square_filename)
-        window[captured_pawn_square].update(filename=captured_pawn_square_filepath)
+        window[square_to_key_mapping[captured_pawn_square]].update(filename=captured_pawn_square_filepath)
     window.refresh()
 
 
@@ -119,21 +153,58 @@ def generate_layout(game: Game, output_from_prev_input: str = '', game_end_text:
     position = game.current_position
     layout = [[sg.Text(intro_text)]]
     if game_end_text is None:
-        side_to_move = position.to_move()
-        side_to_move = side_to_move.replace(side_to_move[0], side_to_move[0].upper(), 1)
-        layout += [[sg.Text(f"{side_to_move} to move.", key='-TOMOVE-')]]
+        layout += [[sg.Text(side_to_move_text(position), key='-TOMOVE-')]]
     else:
-        layout += [[sg.Text('Game is over.')]]
+        layout += [[sg.Text('Game is over.', key='-TOMOVE-')]]
     position_layout = generate_position_layout(position)
     layout += position_layout
     layout += [[sg.Text(output_from_prev_input, key='-TEXT-')]]
     if game_end_text is None:
         prompt = create_input_move_prompt(game)
-        layout += [[sg.Text(prompt, key='-INPUTPROMPT-'), sg.InputText(key='-INPUT-', focus=True), sg.Button('Enter move', bind_return_key=True)]]
+        layout += [[sg.Text('', key='-GAMEENDTEXT-', visible=False)]]
+        layout += [[sg.Text(prompt, key='-INPUTPROMPT-', visible=True), sg.InputText(key='-INPUT-', focus=True, visible=True), sg.Button('Enter move', bind_return_key=True, visible=True)]]
     else:
-        layout += [[sg.Text(game_end_text)]]
+        layout += [[sg.Text(game_end_text, key='-GAMEENDTEXT-', visible=True)]]
+        layout += [
+            [sg.Text('', key='-INPUTPROMPT-', visible=False), sg.InputText(key='-INPUT-', focus=True, visible=False),
+             sg.Button('Enter move', bind_return_key=True, visible=False)]]
     layout += [[sg.Button('Flip board'), sg.Button('Show moves'), sg.Button('Show FEN'), sg.Button('Restart game'), sg.Button('Take back last move')]]
     return layout
+
+
+def update_layout(game: Game, window: PySimpleGUI.PySimpleGUI.Window, output_from_prev: str = '', game_end_text: str = None) -> None:
+    """
+    Updates the layout after flipping board, taking back last move, ending the game, or restarting the game
+    :param window:
+    :param game:
+    :param output_from_prev:
+    :param game_end_text:
+    :return:
+    """
+    position = game.current_position
+    flipped = position.is_flipped()
+    square_to_key_mapping = square_to_key(flipped)
+    if game_end_text is None:
+        window['-TOMOVE-'].update(side_to_move_text(position))
+    else:
+        window['-TOMOVE-'].update('Game is over.')
+    for square in ALL_SQUARES:
+        key_in_layout = square_to_key_mapping[square]
+        image_filepath = get_image_path_from_square(position, square)
+        window[key_in_layout].update(filename=image_filepath)
+    window['-TEXT-'].update(output_from_prev)
+    if game_end_text is None:
+        prompt = create_input_move_prompt(game)
+        window['-GAMEENDTEXT-'].update(visible=False)
+        window['-INPUTPROMPT-'].update(prompt, visible=True)
+        window['-INPUT-'].update('', visible=True)
+        window['Enter move'].update(visible=True)
+    else:
+        window['-GAMEENDTEXT-'].update(game_end_text, visible=True)
+        window['-INPUTPROMPT-'].update(visible=False)
+        window['-INPUT-'].update(visible=False)
+        window['Enter move'].update(visible=False)
+    window.refresh()
 
 
 def create_input_move_prompt(game):
@@ -147,37 +218,13 @@ def create_input_move_prompt(game):
     return prompt
 
 
-def flip_board(game: Game, window: PySimpleGUI.PySimpleGUI.Window, game_end_text: str = None) -> PySimpleGUI.PySimpleGUI.Window:
-    game.current_position.flip_position()
-    text_value = window['-TEXT-'].DisplayText
-    new_layout = generate_layout(game, text_value, game_end_text)
-    window.close()
-    new_window = sg.Window(TITLE, new_layout, element_padding=(0, 0))
-    return new_window
-
-
 def display_moves(game: Game) -> None:
     moves = game.show_moves(return_string_for_window=True)
     new_window_layout = [[sg.Text(moves)]]
     new_window = sg.Window('Moves', new_window_layout, finalize=True)
 
 
-def perform_restart(game: Game, window: PySimpleGUI.PySimpleGUI.Window) -> PySimpleGUI.PySimpleGUI.Window:
-    game.restart_game()
-    new_layout = generate_layout(game, 'Game restarted.')
-    window.close()
-    new_window = sg.Window(TITLE, new_layout, element_padding=(0, 0))
-    return new_window
-
-
-def perform_takeback(game: Game, window: PySimpleGUI.PySimpleGUI.Window) -> PySimpleGUI.PySimpleGUI.Window:
-    takeback_result = game.take_back_last_move(silent=True)
-    new_layout = generate_layout(game, takeback_result)
-    window.close()
-    new_window = sg.Window(TITLE, new_layout, element_padding=(0, 0))
-    return new_window
-
-
+game = Game()
 layout = generate_layout(game)
 window = sg.Window(TITLE, layout, element_padding=(0, 0))
 
@@ -186,16 +233,20 @@ while True:
     if event == sg.WIN_CLOSED:
         break
     if event == 'Flip board':
-        window = flip_board(game, window)
+        game.current_position.flip_position()
+        text = window['-TEXT-'].DisplayText
+        update_layout(game, window, text)
     elif event == 'Show moves':
         display_moves(game)
     elif event == 'Show FEN':
         window['-TEXT-'].update(game.current_position.generate_fen())
     elif event == 'Restart game':
         if sg.popup_yes_no('Are you sure you want to restart?') == 'Yes':
-            window = perform_restart(game, window)
+            game.restart_game()
+            update_layout(game, window, 'Game restarted.')
     elif event == 'Take back last move':
-        window = perform_takeback(game, window)
+        text = game.take_back_last_move(silent=True)
+        update_layout(game, window, text)
     elif event == 'Enter move':
         input_notation = values['-INPUT-'].strip()
         if input_notation == '':
@@ -207,20 +258,13 @@ while True:
             continue
         game_end_check = game.check_game_end_conditions()
         if game_end_check == 'None':
-            update_position_layout_in_window(window, move)
+            update_position_layout_in_window(window, move, game.current_position.is_flipped())
             window['-TEXT-'].update(res)
             window['-INPUT-'].update('')
             window['-INPUTPROMPT-'].update(create_input_move_prompt(game))
-            side_to_move = game.current_position.to_move()
-            side_to_move = side_to_move.replace(side_to_move[0], side_to_move[0].upper(), 1)
-            window['-TOMOVE-'].update(f'{side_to_move} to move.')
-            # new_layout = generate_layout(game, res)
-            # window.close()
-            # window = sg.Window(TITLE, new_layout, element_padding=(0, 0))
+            window['-TOMOVE-'].update(side_to_move_text(game.current_position))
         else:
-            new_layout = generate_layout(game, res, game_end_check)
-            window.close()
-            window = sg.Window(TITLE, new_layout, element_padding=(0, 0))
+            update_layout(game, window, res, game_end_check)
             exit_signal = False
             while True:
                 event, values = window.read()
@@ -228,17 +272,21 @@ while True:
                     exit_signal = True
                     break
                 elif event == 'Flip board':
-                    window = flip_board(game, window, game_end_check)
+                    game.current_position.flip_position()
+                    text = window['-TEXT-'].DisplayText
+                    update_layout(game, window, text, game_end_check)
                 elif event == 'Show moves':
                     display_moves(game)
                 elif event == 'Show FEN':
                     window['-TEXT-'].update(game.current_position.generate_fen())
                 elif event == 'Restart game':
                     if sg.popup_yes_no('Are you sure you want to restart?') == 'Yes':
-                        window = perform_restart(game, window)
+                        game.restart_game()
+                        update_layout(game, window, 'Game restarted.')
                         break
                 elif event == 'Take back last move':
-                    window = perform_takeback(game, window)
+                    text = game.take_back_last_move(silent=True)
+                    update_layout(game, window, text)
                     break
             if exit_signal:
                 break
