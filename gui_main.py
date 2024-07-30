@@ -172,9 +172,10 @@ def generate_layout(game: Game, output_from_prev_input: str = '', game_end_text:
     return layout
 
 
-def update_layout(game: Game, window: PySimpleGUI.PySimpleGUI.Window, output_from_prev: str = '', game_end_text: str = None) -> None:
+def update_layout(game: Game, window: PySimpleGUI.PySimpleGUI.Window, output_from_prev: str = '', input_text: str = None, game_end_text: str = None) -> None:
     """
     Updates the layout after flipping board, taking back last move, ending the game, or restarting the game
+    :param input_text: The text currently in the input field (-INPUT-). Should be preserved when flipping board and the game is not over yet.
     :param window:
     :param game:
     :param output_from_prev:
@@ -197,7 +198,7 @@ def update_layout(game: Game, window: PySimpleGUI.PySimpleGUI.Window, output_fro
         prompt = create_input_move_prompt(game)
         window['-GAMEENDTEXT-'].update(visible=False)
         window['-INPUTPROMPT-'].update(prompt, visible=True)
-        window['-INPUT-'].update('', visible=True)
+        window['-INPUT-'].update('' if input_text is None else input_text, visible=True)
         window['Enter move'].update(visible=True)
     else:
         window['-GAMEENDTEXT-'].update(game_end_text, visible=True)
@@ -235,7 +236,8 @@ while True:
     if event == 'Flip board':
         game.current_position.flip_position()
         text = window['-TEXT-'].DisplayText
-        update_layout(game, window, text)
+        input_text = values['-INPUT-']
+        update_layout(game, window, text, input_text=input_text)
     elif event == 'Show moves':
         display_moves(game)
     elif event == 'Show FEN':
@@ -264,7 +266,7 @@ while True:
             window['-INPUTPROMPT-'].update(create_input_move_prompt(game))
             window['-TOMOVE-'].update(side_to_move_text(game.current_position))
         else:
-            update_layout(game, window, res, game_end_check)
+            update_layout(game, window, res, game_end_text=game_end_check)
             exit_signal = False
             while True:
                 event, values = window.read()
@@ -274,7 +276,7 @@ while True:
                 elif event == 'Flip board':
                     game.current_position.flip_position()
                     text = window['-TEXT-'].DisplayText
-                    update_layout(game, window, text, game_end_check)
+                    update_layout(game, window, text, game_end_text=game_end_check)
                 elif event == 'Show moves':
                     display_moves(game)
                 elif event == 'Show FEN':
