@@ -225,76 +225,78 @@ def display_moves(game: Game) -> None:
     new_window = sg.Window('Moves', new_window_layout, finalize=True)
 
 
-game = Game()
-layout = generate_layout(game)
-window = sg.Window(TITLE, layout, element_padding=(0, 0))
-
-while True:
-    event, values = window.read()
-    if event == sg.WIN_CLOSED:
-        break
-    if event == 'Flip board':
-        game.current_position.flip_position()
-        text = window['-TEXT-'].DisplayText
-        input_text = values['-INPUT-']
-        update_layout(game, window, text, input_text=input_text)
-    elif event == 'Show moves':
-        display_moves(game)
-    elif event == 'Show FEN':
-        window['-TEXT-'].update(game.current_position.generate_fen())
-    elif event == 'Restart game':
-        if sg.popup_yes_no('Are you sure you want to restart?') == 'Yes':
-            game.restart_game()
-            update_layout(game, window, 'Game restarted.')
-    elif event == 'Take back last move':
-        text = game.take_back_last_move(silent=True)
-        update_layout(game, window, text)
-    elif event == 'Enter move':
-        input_notation = values['-INPUT-'].strip()
-        if input_notation == '':
-            continue
-        try:
-            res, move = game.process_input_notation(input_notation, return_move_for_gui=True)
-        except Exception as e:
-            window['-TEXT-'].update(str(e))
-            continue
-        game_end_check = game.check_game_end_conditions()
-        if game_end_check == 'None':
-            update_position_layout_in_window(window, move, game.current_position.is_flipped())
-            window['-TEXT-'].update(res)
-            window['-INPUT-'].update('')
-            window['-INPUTPROMPT-'].update(create_input_move_prompt(game))
-            window['-TOMOVE-'].update(side_to_move_text(game.current_position))
-        else:
-            update_layout(game, window, res, game_end_text=game_end_check)
-            exit_signal = False
-            while True:
-                event, values = window.read()
-                if event == sg.WIN_CLOSED:
-                    exit_signal = True
-                    break
-                elif event == 'Flip board':
-                    game.current_position.flip_position()
-                    text = window['-TEXT-'].DisplayText
-                    update_layout(game, window, text, game_end_text=game_end_check)
-                elif event == 'Show moves':
-                    display_moves(game)
-                elif event == 'Show FEN':
-                    window['-TEXT-'].update(game.current_position.generate_fen())
-                elif event == 'Restart game':
-                    if sg.popup_yes_no('Are you sure you want to restart?') == 'Yes':
-                        game.restart_game()
-                        update_layout(game, window, 'Game restarted.')
+def main(game):
+    layout = generate_layout(game)
+    window = sg.Window(TITLE, layout, element_padding=(0, 0))
+    while True:
+        event, values = window.read()
+        if event == sg.WIN_CLOSED:
+            break
+        if event == 'Flip board':
+            game.current_position.flip_position()
+            text = window['-TEXT-'].DisplayText
+            input_text = values['-INPUT-']
+            update_layout(game, window, text, input_text=input_text)
+        elif event == 'Show moves':
+            display_moves(game)
+        elif event == 'Show FEN':
+            window['-TEXT-'].update(game.current_position.generate_fen())
+        elif event == 'Restart game':
+            if sg.popup_yes_no('Are you sure you want to restart?') == 'Yes':
+                game.restart_game()
+                update_layout(game, window, 'Game restarted.')
+        elif event == 'Take back last move':
+            text = game.take_back_last_move(silent=True)
+            update_layout(game, window, text)
+        elif event == 'Enter move':
+            input_notation = values['-INPUT-'].strip()
+            if input_notation == '':
+                continue
+            try:
+                res, move = game.process_input_notation(input_notation, return_move_for_gui=True)
+            except Exception as e:
+                window['-TEXT-'].update(str(e))
+                continue
+            game_end_check = game.check_game_end_conditions()
+            if game_end_check == 'None':
+                update_position_layout_in_window(window, move, game.current_position.is_flipped())
+                window['-TEXT-'].update(res)
+                window['-INPUT-'].update('')
+                window['-INPUTPROMPT-'].update(create_input_move_prompt(game))
+                window['-TOMOVE-'].update(side_to_move_text(game.current_position))
+            else:
+                update_layout(game, window, res, game_end_text=game_end_check)
+                exit_signal = False
+                while True:
+                    event, values = window.read()
+                    if event == sg.WIN_CLOSED:
+                        exit_signal = True
                         break
-                elif event == 'Take back last move':
-                    text = game.take_back_last_move(silent=True)
-                    update_layout(game, window, text)
+                    elif event == 'Flip board':
+                        game.current_position.flip_position()
+                        text = window['-TEXT-'].DisplayText
+                        update_layout(game, window, text, game_end_text=game_end_check)
+                    elif event == 'Show moves':
+                        display_moves(game)
+                    elif event == 'Show FEN':
+                        window['-TEXT-'].update(game.current_position.generate_fen())
+                    elif event == 'Restart game':
+                        if sg.popup_yes_no('Are you sure you want to restart?') == 'Yes':
+                            game.restart_game()
+                            update_layout(game, window, 'Game restarted.')
+                            break
+                    elif event == 'Take back last move':
+                        text = game.take_back_last_move(silent=True)
+                        update_layout(game, window, text)
+                        break
+                if exit_signal:
                     break
-            if exit_signal:
-                break
+    window.close()
 
 
-window.close()
+if __name__ == '__main__':
+    new_game = Game()
+    main(new_game)
 
 
 
