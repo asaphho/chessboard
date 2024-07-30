@@ -1,4 +1,6 @@
-from typing import Dict
+from typing import Dict, List
+
+from classes.position import Position, ColorPosition, opposite_color
 from utils.parse_notation import SYMBOL_TO_PIECE
 
 FEN_UPPERCASE_SYMBOL_TO_PIECE = SYMBOL_TO_PIECE.copy()
@@ -62,3 +64,88 @@ def parse_piece_positions_part(piece_positions_part: str) -> Dict[str, str]:
         if curr_fen_rank_str_index <= len(curr_fen_rank_str) - 1:
             raise ValueError(f'Too many squares in rank {curr_rank}: {curr_fen_rank_str}.')
     return square_piece_dict
+
+
+def make_virtual_position(square_piece_dict: Dict[str, str], side_to_move: str) -> Position:
+    """
+    Makes a Position object to evaluate whether it is valid.
+    :param square_piece_dict: the output of parse_piece_positions_part
+    :param side_to_move: 'white' or 'black'
+    :return:
+    """
+    white_pieces = {}
+    black_pieces = {}
+    for square in square_piece_dict:
+        fen_symbol = square_piece_dict[square]
+        piece = FEN_UPPERCASE_SYMBOL_TO_PIECE[fen_symbol.upper()]
+        if fen_symbol.isupper():
+            if piece not in white_pieces:
+                white_pieces[piece] = [square]
+            else:
+                white_pieces[piece].append(square)
+        else:
+            if piece not in black_pieces:
+                black_pieces[piece] = [square]
+            else:
+                black_pieces[piece].append(square)
+    white_position = ColorPosition('white', white_pieces)
+    black_position = ColorPosition('black', black_pieces)
+    return Position(white_pieces=white_position, black_pieces=black_position, side_to_move=side_to_move)
+
+
+def evaluate_virtual_position(virtual_position: Position) -> None:
+    """
+    Raises an AssertionError if the side not to move is under check in this position.
+    :param virtual_position:
+    :return:
+    """
+    side_not_to_move = opposite_color(virtual_position.to_move())
+    assert not virtual_position.is_under_check(side_not_to_move)
+
+
+def scan_possible_castling_potential(virtual_position: Position) -> Dict[str, List[str]]:
+    """
+    Checks if the kings and rooks are still on their home squares to determine if castling potential is still possible
+    :param virtual_position:
+    :return: a dictionary of the following form: {'white': ['kingside', 'queenside'], 'black': ['kingside']}. If one side cannot castle, the value will be an empty list. e.g. {'white': [], 'black': ['kingside']}
+    """
+    possible_castling_potential = {'white': [], 'black': []}
+    for color in possible_castling_potential:
+        pieces = virtual_position.get_pieces_by_color(color)
+        back_rank = '1' if color == 'white' else '8'
+        king_on_home_square = pieces.get_king_square() == f'e{back_rank}'
+        has_rooks = 'rook' in pieces.list_unique_piece_types()
+        if king_on_home_square and has_rooks:
+            rook_squares = pieces.get_piece_type_squares('rook')
+            for square in rook_squares:
+                if square == f'a{back_rank}':
+                    possible_castling_potential[color].append('queenside')
+                elif square == f'h{back_rank}':
+                    possible_castling_potential[color].append('kingside')
+    return possible_castling_potential
+
+
+def list_possible_en_passant_squares(virtual_position: Position) -> List[str]:
+    """
+    Looks for pawns on the side not to move that could possibly have used their two-square move immediately before this
+    position. Lists the en passant target squares for all such pawns.
+    :param virtual_position:
+    :return:
+    """
+    side_not_to_move = opposite_color(virtual_position.to_move())
+    if 'pawn' not in virtual_position.get_pieces_by_color(side_not_to_move).list_unique_piece_types():
+        return []
+    two_square_move_rank = '4' if side_not_to_move == 'white' else '5'
+    ranks_to_be_empty = ['2', '3'] if side_not_to_move == 'white' else ['7', '6']
+    pawn_squares = virtual_position.get_pieces_by_color(side_not_to_move).get_piece_type_squares('pawn')
+    possible_en_passant_squares = []
+    squares_on_correct_rank = [square for square in pawn_squares if square[1] == two_square_move_rank]
+    if len(squares_on_correct_rank) == 0:
+        return []
+    occupied_squares = virtual_position.get_occupied_squares()
+    for square in squares_on_correct_rank:
+        file = square[0]
+        if all([sq not in occupied_squares for sq in [f'{file}{rank}' for rank in ranks_to_be_empty]]):
+            possible_en_passant_squares.append(f'{file}{ranks_to_be_empty[1]}')
+    return possible_en_passant_squares
+
