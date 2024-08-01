@@ -318,8 +318,15 @@ def main(game):
                     text = game.take_back_last_move(silent=True)
                     update_layout(game, window, text)
                     break
+                elif event == 'Enter move':
+                    window['-TEXT-'].update('Moving by input notation is disabled when a piece has been selected. Click on a destination square to move the piece or click the selected piece again to de-select it.')
                 elif event in ALL_SQUARE_KEYS:
                     second_clicked_square = key_to_square_dict[event]
+                    if first_clicked_square == second_clicked_square:
+                        window[first_clicked_square_key].update(
+                            filename=get_image_path_from_square(game.current_position, first_clicked_square))
+                        window.refresh()
+                        break
                     all_legal_moves = game.current_position.get_all_legal_moves_for_color(to_move)
                     possible_legal_moves = [move for move in all_legal_moves if move.origin_square == first_clicked_square and move.destination_square == second_clicked_square]
                     if len(possible_legal_moves) == 0:
@@ -365,6 +372,7 @@ def main(game):
                             update_window_layout_after_move_game_continues(game, move, res, window)
                             break
                         else:
+                            update_layout(game, window, res, game_end_text=game_end_check)
                             exit_signal = enter_game_end_loop(game, game_end_check, window)
                             break
             if exit_signal:
