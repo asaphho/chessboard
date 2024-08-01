@@ -21,6 +21,11 @@ intro_text = ('Enter moves in standard algebraic notation. Always use uppercase 
               'Give all files in lowercase. Do not include any spaces.\n ')
 # buttons: 'Flip board' 'Show moves' 'Show FEN' 'Restart game' 'Take back last move'
 
+ALL_SQUARE_KEYS = []
+for i in '01234567':
+    for j in '01234567':
+        ALL_SQUARE_KEYS.append(i+j)
+
 
 def generate_position_layout(position: Position) -> List[List]:
     """
@@ -279,7 +284,7 @@ def main(game):
                 exit_signal = enter_game_end_loop(game, game_end_check, window)
                 if exit_signal:
                     break
-        elif len(event) == 2:
+        elif event in ALL_SQUARE_KEYS:
             first_clicked_square_key = event
             key_to_square_dict = key_to_square(game.current_position.is_flipped())
             first_clicked_square = key_to_square_dict[event]
@@ -313,7 +318,7 @@ def main(game):
                     text = game.take_back_last_move(silent=True)
                     update_layout(game, window, text)
                     break
-                elif len(event) == 2:
+                elif event in ALL_SQUARE_KEYS:
                     second_clicked_square = key_to_square_dict[event]
                     all_legal_moves = game.current_position.get_all_legal_moves_for_color(to_move)
                     possible_legal_moves = [move for move in all_legal_moves if move.origin_square == first_clicked_square and move.destination_square == second_clicked_square]
