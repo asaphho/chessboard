@@ -161,7 +161,7 @@ def generate_layout(game: Game, output_from_prev_input: str = '', game_end_text:
     layout += [[sg.Text(output_from_prev_input, key='-TEXT-')]]
     if game_end_text is None:
         prompt = create_input_move_prompt(game)
-        layout += [[sg.Text('', key='-GAMEENDTEXT-', visible=False)]]
+        layout += [[sg.Text('', key='-GAMEENDTEXT-', visible=True)]]
         layout += [[sg.Text(prompt, key='-INPUTPROMPT-', visible=True), sg.InputText(key='-INPUT-', focus=True, visible=True), sg.Button('Enter move', bind_return_key=True, visible=True)]]
     else:
         layout += [[sg.Text(game_end_text, key='-GAMEENDTEXT-', visible=True)]]
@@ -196,7 +196,7 @@ def update_layout(game: Game, window: PySimpleGUI.PySimpleGUI.Window, output_fro
     window['-TEXT-'].update(output_from_prev)
     if game_end_text is None:
         prompt = create_input_move_prompt(game)
-        window['-GAMEENDTEXT-'].update(visible=False)
+        window['-GAMEENDTEXT-'].update('', visible=True)
         window['-INPUTPROMPT-'].update(prompt, visible=True)
         window['-INPUT-'].update('' if input_text is None else input_text, visible=True)
         window['Enter move'].update(visible=True)
