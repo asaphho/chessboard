@@ -5,9 +5,12 @@ import PySimpleGUI.PySimpleGUI
 import sys
 from classes.position import Position, ALL_SQUARES
 from utils.board_functions import square_color_int
+from utils.parse_notation import piece_to_symbol
 from version import software_version
 from classes.game import Game
 from typing import List, Dict
+
+UNHANDLED_ERROR_MESSAGE = 'Something went wrong. :( Immediately after closing this popup, please submit an issue on https://github.com/asaphho/chessboard with the moves of the game up to this point, and describe what you attempted to do.'
 
 TITLE = f'chessboard v{software_version}'
 FEN_SYMBOL_TO_PIECE = {'P': 'wpawn', 'K': 'wking', 'Q': 'wqueen', 'B': 'wbishop', 'N': 'wknight', 'R': 'wrook',
@@ -17,6 +20,11 @@ FEN_SYMBOL_TO_PIECE = {'P': 'wpawn', 'K': 'wking', 'Q': 'wqueen', 'B': 'wbishop'
 intro_text = ('Enter moves in standard algebraic notation. Always use uppercase for non-pawn pieces.\n '
               'Give all files in lowercase. Do not include any spaces.\n ')
 # buttons: 'Flip board' 'Show moves' 'Show FEN' 'Restart game' 'Take back last move'
+
+ALL_SQUARE_KEYS = []
+for i in '01234567':
+    for j in '01234567':
+        ALL_SQUARE_KEYS.append(i+j)
 
 
 def generate_position_layout(position: Position) -> List[List]:
@@ -37,7 +45,7 @@ def generate_position_layout(position: Position) -> List[List]:
         for j in range(len(files)):
             curr_square = f'{files[j]}{ranks[i]}'
             filepath = get_image_path_from_square(position, curr_square)
-            rank_layout.append(sg.Image(filepath, key=f'{i}{j}'))
+            rank_layout.append(sg.Image(filepath, key=f'{i}{j}', enable_events=True))
         layout.append(rank_layout)
     return layout
 
@@ -58,6 +66,16 @@ def square_to_key(flipped: bool) -> Dict[str, str]:
     return square_to_key_dict
 
 
+def key_to_square(flipped: bool) -> Dict[str, str]:
+    ranks = '87654321' if not flipped else '12345678'
+    files = 'abcdefgh' if not flipped else 'hgfedcba'
+    key_to_square_dict = {}
+    for i in range(8):
+        for j in range(8):
+            key_to_square_dict[f'{i}{j}'] = f'{files[j]}{ranks[i]}'
+    return key_to_square_dict
+
+
 def get_square_color(curr_square: str) -> str:
     square_color_bit = square_color_int(curr_square)
     square_color = 'light' if square_color_bit == 0 else 'dark'
@@ -72,11 +90,12 @@ def get_path_to_image(filename: str) -> str:
     return filepath
 
 
-def get_image_path_from_square(position: Position, square: str) -> str:
+def get_image_path_from_square(position: Position, square: str, highlight: bool = False) -> str:
     square_color = get_square_color(square)
     square_occupant = position.look_at_square(square)
     piece = FEN_SYMBOL_TO_PIECE[square_occupant]
-    filename = f'{square_color}_{piece}.png'
+    hl_suffix = '_hl' if highlight else ''
+    filename = f'{square_color}_{piece}{hl_suffix}.png'
     return get_path_to_image(filename)
 
 
@@ -259,39 +278,141 @@ def main(game):
                 continue
             game_end_check = game.check_game_end_conditions()
             if game_end_check == 'None':
-                update_position_layout_in_window(window, move, game.current_position.is_flipped())
-                window['-TEXT-'].update(res)
-                window['-INPUT-'].update('')
-                window['-INPUTPROMPT-'].update(create_input_move_prompt(game))
-                window['-TOMOVE-'].update(side_to_move_text(game.current_position))
+                update_window_layout_after_move_game_continues(game, move, res, window)
             else:
                 update_layout(game, window, res, game_end_text=game_end_check)
-                exit_signal = False
-                while True:
-                    event, values = window.read()
-                    if event == sg.WIN_CLOSED:
-                        exit_signal = True
-                        break
-                    elif event == 'Flip board':
-                        game.current_position.flip_position()
-                        text = window['-TEXT-'].DisplayText
-                        update_layout(game, window, text, game_end_text=game_end_check)
-                    elif event == 'Show moves':
-                        display_moves(game)
-                    elif event == 'Show FEN':
-                        window['-TEXT-'].update(game.current_position.generate_fen())
-                    elif event == 'Restart game':
-                        if sg.popup_yes_no('Are you sure you want to restart?') == 'Yes':
-                            game.restart_game()
-                            update_layout(game, window, 'Game restarted.')
-                            break
-                    elif event == 'Take back last move':
-                        text = game.take_back_last_move(silent=True)
-                        update_layout(game, window, text)
-                        break
+                exit_signal = enter_game_end_loop(game, game_end_check, window)
                 if exit_signal:
                     break
+        elif event in ALL_SQUARE_KEYS:
+            first_clicked_square_key = event
+            key_to_square_dict = key_to_square(game.current_position.is_flipped())
+            first_clicked_square = key_to_square_dict[event]
+            to_move = game.current_position.to_move()
+            if first_clicked_square not in game.current_position.get_pieces_by_color(to_move).get_occupied_squares():
+                continue
+            window[event].update(filename=get_image_path_from_square(game.current_position, first_clicked_square, highlight=True))
+            window.refresh()
+            exit_signal = False
+            while True:
+                event, values = window.read()
+                if event == sg.WIN_CLOSED:
+                    exit_signal = True
+                    break
+                if event == 'Flip board':
+                    game.current_position.flip_position()
+                    text = window['-TEXT-'].DisplayText
+                    input_text = values['-INPUT-']
+                    update_layout(game, window, text, input_text=input_text)
+                    break
+                elif event == 'Show moves':
+                    display_moves(game)
+                elif event == 'Show FEN':
+                    window['-TEXT-'].update(game.current_position.generate_fen())
+                elif event == 'Restart game':
+                    if sg.popup_yes_no('Are you sure you want to restart?') == 'Yes':
+                        game.restart_game()
+                        update_layout(game, window, 'Game restarted.')
+                        break
+                elif event == 'Take back last move':
+                    text = game.take_back_last_move(silent=True)
+                    update_layout(game, window, text)
+                    break
+                elif event == 'Enter move':
+                    window['-TEXT-'].update('Moving by input notation is disabled when a piece has been selected. Click on a destination square to move the piece or click the selected piece again to de-select it.')
+                elif event in ALL_SQUARE_KEYS:
+                    second_clicked_square = key_to_square_dict[event]
+                    if first_clicked_square == second_clicked_square:
+                        window[first_clicked_square_key].update(
+                            filename=get_image_path_from_square(game.current_position, first_clicked_square))
+                        window.refresh()
+                        break
+                    all_legal_moves = game.current_position.get_all_legal_moves_for_color(to_move)
+                    possible_legal_moves = [move for move in all_legal_moves if move.origin_square == first_clicked_square and move.destination_square == second_clicked_square]
+                    if len(possible_legal_moves) == 0:
+                        window['-TEXT-'].update('Illegal move.')
+                        window[first_clicked_square_key].update(filename=get_image_path_from_square(game.current_position, first_clicked_square))
+                        window.refresh()
+                        break
+                    else:
+                        first_possible_move = possible_legal_moves[0]
+                        if not first_possible_move.pawn_promotion_required():
+                            move = first_possible_move
+                        else:
+                            result = sg.popup_get_text(
+                                message='Enter symbol for promotion piece (Q, R, N, or B). Only the first character will be taken.',
+                                default_text='Q', title=None)
+                            if result is None:
+                                window[first_clicked_square_key].update(
+                                    filename=get_image_path_from_square(game.current_position, first_clicked_square))
+                                window.refresh()
+                                break
+                            piece_symbol = result[0].upper()
+                            if piece_symbol in ('Q', 'R', 'N', 'B'):
+                                possible_moves = [m for m in possible_legal_moves if piece_to_symbol(m.promotion_piece) == piece_symbol]
+                                if len(possible_moves) == 0:
+                                    sg.popup(UNHANDLED_ERROR_MESSAGE)
+                                    window[first_clicked_square_key].update(
+                                        filename=get_image_path_from_square(game.current_position,
+                                                                            first_clicked_square))
+                                    window.refresh()
+                                    break
+                                else:
+                                    move = possible_moves[0]
+
+                            else:
+                                sg.popup('Invalid promotion piece')
+                                window[first_clicked_square_key].update(
+                                    filename=get_image_path_from_square(game.current_position, first_clicked_square))
+                                window.refresh()
+                                break
+                        res = game.process_move(move)
+                        game_end_check = game.check_game_end_conditions()
+                        if game_end_check == 'None':
+                            update_window_layout_after_move_game_continues(game, move, res, window)
+                            break
+                        else:
+                            update_layout(game, window, res, game_end_text=game_end_check)
+                            exit_signal = enter_game_end_loop(game, game_end_check, window)
+                            break
+            if exit_signal:
+                break
     window.close()
+
+
+def update_window_layout_after_move_game_continues(game, move, res, window):
+    update_position_layout_in_window(window, move, game.current_position.is_flipped())
+    window['-TEXT-'].update(res)
+    window['-INPUT-'].update('')
+    window['-INPUTPROMPT-'].update(create_input_move_prompt(game))
+    window['-TOMOVE-'].update(side_to_move_text(game.current_position))
+
+
+def enter_game_end_loop(game: Game, game_end_check: str, window: PySimpleGUI.PySimpleGUI.Window) -> bool:
+    exit_signal = False
+    while True:
+        event, values = window.read()
+        if event == sg.WIN_CLOSED:
+            exit_signal = True
+            break
+        elif event == 'Flip board':
+            game.current_position.flip_position()
+            text = window['-TEXT-'].DisplayText
+            update_layout(game, window, text, game_end_text=game_end_check)
+        elif event == 'Show moves':
+            display_moves(game)
+        elif event == 'Show FEN':
+            window['-TEXT-'].update(game.current_position.generate_fen())
+        elif event == 'Restart game':
+            if sg.popup_yes_no('Are you sure you want to restart?') == 'Yes':
+                game.restart_game()
+                update_layout(game, window, 'Game restarted.')
+                break
+        elif event == 'Take back last move':
+            text = game.take_back_last_move(silent=True)
+            update_layout(game, window, text)
+            break
+    return exit_signal
 
 
 if __name__ == '__main__':
