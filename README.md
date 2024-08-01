@@ -53,7 +53,7 @@ pyinstaller --onefile --windowed --add-data ".\images:images" --icon .\images\ic
 ```
 If the compilation is successful, the file gui_main.exe should appear in the dist folder in the project folder.
 
-For MacOS, the command is
+For macOS, the command is
 ```bash
 pyinstaller --onefile --windowed --add-data "./images:images" --icon ./images/icon.icns gui_main.py
 ```
