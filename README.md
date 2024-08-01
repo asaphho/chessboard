@@ -93,7 +93,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## Acknowledgements
 
 - This project uses [PySimpleGUI](https://github.com/PySimpleGUI/PySimpleGUI) under a Hobbyist License.
-Image assets are sourced from Wikipedia Commons. Specific attributions:
+Image assets are sourced from Wikimedia Commons. Specific attributions:
   - By Cburnett - Own work, Public Domain, https://commons.wikimedia.org/w/index.php?curid=1496742
   - By Cburnett - Own work, Public Domain, https://commons.wikimedia.org/w/index.php?curid=1496741
   - By Cburnett - Own work, CC BY-SA 3.0, https://commons.wikimedia.org/w/index.php?curid=1496738
@@ -120,6 +120,18 @@ Image assets are sourced from Wikipedia Commons. Specific attributions:
   - By Cburnett - Own work, CC BY-SA 3.0, https://commons.wikimedia.org/w/index.php?curid=1496596
   - By Cburnett - Own work, CC BY-SA 3.0, https://commons.wikimedia.org/w/index.php?curid=1496595
   - By Cburnett - Own work, CC BY-SA 3.0, https://commons.wikimedia.org/w/index.php?curid=1496594
+  - By Rfc1394 - Own work, CC BY-SA 3.0, https://commons.wikimedia.org/w/index.php?curid=25250445
+  - By en:User:Rfc1394 - This W3C-unspecified vector image was created with Inkscape ., CC BY-SA 3.0, https://commons.wikimedia.org/w/index.php?curid=25250444
+  - By Rfc1394 - Own work, CC BY-SA 3.0, https://commons.wikimedia.org/w/index.php?curid=25250153
+  - By en:User:Rfc1394 - This W3C-unspecified vector image was created with Inkscape ., CC BY-SA 3.0, https://commons.wikimedia.org/w/index.php?curid=25250152
+  - By en:User:Rfc1394 - This W3C-unspecified vector image was created with Inkscape ., CC BY-SA 3.0, https://commons.wikimedia.org/w/index.php?curid=25250450
+  - en:User:Rfc1394, CC BY-SA 3.0 <https://creativecommons.org/licenses/by-sa/3.0>, via Wikimedia Commons
+  - By en:User:Rfc1394 - This W3C-unspecified vector image was created with Inkscape ., CC BY-SA 3.0, https://commons.wikimedia.org/w/index.php?curid=25250158
+  - By en:User:Rfc1394 - This W3C-unspecified vector image was created with Inkscape ., CC BY-SA 3.0, https://commons.wikimedia.org/w/index.php?curid=25250157
+  - By en:User:Rfc1394 - This W3C-unspecified vector image was created with Inkscape ., CC BY-SA 3.0, https://commons.wikimedia.org/w/index.php?curid=25250453
+  - By en:User:Rfc1394 - This W3C-unspecified vector image was created with Inkscape ., CC BY-SA 3.0, https://commons.wikimedia.org/w/index.php?curid=25250452
+  - By en:User:Rfc1394 - This W3C-unspecified vector image was created with Inkscape ., CC BY-SA 3.0, https://commons.wikimedia.org/w/index.php?curid=25249732
+  - By en:User:Rfc1394 - This W3C-unspecified vector image was created with Inkscape ., CC BY-SA 3.0, https://commons.wikimedia.org/w/index.php?curid=25250159
 
 
 ---
