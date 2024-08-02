@@ -149,3 +149,30 @@ def list_possible_en_passant_squares(virtual_position: Position) -> List[str]:
             possible_en_passant_squares.append(f'{file}{ranks_to_be_empty[1]}')
     return possible_en_passant_squares
 
+
+def parse_full_fen(full_fen: str) -> Position:
+    fen_parts = [part.strip() for part in full_fen.split(' ') if part.strip() != '']
+    try:
+        piece_position_part = fen_parts[0]
+    except IndexError:
+        raise ValueError('Input empty')
+    try:
+        square_piece_dict = parse_piece_positions_part(piece_position_part)
+    except ValueError as e:
+        raise ValueError(str(e))
+    try:
+        active_side_symbol = fen_parts[1]
+    except IndexError:
+        raise ValueError('No active side')
+    if active_side_symbol.lower() == 'w':
+        side_to_move = 'white'
+    elif active_side_symbol.lower() == 'b':
+        side_to_move = 'black'
+    else:
+        raise ValueError(f'Could not recognise {active_side_symbol} as active side. Must be \'w\' or \'b\'.')
+    virtual_position = make_virtual_position(square_piece_dict, side_to_move)
+    try:
+        evaluate_virtual_position(virtual_position)
+    except AssertionError:
+        raise ValueError('Side not to move is under check. Position is illegal.')
+
