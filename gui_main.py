@@ -108,7 +108,8 @@ def side_to_move_text(position: Position) -> str:
 
 def update_position_layout_in_window(window: PySimpleGUI.PySimpleGUI.Window, move: LegalMove, flipped: bool) -> None:
     """
-    For updating the position part of the layout after a legal move is played.
+    For updating the position part of the layout after a legal move is played WHICH DOES NOT TRIGGER AN END GAME
+    CONDITION. This whole design might benefit from some refactoring, but I'm just going to leave it as it is for now.
     :param window:
     :param move:
     :param flipped:
