@@ -17,7 +17,8 @@ FEN_SYMBOL_TO_PIECE = {'P': 'wpawn', 'K': 'wking', 'Q': 'wqueen', 'B': 'wbishop'
                        'p': 'bpawn', 'k': 'bking', 'q': 'bqueen', 'b': 'bbishop', 'n': 'bknight', 'r': 'brook',
                        '1': 'empty'}
 
-intro_text = ('Enter moves in standard algebraic notation. Always use uppercase for non-pawn pieces.\n '
+intro_text = ('Enter moves in standard algebraic notation, or click on a piece and then a destination square to move it.\n'
+              'If using notation, always use uppercase for non-pawn pieces.\n '
               'Give all files in lowercase. Do not include any spaces.\n ')
 # buttons: 'Flip board' 'Show moves' 'Show FEN' 'Restart game' 'Take back last move'
 
@@ -319,7 +320,7 @@ def main(game):
                     update_layout(game, window, text)
                     break
                 elif event == 'Enter move':
-                    window['-TEXT-'].update('Moving by input notation is disabled when a piece has been selected. Click on a destination square to move the piece or click the selected piece again to de-select it.')
+                    window['-TEXT-'].update('Moving by notation is disabled when a piece has been selected.')
                 elif event in ALL_SQUARE_KEYS:
                     second_clicked_square = key_to_square_dict[event]
                     if first_clicked_square == second_clicked_square:
