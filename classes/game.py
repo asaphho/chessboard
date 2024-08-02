@@ -15,6 +15,8 @@ class Game:
         self.moves_record = {}
 
     def process_move(self, legal_move: LegalMove, return_move_for_gui: bool = False) -> Union[str, Tuple[str, LegalMove]]:
+        side_that_moved = legal_move.color
+        move_number = self.current_position.get_move_number()
         move_notation = self.current_position.process_legal_move(legal_move)
         current_fen = self.current_position.generate_fen()
         current_fen_for_record = current_fen.rsplit(' ', maxsplit=2)[0]
@@ -22,14 +24,12 @@ class Game:
             self.fen_record_dict[current_fen_for_record] += 1
         else:
             self.fen_record_dict[current_fen_for_record] = 1
-        if self.current_position.to_move() == 'white':
-            notation_move_number = self.current_position.get_move_number() - 1
+        if side_that_moved == 'white':
+            self.moves_record[move_number] = [move_notation]
+        elif move_number not in self.moves_record:
+            self.moves_record[move_number] = [f'{move_number}. ...', move_notation]
         else:
-            notation_move_number = self.current_position.get_move_number()
-        if notation_move_number in self.moves_record:
-            self.moves_record[notation_move_number].append(move_notation)
-        else:
-            self.moves_record[notation_move_number] = [move_notation]
+            self.moves_record[move_number].append(move_notation)
         return (move_notation, legal_move) if return_move_for_gui else move_notation
 
     def drawn_by_repetition(self) -> bool:
