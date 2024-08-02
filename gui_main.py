@@ -341,33 +341,26 @@ def main(game):
                         if not first_possible_move.pawn_promotion_required():
                             move = first_possible_move
                         else:
-                            result = sg.popup_get_text(
-                                message='Enter symbol for promotion piece (Q, R, N, or B). Only the first character will be taken.',
-                                default_text='Q', title=None)
+                            result = sg.popup_get_text('Select promotion piece by entering Q, R, N, or B. Only first character will be taken.',
+                                                       default_text='Q', title='Select promotion piece')
+
                             if result is None:
                                 window[first_clicked_square_key].update(
                                     filename=get_image_path_from_square(game.current_position, first_clicked_square))
                                 window.refresh()
                                 break
-                            piece_symbol = result[0].upper()
-                            if piece_symbol in ('Q', 'R', 'N', 'B'):
-                                possible_moves = [m for m in possible_legal_moves if piece_to_symbol(m.promotion_piece) == piece_symbol]
-                                if len(possible_moves) == 0:
-                                    sg.popup(UNHANDLED_ERROR_MESSAGE)
-                                    window[first_clicked_square_key].update(
-                                        filename=get_image_path_from_square(game.current_position,
-                                                                            first_clicked_square))
-                                    window.refresh()
-                                    break
-                                else:
-                                    move = possible_moves[0]
-
-                            else:
-                                sg.popup('Invalid promotion piece')
+                            result = result[0].upper()
+                            possible_moves = [m for m in possible_legal_moves if piece_to_symbol(m.promotion_piece) == result]
+                            if len(possible_moves) == 0:
+                                sg.popup('Invalid promotion piece symbol')
                                 window[first_clicked_square_key].update(
-                                    filename=get_image_path_from_square(game.current_position, first_clicked_square))
+                                    filename=get_image_path_from_square(game.current_position,
+                                                                        first_clicked_square))
                                 window.refresh()
                                 break
+                            else:
+                                move = possible_moves[0]
+
                         res = game.process_move(move)
                         game_end_check = game.check_game_end_conditions()
                         if game_end_check == 'None':
