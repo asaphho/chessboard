@@ -18,7 +18,7 @@ FEN_SYMBOL_TO_PIECE = {'P': 'wpawn', 'K': 'wking', 'Q': 'wqueen', 'B': 'wbishop'
                        '1': 'empty'}
 
 intro_text = ('Enter moves in standard algebraic notation, or click on a piece and then a destination square to move it.\n'
-              'If using notation, always use uppercase for non-pawn pieces.\n '
+              'If using notation, always use uppercase for non-pawn pieces.\n'
               'Give all files in lowercase. Do not include any spaces.\n ')
 # buttons: 'Flip board' 'Show moves' 'Show FEN' 'Restart game' 'Take back last move'
 
