@@ -209,7 +209,8 @@ def parse_full_fen(full_fen: str) -> Position:
     possible_en_passant_squares = list_possible_en_passant_squares(virtual_position)
     if (en_passant_square not in possible_en_passant_squares) and (en_passant_square != '-'):
         raise ValueError(f'Invalid en passant square {en_passant_square}.')
-    virtual_position.set_en_passant_square(en_passant_square)
+    if en_passant_square != '-':
+        virtual_position.set_en_passant_square(en_passant_square)
     try:
         half_move_clock = fen_parts[4]
     except IndexError:
