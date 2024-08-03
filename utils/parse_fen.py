@@ -175,4 +175,59 @@ def parse_full_fen(full_fen: str) -> Position:
         evaluate_virtual_position(virtual_position)
     except AssertionError:
         raise ValueError('Side not to move is under check. Position is illegal.')
-
+    try:
+        castling_rights = fen_parts[2]
+    except IndexError:
+        raise ValueError('No castling rights indicated.')
+    castling_potential = scan_possible_castling_potential(virtual_position)
+    if 'K' in castling_rights:
+        if 'kingside' not in castling_potential['white']:
+            castling_rights = castling_rights.replace('K', '')
+    if 'k' in castling_rights:
+        if 'kingside' not in castling_potential['black']:
+            castling_rights = castling_rights.replace('k', '')
+    if 'Q' in castling_rights:
+        if 'queenside' not in castling_potential['white']:
+            castling_rights = castling_rights.replace('Q', '')
+    if 'q' in castling_rights:
+        if 'queenside' not in castling_potential['black']:
+            castling_rights = castling_rights.replace('q', '')
+    if 'K' not in castling_rights:
+        virtual_position.white_pieces.disable_short_castling()
+    if 'k' not in castling_rights:
+        virtual_position.black_pieces.disable_short_castling()
+    if 'Q' not in castling_rights:
+        virtual_position.white_pieces.disable_long_castling()
+    if 'q' not in castling_rights:
+        virtual_position.black_pieces.disable_long_castling()
+    virtual_position.virtual_white_pieces = virtual_position.white_pieces.copy()
+    virtual_position.virtual_black_pieces = virtual_position.black_pieces.copy()
+    try:
+        en_passant_square = fen_parts[3]
+    except IndexError:
+        raise ValueError('No en passant square')
+    possible_en_passant_squares = list_possible_en_passant_squares(virtual_position)
+    if (en_passant_square not in possible_en_passant_squares) and (en_passant_square != '-'):
+        raise ValueError(f'Invalid en passant square {en_passant_square}.')
+    virtual_position.set_en_passant_square(en_passant_square)
+    try:
+        half_move_clock = fen_parts[4]
+    except IndexError:
+        raise ValueError('No half-move clock indicated.')
+    if not half_move_clock.isnumeric():
+        raise ValueError('Half-move clock must be numeric.')
+    half_move_clock = int(half_move_clock)
+    if half_move_clock > 100 or half_move_clock < 0:
+        raise ValueError('Half-move clock must be non-negative and no greater than 100.')
+    virtual_position.set_half_move_clock(half_move_clock)
+    try:
+        move_number_part = fen_parts[5]
+    except IndexError:
+        raise ValueError('No move number')
+    if not move_number_part.isnumeric():
+        raise ValueError('Move number must be numeric.')
+    move_number = int(move_number_part)
+    if move_number < 1:
+        raise ValueError('Move number must be no smaller than 1.')
+    virtual_position.set_move_number(move_number)
+    return virtual_position
