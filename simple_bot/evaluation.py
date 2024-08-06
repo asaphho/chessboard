@@ -2,7 +2,7 @@ from typing import List, Set, Iterable
 
 from classes.move import LegalMove
 from classes.position import Position, opposite_color
-from simple_bot.utils import MATERIAL_DICT
+from simple_bot.parameters import MATERIAL_DICT
 
 
 def count_material(position: Position, color: str) -> int:
