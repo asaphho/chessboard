@@ -63,6 +63,15 @@ class LegalMove:
             return self.destination_square[1] == promotion_rank
         return False
 
+    def generate_uci(self) -> str:
+        uci = f'{self.origin_square}{self.destination_square}'
+        if self.pawn_promotion_required():
+            if self.promotion_piece == 'knight':
+                uci += 'n'
+            else:
+                uci += self.promotion_piece[0].lower()
+        return uci
+
 
 class VirtualMove:
 
