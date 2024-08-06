@@ -1,4 +1,4 @@
-from typing import List, Set, Iterable
+from typing import List, Iterable
 
 from classes.move import LegalMove
 from classes.position import Position, opposite_color
@@ -46,7 +46,7 @@ def all_legal_piece_moves(position: Position, color: str) -> List[LegalMove]:
     return legal_piece_moves
 
 
-def squares_controlled_by_pawns(position: Position, color: str) -> Set[str]:
+def squares_controlled_by_pawns(position: Position, color: str) -> List[str]:
     """
     Returns all the squares attacked by pawns (ignoring any pins) by the given color in the given position.
     :param position:
@@ -57,7 +57,7 @@ def squares_controlled_by_pawns(position: Position, color: str) -> Set[str]:
     squares_with_pawns = position.get_pieces_by_color(color).get_piece_type_squares('pawn')
     for square in squares_with_pawns:
         squares_attacked.extend(position.scan_pawn_attacked_squares(color, square))
-    return set(squares_attacked)
+    return squares_attacked
 
 
 def get_pawn_control_score(position: Position, color: str) -> float:
@@ -68,14 +68,7 @@ def get_pawn_control_score(position: Position, color: str) -> float:
     :return: the total score
     """
     total = 0
-    # this does not use squares_controlled_by_pawns because it returns the unique squares, whereas this function
-    # should account for multiple pawns attacking the same square, and so should double-count squares controlled by
-    # two pawns.
-    pawn_squares = position.get_pieces_by_color(color).get_piece_type_squares('pawn')
-    controlled_squares = []
-    for square in pawn_squares:
-        attacked_squares = position.scan_pawn_attacked_squares(color, square)
-        controlled_squares.extend(attacked_squares)
+    controlled_squares = squares_controlled_by_pawns(position, color)
     for sq in controlled_squares:
         total += WHITE_PAWN_CONTROL_SCORES[sq] if color == 'white' else BLACK_PAWN_CONTROL_SCORES[sq]
     return total
