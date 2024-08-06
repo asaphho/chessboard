@@ -2,7 +2,7 @@ from typing import List, Set, Iterable
 
 from classes.move import LegalMove
 from classes.position import Position, opposite_color
-from simple_bot.parameters import MATERIAL_DICT
+from simple_bot.parameters import MATERIAL_DICT, WHITE_PAWN_CONTROL_SCORES, BLACK_PAWN_CONTROL_SCORES
 
 
 def count_material(position: Position, color: str) -> int:
@@ -58,6 +58,27 @@ def squares_controlled_by_pawns(position: Position, color: str) -> Set[str]:
     for square in squares_with_pawns:
         squares_attacked.extend(position.scan_pawn_attacked_squares(color, square))
     return set(squares_attacked)
+
+
+def get_pawn_control_score(position: Position, color: str) -> float:
+    """
+    Gets the score of the given color in the given position from the squares it attacks by its pawns.
+    :param position: the Position object
+    :param color: 'white' or 'black'
+    :return: the total score
+    """
+    total = 0
+    # this does not use squares_controlled_by_pawns because it returns the unique squares, whereas this function
+    # should account for multiple pawns attacking the same square, and so should double-count squares controlled by
+    # two pawns.
+    pawn_squares = position.get_pieces_by_color(color).get_piece_type_squares('pawn')
+    controlled_squares = []
+    for square in pawn_squares:
+        attacked_squares = position.scan_pawn_attacked_squares(color, square)
+        controlled_squares.extend(attacked_squares)
+    for sq in controlled_squares:
+        total += WHITE_PAWN_CONTROL_SCORES[sq] if color == 'white' else BLACK_PAWN_CONTROL_SCORES[sq]
+    return total
 
 
 def piece_moves_reduced_by_enemy_pawn_control(unreduced_piece_moves: List[LegalMove],
