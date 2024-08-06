@@ -60,15 +60,14 @@ def squares_controlled_by_pawns(position: Position, color: str) -> List[str]:
     return squares_attacked
 
 
-def get_pawn_control_score(position: Position, color: str) -> float:
+def get_pawn_control_score(controlled_squares: List[str], color: str) -> float:
     """
-    Gets the score of the given color in the given position from the squares it attacks by its pawns.
-    :param position: the Position object
+    Gets the score of the given color in a position from the squares it attacks by its pawns.
+    :param controlled_squares: The output of squares_controlled_by_pawns
     :param color: 'white' or 'black'
     :return: the total score
     """
     total = 0
-    controlled_squares = squares_controlled_by_pawns(position, color)
     for sq in controlled_squares:
         total += WHITE_PAWN_CONTROL_SCORES[sq] if color == 'white' else BLACK_PAWN_CONTROL_SCORES[sq]
     return total
