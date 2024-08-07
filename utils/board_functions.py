@@ -1,4 +1,4 @@
-from typing import Tuple, List
+from typing import Tuple, List, Dict
 
 LETTER_TO_NUM = {'a': 1, 'b': 2, 'c': 3, 'd': 4, 'e': 5, 'f': 6, 'g': 7, 'h': 8}
 NUM_TO_LETTER = {}
@@ -25,7 +25,7 @@ def square_to_coordinate(square: str) -> str:
 
 
 def coordinate_to_square(coordinate: str) -> str:
-    file = NUM_TO_LETTER[coordinate[0]]
+    file = NUM_TO_LETTER[int(coordinate[0])]
     return f'{file}{coordinate[1]}'
 
 
@@ -89,3 +89,78 @@ def get_intervening_squares(square1: str, square2: str, line_type: str) -> List[
         print(f'Unrecognized line type: {line_type}')
         raise ValueError
     return squares
+
+
+def scan_rook_scope(from_square: str) -> Dict[str, List[str]]:
+    """
+    All the squares a rook can reach in one move from input from_square on an empty board.
+    :param from_square: e.g. 'e5'
+    :return: if input from_square='e5', returns {'file': ['e1', 'e2', 'e3', 'e4', 'e6', 'e7', 'e8'], 'rank': ['a5', 'b5', 'c5', 'd5', 'f5', 'g5', 'h5']}
+    """
+    rook_scope = {'file': [], 'rank': []}
+    origin_file, origin_rank = from_square[0], from_square[1]
+    for f in 'abcdefgh'.replace(origin_file, ''):
+        rook_scope['rank'].append(f'{f}{origin_rank}')
+    for r in '12345678'.replace(origin_rank, ''):
+        rook_scope['file'].append(f'{origin_file}{r}')
+    return rook_scope
+
+
+def scan_bishop_scope(from_square: str) -> Dict[str, List[str]]:
+    """
+    All the squares a bishop can reach in one move from input from_square on an empty board.
+    :param from_square: e.g. 'd3'
+    :return: if from_square='d3', returns squares in a dictionary of the following form: {'diagonal': ['b1', 'c2', 'e4', 'f5', 'g6', 'h7', 'c4', 'b5', 'a6', 'e2', 'f1']}. The list order may not be the same.
+    """
+    bishop_scope = {'diagonal': []}
+    from_coordinate = square_to_coordinate(from_square)
+    file_int = int(from_coordinate[0])
+    rank_int = int(from_coordinate[1])
+    for i in range(1, 8):
+        file = file_int + i
+        rank = rank_int + i
+        if file <= 8 and rank <= 8:
+            bishop_scope['diagonal'].append(coordinate_to_square(f'{file}{rank}'))
+        file = file_int + i
+        rank = rank_int - i
+        if file <= 8 and rank >= 1:
+            bishop_scope['diagonal'].append(coordinate_to_square(f'{file}{rank}'))
+        file = file_int - i
+        rank = rank_int + i
+        if file >= 1 and rank <= 8:
+            bishop_scope['diagonal'].append(coordinate_to_square(f'{file}{rank}'))
+        file = file_int - i
+        rank = rank_int - i
+        if file >= 1 and rank >= 1:
+            bishop_scope['diagonal'].append(coordinate_to_square(f'{file}{rank}'))
+    return bishop_scope
+
+
+def scan_queen_scope(from_square: str) -> Dict[str, List[str]]:
+    """
+    Returns all the squares a queen can move to in one move from input from_square on an empty board.
+    :param from_square: e.g. 'h5'
+    :return: {'file': ['h1', 'h2', ...], 'rank': ['a5', 'b5', ...], 'diagonal': ['d1', 'e2', ...]}
+    """
+    return scan_rook_scope(from_square) | scan_bishop_scope(from_square)
+
+
+def scan_king_scope(from_square: str) -> List[str]:
+    """
+    Returns the list of all the squares around from_square.
+    :param from_square:
+    :return:
+    """
+    from_coordinate = square_to_coordinate(from_square)
+    file_int = int(from_coordinate[0])
+    rank_int = int(from_coordinate[1])
+    king_scope = []
+    for i in (-1, 0, 1):
+        for j in (-1, 0, 1):
+            if i == 0 and j == 0:
+                continue
+            file = file_int + i
+            rank = rank_int + j
+            if 1 <= file <= 8 and 1 <= rank <= 8:
+                king_scope.append(coordinate_to_square(f'{file}{rank}'))
+    return king_scope

@@ -2,7 +2,8 @@ from typing import List, Iterable
 
 from classes.move import LegalMove
 from classes.position import Position, opposite_color
-from simple_bot.parameters import MATERIAL_DICT, WHITE_PAWN_CONTROL_SCORES, BLACK_PAWN_CONTROL_SCORES
+from simple_bot.parameters import (MATERIAL_DICT, WHITE_PAWN_CONTROL_SCORES, BLACK_PAWN_CONTROL_SCORES,
+                                   LEGAL_PIECE_MOVE_MULTIPLIER)
 
 
 def count_material(position: Position, color: str) -> int:
@@ -84,3 +85,24 @@ def piece_moves_reduced_by_enemy_pawn_control(unreduced_piece_moves: List[LegalM
     :return:
     """
     return [move for move in unreduced_piece_moves if move.destination_square not in squares_controlled]
+
+
+def evaluate(position: Position, color: str) -> float:
+    """
+    The evaluation function to be called to evaluate how good or bad a position is for the given side.
+    :param position: Position object
+    :param color: 'white' or 'black'
+    :return: float. The higher, the better. 0 means equal position.
+    """
+    opposing_side = opposite_color(color)
+    score = count_material_imbalance(position, color)  # MATERIAL IMBALANCE
+    own_pawn_controlled_squares = squares_controlled_by_pawns(position, color)
+    opposing_pawn_controlled_squares = squares_controlled_by_pawns(position, opposing_side)
+    legal_piece_moves = all_legal_piece_moves(position, color)
+    opposing_legal_piece_moves = all_legal_piece_moves(position, opposing_side)
+    piece_moves_reduced = piece_moves_reduced_by_enemy_pawn_control(legal_piece_moves, opposing_pawn_controlled_squares)
+    opposing_piece_moves_reduced = piece_moves_reduced_by_enemy_pawn_control(opposing_legal_piece_moves,
+                                                                             own_pawn_controlled_squares)
+    score += LEGAL_PIECE_MOVE_MULTIPLIER * (len(piece_moves_reduced) - len(opposing_piece_moves_reduced))  # LEGAL PIECE MOVES
+    score += get_pawn_control_score(own_pawn_controlled_squares, color) - get_pawn_control_score(opposing_pawn_controlled_squares, opposing_side)  # SQUARES CONTROLLED BY PAWNS
+    return score
