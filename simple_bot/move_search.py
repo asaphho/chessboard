@@ -14,7 +14,8 @@ class Node:
     def get_parent(self):
         return self.parent
 
-    def add_child(self, child):
+    def add_child(self, name, value):
+        child = Node(name, value, self)
         self.children.append(child)
 
     def remove_all_children(self):
