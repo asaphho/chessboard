@@ -71,53 +71,61 @@ def collapse_node(node: Node, aggregator: Callable[[List[float]], float]):
 
 def make_4_ply_move_tree(position: Position) -> Node:
     side_to_move = position.to_move()
+    opposing_side = opposite_color(side_to_move)
     tree = Node('Current', evaluate(position, side_to_move))
-    first_moves = position.get_all_legal_moves_for_color(side_to_move)
-    for first_move in first_moves:
+    all_legal_first_moves = position.get_all_legal_moves_for_color(side_to_move)
+    for first_move in all_legal_first_moves:
         position_after_first_move = branch_from_position(position, first_move)
-        all_legal_first_replies = position_after_first_move.get_all_legal_moves_for_color(opposite_color(side_to_move))
+        all_legal_first_replies = position_after_first_move.get_all_legal_moves_for_color(opposing_side)
         if all_legal_first_replies:
-            first_move_node = tree.add_child(first_move.generate_uci(), position_after_first_move)
+            # first move does not end game. Level 1 node added here
+            first_move_node = tree.add_child(first_move.generate_uci(), first_move)
             for first_reply in all_legal_first_replies:
                 position_after_first_reply = branch_from_position(position_after_first_move, first_reply)
                 all_legal_second_moves = position_after_first_reply.get_all_legal_moves_for_color(side_to_move)
                 if all_legal_second_moves:
-                    first_reply_node = first_move_node.add_child(f'{first_move_node.get_name()}-{first_reply.generate_uci()}', position_after_first_reply)
+                    # first reply does not end game. Level 2 node added here.
+                    first_reply_node = first_move_node.add_child(f'{first_move_node.get_name()}-{first_reply.generate_uci()}', first_reply)
                     for second_move in all_legal_second_moves:
                         position_after_second_move = branch_from_position(position_after_first_reply, second_move)
-                        all_legal_second_replies = position_after_second_move.get_all_legal_moves_for_color(opposite_color(side_to_move))
+                        all_legal_second_replies = position_after_second_move.get_all_legal_moves_for_color(opposing_side)
                         if all_legal_second_replies:
-                            second_move_node = first_reply_node.add_child(f'{first_reply_node.get_name()}-{second_move.generate_uci()}', position_after_second_move)
+                            # second move does not end game. Level 3 node added here
+                            second_move_node = first_reply_node.add_child(f'{first_reply_node.get_name()}-{second_move.generate_uci()}', second_move)
                             for second_reply in all_legal_second_replies:
                                 position_after_second_reply = branch_from_position(position_after_second_move, second_reply)
                                 all_legal_third_moves = position_after_second_reply.get_all_legal_moves_for_color(side_to_move)
                                 if all_legal_third_moves:
-                                    second_move_node.add_child(f'{second_move_node.get_name()}-{second_reply.generate_uci()}', evaluate(position_after_second_reply, side_to_move))
+                                    # second reply does not end game. Level 4 node is added here with evaluation as value.
+                                    second_reply_node = second_move_node.add_child(f'{second_move_node.get_name()}-{second_reply.generate_uci()}', evaluate(position_after_second_reply, side_to_move))
                                 else:
+                                    # second reply ends game. Level 4 node added here. Check if got checkmated or stalemated.
                                     if position_after_second_reply.is_under_check(side_to_move):
-                                        second_move_node.add_child(f'{second_move_node.get_name()}-{second_reply.generate_uci()}', -1 * CHECKMATE_SCORE)
+                                        second_reply_node = second_move_node.add_child(f'{second_move_node.get_name()}-{second_reply.generate_uci()}', -CHECKMATE_SCORE)
                                     else:
-                                        second_move_node.add_child(
-                                            f'{second_move_node.get_name()}-{second_reply.generate_uci()}',
-                                            0)
+                                        second_reply_node = second_move_node.add_child(f'{second_move_node.get_name()}-{second_reply.generate_uci()}', 0)
+
                         else:
-                            if position_after_second_move.is_under_check(opposite_color(side_to_move)):
-                                first_reply_node.add_child(f'{first_reply_node.get_name()}-{second_move.generate_uci()}', CHECKMATE_SCORE)
+                            # second move ends game. Level 3 node added here, with appropriate value
+                            # check if checkmate or stalemate
+                            if position_after_second_move.is_under_check(opposing_side):
+                                second_move_node = first_reply_node.add_child(f'{first_reply_node.get_name()}-{second_move.generate_uci()}', CHECKMATE_SCORE)
                             else:
-                                first_reply_node.add_child(f'{first_reply_node.get_name()}-{second_move.generate_uci()}',
-                                                           0)
+                                second_move_node = first_reply_node.add_child(f'{first_reply_node.get_name()}-{second_move.generate_uci()}', 0)
                 else:
+                    # first reply ends game. Level 2 node added here, with appropriate value
+                    # checks if got checkmated or stalemated.
                     if position_after_first_reply.is_under_check(side_to_move):
-                        first_move_node.add_child(f'{first_move_node.get_name()}-{first_reply.generate_uci()}',
-                                                  -1 * CHECKMATE_SCORE)
+                        first_reply_node = first_move_node.add_child(f'{first_move_node.get_name()}-{first_reply.generate_uci()}', -CHECKMATE_SCORE)
                     else:
-                        first_move_node.add_child(f'{first_move_node.get_name()}-{first_reply.generate_uci()}',
-                                                  0)
+                        first_reply_node = first_move_node.add_child(f'{first_move_node.get_name()}-{first_reply.generate_uci()}', 0)
         else:
-            if position_after_first_move.is_under_check(opposite_color(side_to_move)):
-                tree.add_child(first_move.generate_uci(), CHECKMATE_SCORE)
+            # first move ends game. Level 1 node added here, with appropriate value
+            # checks if checkmate or stalemate
+            if position_after_first_move.is_under_check(opposing_side):
+                first_move_node = tree.add_child(first_move.generate_uci(), CHECKMATE_SCORE)
             else:
-                tree.add_child(first_move.generate_uci(), 0)
+                first_move_node = tree.add_child(first_move.generate_uci(), 0)
     return tree
 
 
