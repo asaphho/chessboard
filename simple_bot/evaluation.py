@@ -89,7 +89,8 @@ def piece_moves_reduced_by_enemy_pawn_control(unreduced_piece_moves: List[LegalM
 
 def evaluate(position: Position, color: str) -> float:
     """
-    The evaluation function to be called to evaluate how good or bad a position is for the given side.
+    The evaluation function to be called to evaluate how good or bad a position is for the given side. Assumption is
+    that checkmate or stalemate has not occurred.
     :param position: Position object
     :param color: 'white' or 'black'
     :return: float. The higher, the better. 0 means equal position.
