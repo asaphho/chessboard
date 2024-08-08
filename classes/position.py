@@ -322,7 +322,7 @@ class Position:
             else:
                 notation_move_str += f'{move.destination_square}'
             if move.pawn_promotion_required():
-                notation_move_str += piece_to_symbol(move.promotion_piece)
+                notation_move_str += '=' + piece_to_symbol(move.promotion_piece)
         else:
             notation_move_str += piece_to_symbol(move.piece_moved)
             if disambiguation != 'None':
