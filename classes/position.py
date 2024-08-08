@@ -1,8 +1,7 @@
 from typing import List
 from classes.color_position import ColorPosition, generate_starting_position_for_color
 from classes.move import LegalMove, VirtualMove
-from utils.board_functions import (check_squares_in_line, get_intervening_squares, is_knight_move, LETTER_TO_NUM,
-                                   NUM_TO_LETTER)
+from utils.board_functions import get_intervening_squares, LETTER_TO_NUM, NUM_TO_LETTER, scan_qbr_scope, scan_kn_scope
 from utils.parse_notation import piece_to_symbol
 
 ALL_SQUARES = []
@@ -153,32 +152,29 @@ class Position:
         own_piece_positions = self.get_pieces_by_color(color, virtual)
         occupied_squares = self.get_occupied_squares(virtual=virtual)
         own_pieces_squares = own_piece_positions.get_occupied_squares()
-        all_other_squares = [square for square in ALL_SQUARES if square not in own_pieces_squares]
         reachable_squares = []
-        for candidate_square in all_other_squares:
-            check_line = check_squares_in_line(from_square, candidate_square)
-            knight_move = is_knight_move(from_square, candidate_square)
-            if check_line != 'Not in line':
-                intervening_squares = get_intervening_squares(from_square, candidate_square, check_line)
-                if len(intervening_squares) == 0:
-                    if piece == 'queen' or piece == 'king':
+        if piece in ('rook', 'bishop', 'queen'):
+            scope = scan_qbr_scope(piece, from_square)
+            for line_type in scope:
+                for candidate_square in scope[line_type]:
+                    if candidate_square in own_pieces_squares:
+                        continue
+                    intervening_squares = get_intervening_squares(from_square, candidate_square, line_type)
+                    if len(intervening_squares) == 0:
                         reachable_squares.append(candidate_square)
-                    if piece == 'rook' and (check_line == 'file' or check_line == 'rank'):
-                        reachable_squares.append(candidate_square)
-                    if piece == 'bishop' and check_line == 'diagonal':
-                        reachable_squares.append(candidate_square)
-                else:
-                    blocked = any([square in occupied_squares for square in intervening_squares])
+                        continue
+                    blocked = any([sq in occupied_squares for sq in intervening_squares])
                     if not blocked:
-                        if piece == 'queen':
-                            reachable_squares.append(candidate_square)
-                        elif piece == 'rook' and (check_line == 'file' or check_line == 'rank'):
-                            reachable_squares.append(candidate_square)
-                        elif piece == 'bishop' and check_line == 'diagonal':
-                            reachable_squares.append(candidate_square)
-            elif knight_move and piece == 'knight':
-                reachable_squares.append(candidate_square)
+                        reachable_squares.append(candidate_square)
+        elif piece in ('king', 'knight'):
+            scope = scan_kn_scope(piece, from_square)
+            for candidate_square in scope:
+                if candidate_square not in own_pieces_squares:
+                    reachable_squares.append(candidate_square)
+        else:
+            raise ValueError(f'Invalid piece (\'{piece}\') for this function.')
         return reachable_squares
+
 
     def scan_pawn_non_capture_moves(self, color: str, from_square: str) -> List[str]:
         occupied_squares = self.get_occupied_squares()
