@@ -1,5 +1,5 @@
 from typing import List, Iterable
-
+from utils.board_functions import scan_qbr_scope, scan_kn_scope, get_intervening_squares
 from classes.move import LegalMove
 from classes.position import Position, opposite_color
 from simple_bot.parameters import (MATERIAL_DICT, WHITE_PAWN_CONTROL_SCORES, BLACK_PAWN_CONTROL_SCORES,
