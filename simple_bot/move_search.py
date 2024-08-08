@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Callable
 
 from simple_bot.evaluation import evaluate
 
@@ -54,16 +54,12 @@ def search_upstream(node: Node) -> Node:
         return search_upstream(node.get_parent())
 
 
-def collapse_node(node: Node, extremum: str):
+def collapse_node(node: Node, aggregator: Callable[[List[float]], float]):
     leaves = search_downstream(node)
     values = [leave.get_value() for leave in leaves]
-    if extremum == 'max':
-        node.set_value(max(values))
-        node.remove_all_children()
-    elif extremum == 'min':
-        node.set_value(min(values))
-        node.remove_all_children()
-    else:
-        raise ValueError('Extremum must be \'max\' or \'min\'.')
+    value = aggregator(values)
+    node.set_value(value)
+    node.remove_all_children()
+
 
 
