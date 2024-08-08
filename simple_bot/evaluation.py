@@ -3,7 +3,7 @@ from utils.board_functions import scan_qbr_scope, scan_kn_scope, get_intervening
 from classes.move import LegalMove
 from classes.position import Position, opposite_color
 from simple_bot.parameters import (MATERIAL_DICT, WHITE_PAWN_CONTROL_SCORES, BLACK_PAWN_CONTROL_SCORES,
-                                   LEGAL_PIECE_MOVE_MULTIPLIER)
+                                   LEGAL_PIECE_MOVE_MULTIPLIER, ACTIVITY_COUNT_MULTIPLIER)
 
 
 def count_material(position: Position, color: str) -> int:
@@ -47,6 +47,29 @@ def all_legal_piece_moves(position: Position, color: str) -> List[LegalMove]:
     return legal_piece_moves
 
 
+def piece_activity(position: Position, color: str) -> List[str]:
+    squares = []
+    own_pieces = position.get_pieces_by_color(color)
+    occupied_squares = position.get_occupied_squares()
+    for piece_type in own_pieces.list_unique_piece_types():
+        if piece_type in ('queen', 'bishop', 'rook'):
+            for from_square in own_pieces.get_piece_type_squares(piece_type):
+                scope = scan_qbr_scope(piece_type, from_square)
+                for line_type in scope:
+                    for candidate_square in scope[line_type]:
+                        intervening_squares = get_intervening_squares(from_square, candidate_square, line_type)
+                        blocked = any([sq in occupied_squares for sq in intervening_squares])
+                        if not blocked:
+                            squares.append(candidate_square)
+        elif piece_type == 'knight':
+            for from_square in own_pieces.get_piece_type_squares(piece_type):
+                scope = scan_kn_scope(piece_type, from_square)
+                for sq in scope:
+                    if sq not in own_pieces.get_occupied_squares():
+                        squares.append(sq)
+    return squares
+
+
 def squares_controlled_by_pawns(position: Position, color: str) -> List[str]:
     """
     Returns all the squares attacked by pawns (ignoring any pins) by the given color in the given position.
@@ -74,17 +97,17 @@ def get_pawn_control_score(controlled_squares: List[str], color: str) -> float:
     return total
 
 
-def piece_moves_reduced_by_enemy_pawn_control(unreduced_piece_moves: List[LegalMove],
-                                              squares_controlled: Iterable[str]) -> List[LegalMove]:
+def piece_moves_reduced_by_enemy_pawn_control(unreduced_piece_moves: List[str],
+                                              squares_controlled: Iterable[str]) -> List[str]:
     """
     Returns the subset of unreduced_piece_moves that do not put a piece on a square controlled by an enemy pawn
     (pins are ignored).
-    :param unreduced_piece_moves: The legal piece moves (knight, bishop, rook, queen) in the current position of one
+    :param unreduced_piece_moves: The piece moves (knight, bishop, rook, queen) in the current position of one
     side
     :param squares_controlled: An iterable containing all the squares attacked by enemy pawns in the same position
     :return:
     """
-    return [move for move in unreduced_piece_moves if move.destination_square not in squares_controlled]
+    return [sq for sq in unreduced_piece_moves if sq not in squares_controlled]
 
 
 def evaluate(position: Position, color: str) -> float:
@@ -99,11 +122,11 @@ def evaluate(position: Position, color: str) -> float:
     score = count_material_imbalance(position, color)  # MATERIAL IMBALANCE
     own_pawn_controlled_squares = squares_controlled_by_pawns(position, color)
     opposing_pawn_controlled_squares = squares_controlled_by_pawns(position, opposing_side)
-    legal_piece_moves = all_legal_piece_moves(position, color)
-    opposing_legal_piece_moves = all_legal_piece_moves(position, opposing_side)
-    piece_moves_reduced = piece_moves_reduced_by_enemy_pawn_control(legal_piece_moves, opposing_pawn_controlled_squares)
-    opposing_piece_moves_reduced = piece_moves_reduced_by_enemy_pawn_control(opposing_legal_piece_moves,
+    activity = piece_activity(position, color)
+    opposing_activity = piece_activity(position, opposing_side)
+    piece_moves_reduced = piece_moves_reduced_by_enemy_pawn_control(activity, opposing_pawn_controlled_squares)
+    opposing_piece_moves_reduced = piece_moves_reduced_by_enemy_pawn_control(opposing_activity,
                                                                              own_pawn_controlled_squares)
-    score += LEGAL_PIECE_MOVE_MULTIPLIER * (len(piece_moves_reduced) - len(opposing_piece_moves_reduced))  # LEGAL PIECE MOVES
+    score += ACTIVITY_COUNT_MULTIPLIER * (len(piece_moves_reduced) - len(opposing_piece_moves_reduced))  # LEGAL PIECE MOVES
     score += get_pawn_control_score(own_pawn_controlled_squares, color) - get_pawn_control_score(opposing_pawn_controlled_squares, opposing_side)  # SQUARES CONTROLLED BY PAWNS
     return score
