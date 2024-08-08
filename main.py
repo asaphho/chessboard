@@ -24,7 +24,8 @@ def main(game: Game):
             try:
                 res = game.process_input_notation(input_str)
                 print(res)
-            except Exception:
+            except Exception as e:
+                print(str(e))
                 continue
             end_game_check = game.check_game_end_conditions()
             if end_game_check != 'None':
