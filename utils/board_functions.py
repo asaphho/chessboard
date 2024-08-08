@@ -148,8 +148,8 @@ def scan_queen_scope(from_square: str) -> Dict[str, List[str]]:
 def scan_king_scope(from_square: str) -> List[str]:
     """
     Returns the list of all the squares around from_square.
-    :param from_square:
-    :return:
+    :param from_square: e.g. 'd6'
+    :return: if from_square='d6', returns ['c5', 'c6', 'c7', 'd5', 'd7', 'e5', 'e6', 'e7']
     """
     from_coordinate = square_to_coordinate(from_square)
     file_int = int(from_coordinate[0])
@@ -164,3 +164,48 @@ def scan_king_scope(from_square: str) -> List[str]:
             if 1 <= file <= 8 and 1 <= rank <= 8:
                 king_scope.append(coordinate_to_square(f'{file}{rank}'))
     return king_scope
+
+
+def scan_knight_scope(from_square: str) -> List[str]:
+    """
+    Returns the squares that a knight can reach in one move from input from_square on an empty board.
+    :param from_square: e.g. 'f3'
+    :return: if from_square='f3', returns, not necessarily in this order, ['g1', 'h2', 'h4', 'g5', 'e5', 'd4', 'd2', 'e1']
+    """
+    from_coordinate = square_to_coordinate(from_square)
+    file_int = int(from_coordinate[0])
+    rank_int = int(from_coordinate[1])
+    knight_scope = []
+    for rank_diff in (-2, 2):
+        for file_diff in (-1, 1):
+            file = file_int + file_diff
+            rank = rank_int + rank_diff
+            if 1 <= file <= 8 and 1 <= rank <= 8:
+                knight_scope.append(coordinate_to_square(f'{file}{rank}'))
+    for file_diff in (-2, 2):
+        for rank_diff in (-1, 1):
+            file = file_int + file_diff
+            rank = rank_int + rank_diff
+            if 1 <= file <= 8 and 1 <= rank <= 8:
+                knight_scope.append(coordinate_to_square(f'{file}{rank}'))
+    return knight_scope
+
+
+def scan_qbr_scope(piece: str, from_square: str) -> Dict[str, List[str]]:
+    if piece == 'rook':
+        return scan_rook_scope(from_square)
+    elif piece == 'bishop':
+        return scan_bishop_scope(from_square)
+    elif piece == 'queen':
+        return scan_queen_scope(from_square)
+    else:
+        raise ValueError(f'Invalid piece (\'{piece}\') for this function.')
+
+
+def scan_kn_scope(piece: str, from_square: str) -> List[str]:
+    if piece == 'king':
+        return scan_king_scope(from_square)
+    elif piece == 'knight':
+        return scan_knight_scope(from_square)
+    else:
+        raise ValueError(f'Invalid piece (\'{piece}\') for this function')
