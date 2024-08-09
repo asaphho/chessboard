@@ -7,3 +7,5 @@ gui_main.spec
 build
 dist
 version/__pycache__
+.DS_Store
+simple_bot/__pycache__
