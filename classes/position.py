@@ -507,7 +507,9 @@ class Position:
                         if attacked_square in opposing_piece_position.get_occupied_squares():
                             virtual_moves.append(VirtualMove(color, piece, origin_square, attacked_square))
                         elif attacked_square == self.get_en_passant_square():
-                            virtual_moves.append(VirtualMove(color, piece, origin_square, attacked_square))
+                            en_passant_target_rank = '6' if color == 'white' else '3'
+                            if attacked_square[1] == en_passant_target_rank:
+                                virtual_moves.append(VirtualMove(color, piece, origin_square, attacked_square))
         return virtual_moves
 
     def get_all_legal_moves_for_color(self, color: str) -> List[LegalMove]:
@@ -522,6 +524,9 @@ class Position:
                 else:
                     legal_moves.append(self.translate_virtual_move_to_legal(virtual_move))
         return legal_moves
+
+    def get_all_legal_moves_for_side_to_move(self) -> List[LegalMove]:
+        return self.get_all_legal_moves_for_color(self.to_move())
 
 
 def generate_starting_position() -> Position:
