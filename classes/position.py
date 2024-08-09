@@ -13,7 +13,7 @@ for f in files:
 
 
 def opposite_color(color: str) -> str:
-    return 'white' if color.lower().startswith('b') else 'black'
+    return 'w' if color == 'b' else 'b'
 
 
 def collapse_rank_string(rank_str: str) -> str:
@@ -105,10 +105,7 @@ class Position:
         self.flipped = not self.is_flipped()
 
     def change_side_to_move(self) -> None:
-        if self.to_move().lower().startswith('w'):
-            self.side_to_move = 'black'
-        elif self.to_move().lower().startswith('b'):
-            self.side_to_move = 'white'
+        self.side_to_move = opposite_color(self.to_move())
 
     def get_castling_rights(self) -> str:
         castling_rights = ''
@@ -154,7 +151,7 @@ class Position:
         self.en_passant_square = '-'
 
     def get_pieces_by_color(self, color: str, virtual: bool = False) -> ColorPosition:
-        if color == 'white':
+        if color == 'w':
             return self.white_pieces if not virtual else self.virtual_white_pieces
         else:
             return self.black_pieces if not virtual else self.virtual_black_pieces
@@ -164,7 +161,7 @@ class Position:
         occupied_squares = self.get_occupied_squares(virtual=virtual)
         own_pieces_squares = own_piece_positions.get_occupied_squares()
         reachable_squares = []
-        if piece in ('rook', 'bishop', 'queen'):
+        if piece in ('R', 'B', 'Q'):
             scope = scan_qbr_scope(piece, from_square)
             for line_type in scope:
                 for candidate_square in scope[line_type]:
@@ -177,7 +174,7 @@ class Position:
                     blocked = any([sq in occupied_squares for sq in intervening_squares])
                     if not blocked:
                         reachable_squares.append(candidate_square)
-        elif piece in ('king', 'knight'):
+        elif piece in ('K', 'N'):
             scope = scan_kn_scope(piece, from_square)
             for candidate_square in scope:
                 if candidate_square not in own_pieces_squares:
@@ -186,13 +183,12 @@ class Position:
             raise ValueError(f'Invalid piece (\'{piece}\') for this function.')
         return reachable_squares
 
-
     def scan_pawn_non_capture_moves(self, color: str, from_square: str) -> List[str]:
         occupied_squares = self.get_occupied_squares()
         file = from_square[0]
         rank = int(from_square[1])
-        home_rank = 2 if color == 'white' else 7
-        rank_delta = 1 if color == 'white' else -1
+        home_rank = 2 if color == 'w' else 7
+        rank_delta = 1 if color == 'w' else -1
         if rank == home_rank:
             if f'{file}{home_rank + rank_delta}' in occupied_squares:
                 return []
@@ -213,7 +209,7 @@ class Position:
             neighboring_files = ['b']
         else:
             neighboring_files = ['g']
-        delta_rank = 1 if color.lower() == 'white' else -1
+        delta_rank = 1 if color == 'w' else -1
         target_rank = rank + delta_rank
         return [f"{f}{target_rank}" for f in neighboring_files]
 
@@ -222,7 +218,7 @@ class Position:
         piece_positions = self.get_pieces_by_color(color, virtual)
         for piece_type in piece_positions.list_unique_piece_types():
             squares_occupied_by_that_piece_type = piece_positions.get_piece_type_squares(piece_type)
-            if piece_type != 'pawn':
+            if piece_type != 'P':
                 for square in squares_occupied_by_that_piece_type:
                     attacked_squares.extend(self.scan_non_pawn_piece_moves(color, piece_type, square, virtual))
             else:
@@ -241,36 +237,36 @@ class Position:
         piece_positions = self.get_pieces_by_color(color)
         squares_occupied_by_piece = piece_positions.get_piece_type_squares(piece)
         if len(squares_occupied_by_piece) == 1:
-            return 'None'
+            return 'N'
         origin_squares_that_can_reach_destination = []
         for occupied_square in squares_occupied_by_piece:
             reachable_squares = self.scan_non_pawn_piece_moves(color, piece, occupied_square)
             if destination_square in reachable_squares:
                 origin_squares_that_can_reach_destination.append(occupied_square)
         if len(origin_squares_that_can_reach_destination) == 1:
-            return 'None'
+            return 'N'
         origin_file = origin_square[0]
         disambiguate_by_file = [square for square in origin_squares_that_can_reach_destination if
                                 square[0] == origin_file]
         if len(disambiguate_by_file) == 1:
-            return 'file'
+            return 'f'
         origin_rank = origin_square[1]
         disambiguate_by_rank = [square for square in origin_squares_that_can_reach_destination if
                                 square[1] == origin_rank]
         if len(disambiguate_by_rank) == 1:
-            return 'rank'
-        return 'square'
+            return 'r'
+        return 's'
 
     def process_legal_move(self, move: LegalMove) -> str:
         color_moved = move.get_color()
         opposing_color = opposite_color(color_moved)
         notation_move_number = self.get_move_number()
-        if move.piece_moved not in ('king', 'pawn'):
+        if move.piece_moved not in ('K', 'P'):
             disambiguation = self.check_for_disambiguation(color_moved, move.piece_moved,
                                                            move.origin_square, move.destination_square)
         else:
-            disambiguation = 'None'
-        if color_moved == 'black':
+            disambiguation = 'N'
+        if color_moved == 'b':
             self.increment_move_number()
         if move.is_king_move():
             self.get_pieces_by_color(color_moved).disable_castling()
@@ -288,7 +284,7 @@ class Position:
             self.increment_half_move_clock()
         if move.is_pawn_2_square_move():
             file = move.destination_square[0]
-            if color_moved == 'white':
+            if color_moved == 'w':
                 self.set_en_passant_square(f"{file}3")
             else:
                 self.set_en_passant_square(f"{file}6")
@@ -299,13 +295,13 @@ class Position:
                 self.get_pieces_by_color(opposing_color).remove_piece_on_square(move.destination_square)
             else:
                 file = move.destination_square[0]
-                rank_to_remove = 5 if color_moved == 'white' else 4
+                rank_to_remove = 5 if color_moved == 'w' else 4
                 self.get_pieces_by_color(opposite_color(color_moved)).remove_piece_on_square(f'{file}{rank_to_remove}')
-        back_rank = '1' if color_moved == 'white' else '8'
-        if str(move.castling).lower().startswith('k') or str(move.castling).lower().startswith('short'):
-            self.get_pieces_by_color(color_moved).move_piece('rook', f'h{back_rank}', f'f{back_rank}')
-        elif str(move.castling).lower().startswith('q') or str(move.castling).lower().startswith('long'):
-            self.get_pieces_by_color(color_moved).move_piece('rook', f'a{back_rank}', f'd{back_rank}')
+        back_rank = '1' if color_moved == 'w' else '8'
+        if move.castling == 'k':
+            self.get_pieces_by_color(color_moved).move_piece('R', f'h{back_rank}', f'f{back_rank}')
+        elif move.castling == 'q':
+            self.get_pieces_by_color(color_moved).move_piece('R', f'a{back_rank}', f'd{back_rank}')
 
         # ACTUAL PIECE MOVEMENT HERE
         self.get_pieces_by_color(color_moved).move_piece(move.piece_moved, move.origin_square, move.destination_square)
@@ -316,11 +312,11 @@ class Position:
         self.virtual_black_pieces = self.black_pieces.copy()
 
         # PRODUCE NOTATION
-        notation_move_str = f'{notation_move_number}. ' if color_moved == 'white' else f'{notation_move_number}... '
+        notation_move_str = f'{notation_move_number}. ' if color_moved == 'w' else f'{notation_move_number}... '
         if move.is_king_move():
-            if move.castling.lower().startswith('k') or move.castling.lower().startswith('short'):
+            if move.castling == 'k':
                 notation_move_str += 'O-O'
-            elif move.castling.lower().startswith('q') or move.castling.lower().startswith('long'):
+            elif move.castling == 'q':
                 notation_move_str += 'O-O-O'
             else:
                 notation_move_str += 'K'
@@ -336,10 +332,10 @@ class Position:
                 notation_move_str += '=' + piece_to_symbol(move.promotion_piece)
         else:
             notation_move_str += piece_to_symbol(move.piece_moved)
-            if disambiguation != 'None':
-                if disambiguation == 'file':
+            if disambiguation != 'N':
+                if disambiguation == 'f':
                     notation_move_str += move.origin_square[0]
-                elif disambiguation == 'rank':
+                elif disambiguation == 'r':
                     notation_move_str += move.origin_square[1]
                 else:
                     notation_move_str += move.origin_square
@@ -385,12 +381,12 @@ class Position:
         return fen_str
 
     def castling_legal_here(self, color: str, side: str) -> bool:
-        back_rank = '1' if color == 'white' else '8'
+        back_rank = '1' if color == 'w' else '8'
         own_piece_positions = self.get_pieces_by_color(color)
         opposing_color = opposite_color(color)
         if own_piece_positions.get_king_square() != f'e{back_rank}':
             return False
-        rook_home_file = 'a' if side == 'queenside' else 'h'
+        rook_home_file = 'a' if side == 'q' else 'h'
         square_piece_symbol_dict = own_piece_positions.get_square_piece_symbol_dict()
         if f'{rook_home_file}{back_rank}' not in square_piece_symbol_dict:
             return False
@@ -403,9 +399,9 @@ class Position:
         if not own_piece_positions.can_castle_on_side(side):
             return False
 
-        squares_to_be_empty = [f'{file}{back_rank}' for file in ('f', 'g')] if side == 'kingside' \
+        squares_to_be_empty = [f'{file}{back_rank}' for file in ('f', 'g')] if side == 'k' \
             else [f'{file}{back_rank}' for file in ('b', 'c', 'd')]
-        squares_that_must_not_be_attacked = [f'f{back_rank}', f'g{back_rank}'] if side == 'kingside' \
+        squares_that_must_not_be_attacked = [f'f{back_rank}', f'g{back_rank}'] if side == 'k' \
             else [f'c{back_rank}', f'd{back_rank}']
 
         squares_attacked_by_opponent = self.scan_all_squares_attacked_by_color(opposing_color)
@@ -418,19 +414,19 @@ class Position:
         return True
 
     def virtual_move_is_legal(self, virtual_move: VirtualMove) -> bool:
-        side_attempting_move = 'white' if virtual_move.get_color().lower().startswith('w') else 'black'
+        side_attempting_move = virtual_move.get_color()
         piece_typed_moved = virtual_move.get_piece_type()
         origin_square = virtual_move.get_origin_square()
         destination_square = virtual_move.get_destination_square()
-        if piece_typed_moved == 'king':
-            if side_attempting_move == 'white' and origin_square == 'e1' and destination_square == 'g1':
-                return self.castling_legal_here(side_attempting_move, 'kingside')
-            elif side_attempting_move == 'white' and origin_square == 'e1' and destination_square == 'c1':
-                return self.castling_legal_here(side_attempting_move, 'queenside')
-            elif side_attempting_move == 'black' and origin_square == 'e8' and destination_square == 'g8':
-                return self.castling_legal_here(side_attempting_move, 'kingside')
-            elif side_attempting_move == 'black' and origin_square == 'e8' and destination_square == 'c8':
-                return self.castling_legal_here(side_attempting_move, 'queenside')
+        if piece_typed_moved == 'K':
+            if side_attempting_move == 'w' and origin_square == 'e1' and destination_square == 'g1':
+                return self.castling_legal_here(side_attempting_move, 'k')
+            elif side_attempting_move == 'w' and origin_square == 'e1' and destination_square == 'c1':
+                return self.castling_legal_here(side_attempting_move, 'q')
+            elif side_attempting_move == 'b' and origin_square == 'e8' and destination_square == 'g8':
+                return self.castling_legal_here(side_attempting_move, 'k')
+            elif side_attempting_move == 'b' and origin_square == 'e8' and destination_square == 'c8':
+                return self.castling_legal_here(side_attempting_move, 'q')
         opposing_side = opposite_color(side_attempting_move)
         opposing_piece_squares = self.get_pieces_by_color(opposing_side, virtual=True)
         own_piece_squares = self.get_pieces_by_color(side_attempting_move, virtual=True)
@@ -439,9 +435,9 @@ class Position:
 
         own_piece_squares.move_piece(piece_typed_moved, virtual_move.get_origin_square(),
                                      destination_square)
-        if destination_square == self.get_en_passant_square() and piece_typed_moved == 'pawn':
+        if destination_square == self.get_en_passant_square() and piece_typed_moved == 'P':
             file = destination_square[0]
-            if side_attempting_move == 'white':
+            if side_attempting_move == 'w':
                 opposing_piece_squares.remove_piece_on_square(f'{file}5')
             else:
                 opposing_piece_squares.remove_piece_on_square(f"{file}4")
@@ -451,26 +447,26 @@ class Position:
         return not results_in_check
 
     def translate_virtual_move_to_legal(self, virtual_move: VirtualMove, promotion_piece: str = None) -> LegalMove:
-        side_attempting_move = 'white' if virtual_move.get_color().lower().startswith('w') else 'black'
+        side_attempting_move = virtual_move.get_color()
         piece_typed_moved = virtual_move.get_piece_type()
         origin_square = virtual_move.get_origin_square()
         destination_square = virtual_move.get_destination_square()
         opposing_side_pieces = self.get_pieces_by_color(opposite_color(side_attempting_move))
         is_capture = destination_square in opposing_side_pieces.get_occupied_squares()
-        if destination_square == self.get_en_passant_square() and piece_typed_moved == 'pawn':
+        if destination_square == self.get_en_passant_square() and piece_typed_moved == 'P':
             is_capture = True
             is_en_passant_capture = True
         else:
             is_en_passant_capture = False
-        if piece_typed_moved == 'king':
-            if side_attempting_move == 'white' and origin_square == 'e1' and destination_square == 'g1':
-                castling = 'kingside'
-            elif side_attempting_move == 'white' and origin_square == 'e1' and destination_square == 'c1':
-                castling = 'queenside'
-            elif side_attempting_move == 'black' and origin_square == 'e8' and destination_square == 'g8':
-                castling = 'kingside'
-            elif side_attempting_move == 'black' and origin_square == 'e8' and destination_square == 'c8':
-                castling = 'queenside'
+        if piece_typed_moved == 'K':
+            if side_attempting_move == 'w' and origin_square == 'e1' and destination_square == 'g1':
+                castling = 'k'
+            elif side_attempting_move == 'w' and origin_square == 'e1' and destination_square == 'c1':
+                castling = 'q'
+            elif side_attempting_move == 'b' and origin_square == 'e8' and destination_square == 'g8':
+                castling = 'k'
+            elif side_attempting_move == 'b' and origin_square == 'e8' and destination_square == 'c8':
+                castling = 'q'
             else:
                 castling = None
         else:
@@ -488,14 +484,14 @@ class Position:
         for piece in piece_types:
             squares_occupied_by_that_piece_type = piece_position.get_piece_type_squares(piece)
             for origin_square in squares_occupied_by_that_piece_type:
-                if piece != 'pawn':
+                if piece != 'P':
                     reachable_squares = self.scan_non_pawn_piece_moves(color, piece, origin_square)
                     for reachable_square in reachable_squares:
                         virtual_moves.append(VirtualMove(color, piece, origin_square, reachable_square))
-                    if piece == 'king' and color == 'white' and origin_square == 'e1':
+                    if piece == 'K' and color == 'w' and origin_square == 'e1':
                         virtual_moves.extend([VirtualMove(color, piece, 'e1', 'g1'),
                                               VirtualMove(color, piece, 'e1', 'c1')])
-                    elif piece == 'king' and color == 'black' and origin_square == 'e8':
+                    elif piece == 'K' and color == 'b' and origin_square == 'e8':
                         virtual_moves.extend([VirtualMove(color, piece, 'e8', 'g8'),
                                               VirtualMove(color, piece, 'e8', 'c8')])
                 else:
@@ -507,7 +503,7 @@ class Position:
                         if attacked_square in opposing_piece_position.get_occupied_squares():
                             virtual_moves.append(VirtualMove(color, piece, origin_square, attacked_square))
                         elif attacked_square == self.get_en_passant_square():
-                            en_passant_target_rank = '6' if color == 'white' else '3'
+                            en_passant_target_rank = '6' if color == 'w' else '3'
                             if attacked_square[1] == en_passant_target_rank:
                                 virtual_moves.append(VirtualMove(color, piece, origin_square, attacked_square))
         return virtual_moves
@@ -519,7 +515,7 @@ class Position:
             move_is_legal = self.virtual_move_is_legal(virtual_move)
             if move_is_legal:
                 if virtual_move.results_in_promotion():
-                    for promotion_piece in ['queen', 'rook', 'knight', 'bishop']:
+                    for promotion_piece in ['Q', 'R', 'N', 'B']:
                         legal_moves.append(self.translate_virtual_move_to_legal(virtual_move, promotion_piece))
                 else:
                     legal_moves.append(self.translate_virtual_move_to_legal(virtual_move))
@@ -530,6 +526,6 @@ class Position:
 
 
 def generate_starting_position() -> Position:
-    white_pieces = generate_starting_position_for_color('white')
-    black_pieces = generate_starting_position_for_color('black')
-    return Position(white_pieces=white_pieces, black_pieces=black_pieces, side_to_move='white')
+    white_pieces = generate_starting_position_for_color('w')
+    black_pieces = generate_starting_position_for_color('b')
+    return Position(white_pieces=white_pieces, black_pieces=black_pieces, side_to_move='w')

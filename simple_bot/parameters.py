@@ -1,4 +1,4 @@
-MATERIAL_DICT = {'king': 10, 'pawn': 1, 'knight': 3, 'bishop': 3, 'rook': 5, 'queen': 9}
+MATERIAL_DICT = {'K': 10, 'P': 1, 'N': 3, 'B': 3, 'R': 5, 'Q': 9}
 ALL_SQUARES = []
 for f in 'abcdefgh':
     for r in '12345678':

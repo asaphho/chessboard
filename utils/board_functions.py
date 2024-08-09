@@ -71,15 +71,15 @@ def get_intervening_squares(square1: str, square2: str, line_type: str) -> List[
     rank2 = int(square2[1])
     file1 = LETTER_TO_NUM[square1[0]]
     file2 = LETTER_TO_NUM[square2[0]]
-    if line_type == 'file':
+    if line_type == 'f':
         if abs(rank1 - rank2) <= 1:
             return []
         squares = [f'{NUM_TO_LETTER[file1]}{rank}' for rank in make_range(rank1, rank2)]
-    elif line_type == 'rank':
+    elif line_type == 'r':
         if abs(file1 - file2) <= 1:
             return []
         squares = [f"{NUM_TO_LETTER[file]}{rank1}" for file in make_range(file1, file2)]
-    elif line_type == 'diagonal':
+    elif line_type == 'd':
         if abs(rank1 - rank2) <= 1:
             return []
         files = list(make_range(file1, file2))
@@ -95,14 +95,14 @@ def scan_rook_scope(from_square: str) -> Dict[str, List[str]]:
     """
     All the squares a rook can reach in one move from input from_square on an empty board.
     :param from_square: e.g. 'e5'
-    :return: if input from_square='e5', returns {'file': ['e1', 'e2', 'e3', 'e4', 'e6', 'e7', 'e8'], 'rank': ['a5', 'b5', 'c5', 'd5', 'f5', 'g5', 'h5']}
+    :return: if input from_square='e5', returns {'f': ['e1', 'e2', 'e3', 'e4', 'e6', 'e7', 'e8'], 'r': ['a5', 'b5', 'c5', 'd5', 'f5', 'g5', 'h5']}
     """
-    rook_scope = {'file': [], 'rank': []}
+    rook_scope = {'f': [], 'r': []}
     origin_file, origin_rank = from_square[0], from_square[1]
     for f in 'abcdefgh'.replace(origin_file, ''):
-        rook_scope['rank'].append(f'{f}{origin_rank}')
+        rook_scope['r'].append(f'{f}{origin_rank}')
     for r in '12345678'.replace(origin_rank, ''):
-        rook_scope['file'].append(f'{origin_file}{r}')
+        rook_scope['f'].append(f'{origin_file}{r}')
     return rook_scope
 
 
@@ -110,9 +110,9 @@ def scan_bishop_scope(from_square: str) -> Dict[str, List[str]]:
     """
     All the squares a bishop can reach in one move from input from_square on an empty board.
     :param from_square: e.g. 'd3'
-    :return: if from_square='d3', returns squares in a dictionary of the following form: {'diagonal': ['b1', 'c2', 'e4', 'f5', 'g6', 'h7', 'c4', 'b5', 'a6', 'e2', 'f1']}. The list order may not be the same.
+    :return: if from_square='d3', returns squares in a dictionary of the following form: {'d': ['b1', 'c2', 'e4', 'f5', 'g6', 'h7', 'c4', 'b5', 'a6', 'e2', 'f1']}. The list order may not be the same.
     """
-    bishop_scope = {'diagonal': []}
+    bishop_scope = {'d': []}
     from_coordinate = square_to_coordinate(from_square)
     file_int = int(from_coordinate[0])
     rank_int = int(from_coordinate[1])
@@ -120,19 +120,19 @@ def scan_bishop_scope(from_square: str) -> Dict[str, List[str]]:
         file = file_int + i
         rank = rank_int + i
         if file <= 8 and rank <= 8:
-            bishop_scope['diagonal'].append(coordinate_to_square(f'{file}{rank}'))
+            bishop_scope['d'].append(coordinate_to_square(f'{file}{rank}'))
         file = file_int + i
         rank = rank_int - i
         if file <= 8 and rank >= 1:
-            bishop_scope['diagonal'].append(coordinate_to_square(f'{file}{rank}'))
+            bishop_scope['d'].append(coordinate_to_square(f'{file}{rank}'))
         file = file_int - i
         rank = rank_int + i
         if file >= 1 and rank <= 8:
-            bishop_scope['diagonal'].append(coordinate_to_square(f'{file}{rank}'))
+            bishop_scope['d'].append(coordinate_to_square(f'{file}{rank}'))
         file = file_int - i
         rank = rank_int - i
         if file >= 1 and rank >= 1:
-            bishop_scope['diagonal'].append(coordinate_to_square(f'{file}{rank}'))
+            bishop_scope['d'].append(coordinate_to_square(f'{file}{rank}'))
     return bishop_scope
 
 
@@ -140,7 +140,7 @@ def scan_queen_scope(from_square: str) -> Dict[str, List[str]]:
     """
     Returns all the squares a queen can move to in one move from input from_square on an empty board.
     :param from_square: e.g. 'h5'
-    :return: {'file': ['h1', 'h2', ...], 'rank': ['a5', 'b5', ...], 'diagonal': ['d1', 'e2', ...]}
+    :return: {'f': ['h1', 'h2', ...], 'r': ['a5', 'b5', ...], 'd': ['d1', 'e2', ...]}
     """
     return scan_rook_scope(from_square) | scan_bishop_scope(from_square)
 
@@ -192,20 +192,20 @@ def scan_knight_scope(from_square: str) -> List[str]:
 
 
 def scan_qbr_scope(piece: str, from_square: str) -> Dict[str, List[str]]:
-    if piece == 'rook':
+    if piece == 'R':
         return scan_rook_scope(from_square)
-    elif piece == 'bishop':
+    elif piece == 'B':
         return scan_bishop_scope(from_square)
-    elif piece == 'queen':
+    elif piece == 'Q':
         return scan_queen_scope(from_square)
     else:
         raise ValueError(f'Invalid piece (\'{piece}\') for this function.')
 
 
 def scan_kn_scope(piece: str, from_square: str) -> List[str]:
-    if piece == 'king':
+    if piece == 'K':
         return scan_king_scope(from_square)
-    elif piece == 'knight':
+    elif piece == 'N':
         return scan_knight_scope(from_square)
     else:
         raise ValueError(f'Invalid piece (\'{piece}\') for this function')

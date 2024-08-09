@@ -33,13 +33,13 @@ def find_piece_moved_and_destination_square(move_str: str) -> Tuple[str, str]:
     destination_square = f'{file}{rank}'
     move_str_bef_destination_square = move_str.rsplit(destination_square, maxsplit=1)[0]
     if move_str_bef_destination_square == '':
-        piece_moved = 'pawn'
+        piece_moved = 'P'
     else:
         first_char = move_str_bef_destination_square[0]
-        if first_char in SYMBOL_TO_PIECE:
-            piece_moved = SYMBOL_TO_PIECE[first_char]
+        if first_char in ('Q', 'R', 'B', 'N', 'K'):
+            piece_moved = first_char
         elif first_char in 'abcdefgh':
-            piece_moved = 'pawn'
+            piece_moved = 'P'
         else:
             # print(f'Unrecognized piece symbol {first_char}. Non-pawn piece symbols must be given in uppercase. Allowed piece symbols: K, Q, R, B, N')
             raise ValueError(f'Unrecognized piece symbol {first_char}. Non-pawn piece symbols must be given in uppercase. Allowed piece symbols: K, Q, R, B, N')
@@ -48,11 +48,11 @@ def find_piece_moved_and_destination_square(move_str: str) -> Tuple[str, str]:
 
 def check_for_castling(move_str: str) -> str:
     if move_str.replace(' ', '').upper().startswith('O-O-O'):
-        return 'queenside'
+        return 'q'
     elif move_str.replace(' ', '').upper().startswith('O-O'):
-        return 'kingside'
+        return 'k'
     else:
-        return 'None'
+        return 'N'
 
 
 def check_for_disambiguating_string(move_str: str, destination_square: str, piece_symbol: str) -> str:
@@ -66,7 +66,7 @@ def check_for_disambiguating_string(move_str: str, destination_square: str, piec
     elif len(disambiguation_string) == 2 and disambiguation_string[0] in 'abcdefgh' and disambiguation_string[1] in '12345678':
         return disambiguation_string
     elif disambiguation_string == '':
-        return 'None'
+        return disambiguation_string
     else:
         # print(f'Could not recognize {disambiguation_string} as a disambiguation string.')
         raise ValueError(f'Could not recognize {disambiguation_string} as a disambiguation string.')
@@ -77,7 +77,7 @@ def check_for_promotion_piece(move_str: str, destination_square: str) -> str:
     if str_after_destination_square == '':
         return 'None'
     elif str_after_destination_square[0] in ('Q', 'R', 'B', 'N'):
-        return SYMBOL_TO_PIECE[str_after_destination_square[0]]
+        return str_after_destination_square[0]
     else:
         # print(f'Could not recognize {str_after_destination_square[0]} as a promotion piece symbol. Must be given in uppercase. Allowed symbols: Q, R, B, N')
         raise ValueError(f'Could not recognize {str_after_destination_square[0]} as a promotion piece symbol. Must be given in uppercase. Allowed symbols: Q, R, B, N')
@@ -86,7 +86,7 @@ def check_for_promotion_piece(move_str: str, destination_square: str) -> str:
 def pawn_capture_origin_file(move_str: str, destination_square: str) -> str:
     str_bef_destination_square = move_str.rsplit(destination_square, maxsplit=1)[0]
     if str_bef_destination_square == '':
-        return 'None'
+        return ''
     first_char = str_bef_destination_square[0]
     valid_file_captures = {'a': ('b',), 'b': ('a', 'c'), 'c': ('b', 'd'), 'd': ('c', 'e'),
                            'e': ('d', 'f'), 'f': ('e', 'g'), 'g': ('f', 'h'), 'h': ('g',)}

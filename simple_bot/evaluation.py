@@ -13,7 +13,7 @@ def count_material(position: Position, color: str) -> int:
     """
     Counts the number of pawns worth of material on the given side in the given position
     :param position:
-    :param color: 'white' or 'black'
+    :param color: 'w' or 'b'
     :return:
     """
     pieces = position.get_pieces_by_color(color)
@@ -29,8 +29,8 @@ def count_material_imbalance(position: Position, color: str) -> int:
     """
     Calculates the material imbalance in favor of the given color in the given position.
     :param position:
-    :param color: 'white' or 'black'.
-    :return: e.g. returning 3 if color='white' means that white is up 3 pawns of material
+    :param color: 'w' or 'b'.
+    :return: e.g. returning 3 if color='w' means that white is up 3 pawns of material
     """
     own_material = count_material(position, color)
     opponents_material = count_material(position, opposite_color(color))
@@ -49,9 +49,9 @@ def evaluate_exchange_square(position: Position, square: str, init_possible_capt
     """
     capturing_move = min(init_possible_captures, key=lambda x: MATERIAL_DICT[x.piece_moved])
     if not capturing_move.is_en_passant_capture():
-        captured_piece = SYMBOL_TO_PIECE[position.look_at_square(square).upper()]
+        captured_piece = position.look_at_square(square).upper()
     else:
-        captured_piece = 'pawn'
+        captured_piece = 'P'
     position_after_capture = branch_from_position(position, capturing_move)
     possible_recaptures = [move for move in position_after_capture.get_all_legal_moves_for_side_to_move() if move.destination_square == square and move.is_capture()]
     material_gain = MATERIAL_DICT[captured_piece]
@@ -61,16 +61,39 @@ def evaluate_exchange_square(position: Position, square: str, init_possible_capt
         return material_gain - evaluate_exchange_square(position_after_capture, square, possible_recaptures)
 
 
+def find_hanging_material(position: Position) -> int:
+    all_possible_captures = [move for move in position.get_all_legal_moves_for_side_to_move() if move.is_capture()]
+    capture_squares = [move.destination_square for move in all_possible_captures]
+    material_gains = [0]
+    for square in capture_squares:
+        possible_captures = [move for move in all_possible_captures if move.destination_square == square]
+        if position.get_en_passant_square() != square:
+            first_capturable_piece = position.look_at_square(square).upper()
+        else:
+            first_capturable_piece = 'P'
+        cost = min([MATERIAL_DICT[move.piece_moved] for move in possible_captures])
+        worth = MATERIAL_DICT[first_capturable_piece]
+        material_gain = evaluate_exchange_square(position, square, possible_captures)
+        if material_gain == worth:
+            material_gains.append(material_gain)
+        elif material_gain < worth - cost and worth > cost:
+            material_gains.append(worth - cost)
+        elif worth <= cost and material_gain > 0:
+            material_gains.append(material_gain)
+
+    return max(material_gains)
+
+
 def all_legal_piece_moves(position: Position, color: str) -> List[LegalMove]:
     """
     Returns all the legal piece moves (knight, bishop, rook, or queen) in the given position with the given color to
     move
     :param position:
-    :param color: 'white' or 'black'
+    :param color: 'w' or 'b'
     :return:
     """
     all_legal_moves = position.get_all_legal_moves_for_color(color)
-    legal_piece_moves = [move for move in all_legal_moves if move.piece_moved in ('rook', 'queen', 'bishop', 'knight')]
+    legal_piece_moves = [move for move in all_legal_moves if move.piece_moved in ('R', 'Q', 'B', 'N')]
     return legal_piece_moves
 
 
@@ -79,7 +102,7 @@ def piece_activity(position: Position, color: str) -> List[str]:
     own_pieces = position.get_pieces_by_color(color)
     occupied_squares = position.get_occupied_squares()
     for piece_type in own_pieces.list_unique_piece_types():
-        if piece_type in ('queen', 'bishop', 'rook'):
+        if piece_type in ('Q', 'B', 'R'):
             for from_square in own_pieces.get_piece_type_squares(piece_type):
                 scope = scan_qbr_scope(piece_type, from_square)
                 for line_type in scope:
@@ -88,7 +111,7 @@ def piece_activity(position: Position, color: str) -> List[str]:
                         blocked = any([sq in occupied_squares for sq in intervening_squares])
                         if not blocked:
                             squares.append(candidate_square)
-        elif piece_type == 'knight':
+        elif piece_type == 'N':
             for from_square in own_pieces.get_piece_type_squares(piece_type):
                 scope = scan_kn_scope(piece_type, from_square)
                 for sq in scope:
@@ -101,11 +124,11 @@ def squares_controlled_by_pawns(position: Position, color: str) -> List[str]:
     """
     Returns all the squares attacked by pawns (ignoring any pins) by the given color in the given position.
     :param position:
-    :param color: 'white' or 'black'
-    :return: the set of all squares attacked by white pawns if color='white'. Pins are ignored.
+    :param color: 'w' or 'b'
+    :return: the set of all squares attacked by white pawns if color='w'. Pins are ignored.
     """
     squares_attacked = []
-    squares_with_pawns = position.get_pieces_by_color(color).get_piece_type_squares('pawn')
+    squares_with_pawns = position.get_pieces_by_color(color).get_piece_type_squares('P')
     for square in squares_with_pawns:
         squares_attacked.extend(position.scan_pawn_attacked_squares(color, square))
     return squares_attacked
@@ -115,12 +138,12 @@ def get_pawn_control_score(controlled_squares: List[str], color: str) -> float:
     """
     Gets the score of the given color in a position from the squares it attacks by its pawns.
     :param controlled_squares: The output of squares_controlled_by_pawns
-    :param color: 'white' or 'black'
+    :param color: 'w' or 'b'
     :return: the total score
     """
     total = 0
     for sq in controlled_squares:
-        total += WHITE_PAWN_CONTROL_SCORES[sq] if color == 'white' else BLACK_PAWN_CONTROL_SCORES[sq]
+        total += WHITE_PAWN_CONTROL_SCORES[sq] if color == 'w' else BLACK_PAWN_CONTROL_SCORES[sq]
     return total
 
 
@@ -160,4 +183,5 @@ def evaluate(position: Position) -> float:
                                                                              own_pawn_controlled_squares)
     score += ACTIVITY_COUNT_MULTIPLIER * (len(piece_moves_reduced) - len(opposing_piece_moves_reduced))  # LEGAL PIECE MOVES
     score += get_pawn_control_score(own_pawn_controlled_squares, side_evaluating_for) - get_pawn_control_score(opposing_pawn_controlled_squares, side_to_move)  # SQUARES CONTROLLED BY PAWNS
+    score -= find_hanging_material(position)
     return score

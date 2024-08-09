@@ -11,7 +11,7 @@ def main(game: Game):
         to_move = game.current_position.to_move()
         move_number = game.current_position.get_move_number()
         prompt = f'{move_number}'
-        if to_move == 'white':
+        if to_move == 'w':
             prompt += '. '
         else:
             prompt += '... '
@@ -28,7 +28,7 @@ def main(game: Game):
                 print(str(e))
                 continue
             end_game_check = game.check_game_end_conditions()
-            if end_game_check != 'None':
+            if end_game_check != 'N':
                 print(end_game_check)
                 while True:
                     command = input().strip()

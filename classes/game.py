@@ -5,6 +5,7 @@ from classes.move import LegalMove
 from utils.parse_notation import check_for_castling, find_piece_moved_and_destination_square,\
     check_for_disambiguating_string, piece_to_symbol, check_for_promotion_piece, pawn_capture_origin_file
 from copy import deepcopy
+from simple_bot.move_search import choose_best_move
 
 
 class Game:
@@ -22,7 +23,7 @@ class Game:
             self.fen_record_dict[current_fen_for_record] += 1
         else:
             self.fen_record_dict[current_fen_for_record] = 1
-        if self.current_position.to_move() == 'white':
+        if self.current_position.to_move() == 'w':
             notation_move_number = self.current_position.get_move_number() - 1
         else:
             notation_move_number = self.current_position.get_move_number()
@@ -43,28 +44,28 @@ class Game:
         black_pieces = self.current_position.black_pieces
         unique_white_pieces = white_pieces.list_unique_piece_types()
         unique_black_pieces = black_pieces.list_unique_piece_types()
-        if any([piece in ('queen', 'rook', 'pawn') for piece in unique_white_pieces + unique_black_pieces]):
+        if any([piece in ('Q', 'R', 'P') for piece in unique_white_pieces + unique_black_pieces]):
             return False
         if any([len(piece_list) >= 3 for piece_list in [unique_white_pieces, unique_black_pieces]]):
             return False
-        if unique_black_pieces == ['king'] and unique_white_pieces == ['king']:
+        if unique_black_pieces == ['K'] and unique_white_pieces == ['K']:
             return True
-        if 'bishop' in unique_white_pieces and 'knight' not in unique_white_pieces:
-            white_insufficient_material = len(white_pieces.get_piece_type_squares('bishop')) == 1
+        if 'B' in unique_white_pieces and 'N' not in unique_white_pieces:
+            white_insufficient_material = len(white_pieces.get_piece_type_squares('B')) == 1
             white_has_minor_piece = True
-        elif 'knight' in unique_white_pieces and 'bishop' not in unique_white_pieces:
-            white_insufficient_material = len(white_pieces.get_piece_type_squares('knight')) == 1
+        elif 'N' in unique_white_pieces and 'B' not in unique_white_pieces:
+            white_insufficient_material = len(white_pieces.get_piece_type_squares('N')) == 1
             white_has_minor_piece = True
         else:
             white_insufficient_material = True
             white_has_minor_piece = False
         if not white_insufficient_material:
             return False
-        if 'bishop' in unique_black_pieces and 'knight' not in unique_black_pieces:
-            black_insufficient_material = len(black_pieces.get_piece_type_squares('bishop')) == 1
+        if 'B' in unique_black_pieces and 'N' not in unique_black_pieces:
+            black_insufficient_material = len(black_pieces.get_piece_type_squares('B')) == 1
             black_has_minor_piece = True
-        elif 'knight' in unique_black_pieces and 'bishop' not in unique_black_pieces:
-            black_insufficient_material = len(black_pieces.get_piece_type_squares('knight')) == 1
+        elif 'N' in unique_black_pieces and 'B' not in unique_black_pieces:
+            black_insufficient_material = len(black_pieces.get_piece_type_squares('N')) == 1
             black_has_minor_piece = True
         else:
             black_insufficient_material = True
@@ -78,10 +79,10 @@ class Game:
 
     def check_game_end_conditions(self) -> str:
         side_to_move = self.current_position.to_move()
-        legal_moves_available = self.current_position.get_all_legal_moves_for_color(side_to_move)
+        legal_moves_available = self.current_position.get_all_legal_moves_for_side_to_move()
         if len(legal_moves_available) == 0:
             if self.current_position.is_under_check(side_to_move):
-                if side_to_move == 'white':
+                if side_to_move == 'w':
                     return 'Black wins by checkmate.'
                 else:
                     return 'White wins by checkmate.'
@@ -94,12 +95,12 @@ class Game:
             return 'Drawn by 50-move rule.'
         if self.drawn_by_reduction():
             return 'Drawn by reduction.'
-        return 'None'
+        return 'N'
 
     def process_input_notation(self, notation_str: str, return_move_for_gui: bool = False) -> Union[str, Tuple[str, LegalMove]]:
         side_to_move = self.current_position.to_move()
         castling = check_for_castling(notation_str)
-        if castling == 'None':
+        if castling == 'N':
             piece_moved, destination_square = find_piece_moved_and_destination_square(notation_str)
             all_legal_moves = self.current_position.get_all_legal_moves_for_color(side_to_move)
             possible_legal_moves = [move for move in all_legal_moves if move.piece_moved == piece_moved]
@@ -114,13 +115,13 @@ class Game:
             #     if check_for_disambiguating_string(notation_str, destination_square, 'K') != 'None':
             #         print('Disambiguation ignored for king move.')
             #     return self.process_move(possible_legal_moves[0])
-            elif piece_moved != 'pawn':
+            elif piece_moved != 'P':
                 disambiguating_string = check_for_disambiguating_string(notation_str, destination_square,
                                                                         piece_to_symbol(piece_moved))
-                if disambiguating_string == 'None' and len(possible_legal_moves) > 1:
+                if disambiguating_string == '' and len(possible_legal_moves) > 1:
                     # print(f'Ambiguity detected. More than one {piece_moved} can move to {destination_square}.')
                     raise ValueError(f'Ambiguity detected. More than one {piece_moved} can move to {destination_square}.')
-                elif disambiguating_string == 'None' and len(possible_legal_moves) == 1:
+                elif disambiguating_string == '' and len(possible_legal_moves) == 1:
                     return self.process_move(possible_legal_moves[0], return_move_for_gui)
                 elif len(disambiguating_string) == 1 and disambiguating_string.isalpha():
                     possible_legal_moves = [move for move in possible_legal_moves if move.origin_square[0] == disambiguating_string]
@@ -152,14 +153,14 @@ class Game:
                 else:
                     raise ValueError(f'Something went wrong: Unhandled disambiguation string {disambiguating_string}.')
             else:
-                promotion_rank = '1' if side_to_move == 'black' else '8'
+                promotion_rank = '1' if side_to_move == 'b' else '8'
                 if destination_square[1] == promotion_rank:
                     promotion_piece = check_for_promotion_piece(notation_str, destination_square)
                     if promotion_piece == 'None':
                         # print(f'Promotion piece required as pawn has reached last rank. Add Q, R, B, or N right after the destination square.')
                         raise ValueError(f'Promotion piece required as pawn has reached last rank. Add Q, R, B, or N right after the destination square.')
                     capture_origin_file = pawn_capture_origin_file(notation_str, destination_square)
-                    if capture_origin_file == 'None':
+                    if capture_origin_file == '':
                         for move in possible_legal_moves:
                             if move.promotion_piece == promotion_piece and not move.is_capture():
                                 return self.process_move(move, return_move_for_gui)
@@ -171,7 +172,7 @@ class Game:
                         raise ValueError('Something went wrong. Pawn reached last rank but no pawn promotion LegalMove objects found to match promotion piece.')
                 else:
                     capture_origin_file = pawn_capture_origin_file(notation_str, destination_square)
-                    if capture_origin_file == 'None':
+                    if capture_origin_file == '':
                         for move in possible_legal_moves:
                             if not move.is_capture():
                                 return self.process_move(move, return_move_for_gui)
@@ -186,15 +187,15 @@ class Game:
                         raise ValueError('Illegal move.')
         else:
             if self.current_position.castling_legal_here(side_to_move, castling):
-                back_rank = '1' if side_to_move == 'white' else '8'
-                legal_move = LegalMove(color=side_to_move, piece_type='king',
+                back_rank = '1' if side_to_move == 'w' else '8'
+                legal_move = LegalMove(color=side_to_move, piece_type='K',
                                        origin_square=f'e{back_rank}',
-                                       destination_square=f'g{back_rank}' if castling == 'kingside' else f'c{back_rank}',
+                                       destination_square=f'g{back_rank}' if castling == 'k' else f'c{back_rank}',
                                        castling=castling)
                 return self.process_move(legal_move, return_move_for_gui)
             else:
                 # print('Castling not legal here.')
-                raise ValueError(f'Castling {castling} not legal here.')
+                raise ValueError(f'Castling {castling}-side not legal here.')
 
     def show_moves(self, return_string_for_window: bool = False) -> Union[str, None]:
         ret_str = '' if return_string_for_window else None
@@ -247,6 +248,24 @@ class Game:
             print(f'{last_move_played} taken back.')
         else:
             return f'{last_move_played} taken back.'
+
+    def play_computer_move(self, return_move_for_gui: bool = False) -> Union[str, Tuple[str, LegalMove]]:
+        legal_moves = self.current_position.get_all_legal_moves_for_side_to_move()
+        best_move_uci = choose_best_move(self.current_position)
+        origin_square, destination_square = best_move_uci[:2], best_move_uci[2:4]
+        if len(best_move_uci) == 5:
+            promotion_piece = best_move_uci[-1].upper()
+        else:
+            promotion_piece = ''
+        if promotion_piece:
+            for move in legal_moves:
+                if move.origin_square == origin_square and move.destination_square == destination_square and move.promotion_piece == promotion_piece:
+                    return self.process_move(move, return_move_for_gui)
+        else:
+            for move in legal_moves:
+                if move.origin_square == origin_square and move.destination_square == destination_square:
+                    return self.process_move(move, return_move_for_gui)
+
 
 
 
