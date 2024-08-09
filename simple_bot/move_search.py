@@ -2,8 +2,8 @@ from typing import List, Callable, Tuple
 
 from classes.move import LegalMove
 from classes.position import Position, opposite_color
-from simple_bot.evaluation import evaluate
 from simple_bot.utils import branch_from_position
+
 
 class Node:
 
@@ -69,7 +69,7 @@ def collapse_node(node: Node, aggregator: Callable[[List[float]], float]):
     node.remove_all_children()
 
 
-def select_top_three_moves(position: Position) -> List[Tuple[LegalMove, Position, float]]:
+def select_top_three_moves(position: Position, evaluate: Callable[[Position], float]) -> List[Tuple[LegalMove, Position, float]]:
     to_move = position.to_move()
     all_legal_moves = position.get_all_legal_moves_for_color(to_move)
     positions = [branch_from_position(position, move) for move in all_legal_moves]
@@ -88,28 +88,28 @@ def select_top_three_moves(position: Position) -> List[Tuple[LegalMove, Position
     return returned_list
 
 
-def make_4_ply_move_tree(position: Position) -> Node:
+def make_4_ply_move_tree(position: Position, evaluate: Callable[[Position], float]) -> Node:
     side_to_move = position.to_move()
     opposing_side = opposite_color(side_to_move)
     tree = Node('Current', -evaluate(position))
-    top_three_first_moves = select_top_three_moves(position)
+    top_three_first_moves = select_top_three_moves(position, evaluate)
     for first_move_tup in top_three_first_moves:
         first_move = first_move_tup[0]
         position_after_first_move = first_move_tup[1]
         first_move_node = tree.add_child(first_move.generate_uci(), first_move_tup[2])
-        top_three_first_replies = select_top_three_moves(position_after_first_move)
+        top_three_first_replies = select_top_three_moves(position_after_first_move, evaluate)
         for first_reply_tup in top_three_first_replies:
             first_reply = first_reply_tup[0]
             position_after_first_reply = first_reply_tup[1]
             first_reply_node = first_move_node.add_child(f'{first_move_node.get_name()}-{first_reply.generate_uci()}',
                                                          first_reply_tup[2])
-            top_three_second_moves = select_top_three_moves(position_after_first_reply)
+            top_three_second_moves = select_top_three_moves(position_after_first_reply, evaluate)
             for second_move_tup in top_three_second_moves:
                 second_move = second_move_tup[0]
                 position_after_second_move = second_move_tup[1]
                 second_move_node = first_reply_node.add_child(f'{first_move_node.get_name()}-{second_move.generate_uci()}',
                                                               second_move_tup[2])
-                top_three_second_replies = select_top_three_moves(position_after_second_move)
+                top_three_second_replies = select_top_three_moves(position_after_second_move, evaluate)
                 for second_reply_tup in top_three_second_replies:
                     second_reply = second_reply_tup[0]
                     second_reply_node = second_move_node.add_child(f'{second_move_node.get_name()}-{second_reply.generate_uci()}',
@@ -133,13 +133,14 @@ def collapse_at_level(tree: Node, level: int, aggregator: Callable[[List[float]]
             collapsed_node_names.append(parent.get_name())
 
 
-def choose_best_move(position: Position) -> str:
+def choose_best_move(position: Position, evaluation_func: Callable[[Position], float]) -> str:
     """
     Returns a UCI notation e.g. 'd1h5'
+    :param evaluation_func:
     :param position:
     :return:
     """
-    tree = make_4_ply_move_tree(position)
+    tree = make_4_ply_move_tree(position, evaluation_func)
     collapse_at_level(tree, 4, lambda x: -max(x))
     collapse_at_level(tree, 3, max)
     collapse_at_level(tree, 2, lambda x: -max(x))

@@ -1,12 +1,73 @@
 from typing import List, Iterable
+
+from classes.color_position import ColorPosition
 from utils.board_functions import scan_qbr_scope, scan_kn_scope, get_intervening_squares
 from classes.move import LegalMove
 from classes.position import Position, opposite_color
-from simple_bot.parameters import (MATERIAL_DICT, WHITE_PAWN_CONTROL_SCORES, BLACK_PAWN_CONTROL_SCORES,
-                                   ACTIVITY_COUNT_MULTIPLIER, CHECKMATE_SCORE)
 from simple_bot.utils import branch_from_position
 
 SYMBOL_TO_PIECE = {'P': 'pawn', 'K': 'king', 'Q': 'queen', 'R': 'rook', 'B': 'bishop', 'N': 'knight'}
+MATERIAL_DICT = {'K': 10, 'P': 1, 'N': 3, 'B': 3, 'R': 5, 'Q': 9}
+ALL_SQUARES = []
+for f in 'abcdefgh':
+    for r in '12345678':
+        ALL_SQUARES.append(f + r)
+
+# CHECKMATE SCORE
+CHECKMATE_SCORE = 999999
+
+# SCORES FOR SQUARES CONTROLLED BY PAWNS
+CENTRAL_FILE_4TH_RANK = 0.15
+CENTRAL_FILE_5TH_RANK = 0.18
+CENTRAL_FILE_6TH_RANK = 0.20
+BISHOP_FILE_4TH_RANK = 0.13
+BISHOP_FILE_5TH_RANK = 0.15
+BISHOP_FILE_6TH_RANK = 0.18
+SEVENTH_RANK = 0.20
+EIGHTH_RANK = 0.25
+KNIGHT_FILE_5TH_RANK = 0.13
+KNIGHT_FILE_6TH_RANK = 0.15
+ALL_OTHERS = 0.1
+
+SEVENTH_RANK_SCORES = {}
+for f in 'abcdefgh':
+    SEVENTH_RANK_SCORES[f] = SEVENTH_RANK
+EIGHTH_RANK_SCORES = {}
+for f in 'abcdefgh':
+    EIGHTH_RANK_SCORES[f] = EIGHTH_RANK
+SIXTH_RANK_SCORES = {'a': ALL_OTHERS, 'b': KNIGHT_FILE_6TH_RANK, 'c': BISHOP_FILE_6TH_RANK, 'd': CENTRAL_FILE_6TH_RANK,
+                     'e': CENTRAL_FILE_6TH_RANK, 'f': BISHOP_FILE_6TH_RANK, 'g': KNIGHT_FILE_6TH_RANK, 'h': ALL_OTHERS}
+FIFTH_RANK_SCORES = {'a': ALL_OTHERS, 'b': KNIGHT_FILE_5TH_RANK, 'c': BISHOP_FILE_5TH_RANK, 'd': CENTRAL_FILE_5TH_RANK,
+                     'e': CENTRAL_FILE_5TH_RANK, 'f': BISHOP_FILE_5TH_RANK, 'g': KNIGHT_FILE_5TH_RANK, 'h': ALL_OTHERS}
+FOURTH_RANK_SCORES = {'a': ALL_OTHERS, 'b': ALL_OTHERS, 'c': BISHOP_FILE_4TH_RANK, 'd': CENTRAL_FILE_4TH_RANK,
+                      'e': CENTRAL_FILE_4TH_RANK, 'f': BISHOP_FILE_4TH_RANK, 'g': ALL_OTHERS, 'h': ALL_OTHERS}
+RANK_SCORES = {'4': FOURTH_RANK_SCORES, '5': FIFTH_RANK_SCORES, '6': SIXTH_RANK_SCORES, '7': SEVENTH_RANK_SCORES, '8': EIGHTH_RANK_SCORES}
+WHITE_PAWN_CONTROL_SCORES = {}
+BLACK_PAWN_CONTROL_SCORES = {}
+for square in ALL_SQUARES:
+    file = square[0]
+    rank = square[1]
+    if rank in RANK_SCORES:
+        WHITE_PAWN_CONTROL_SCORES[square] = RANK_SCORES[rank][file]
+    else:
+        WHITE_PAWN_CONTROL_SCORES[square] = ALL_OTHERS
+
+for square in WHITE_PAWN_CONTROL_SCORES:
+    rank = int(square[1])
+    black_rank = 9 - rank
+    mirrored_square = square[0] + str(black_rank)
+    BLACK_PAWN_CONTROL_SCORES[mirrored_square] = WHITE_PAWN_CONTROL_SCORES[square]
+
+# MULTIPLIER FOR NUMBER OF LEGAL PIECE MOVES AVAILABLE
+LEGAL_PIECE_MOVE_MULTIPLIER = 0.1
+
+# ACTIVITY MULTIPLIER
+ACTIVITY_COUNT_MULTIPLIER = 0.1  # BASE
+CENTRAL_SQUARE_BONUS = 0.05
+SQUARE_AROUND_ENEMY_KING = 0.1
+
+# MATERIAL THREAT MULTIPLIER
+MATERIAL_THREAT_MULTIPLIER = 0.35
 
 
 def count_material(position: Position, color: str) -> int:
@@ -53,7 +114,8 @@ def evaluate_exchange_square(position: Position, square: str, init_possible_capt
     else:
         captured_piece = 'P'
     position_after_capture = branch_from_position(position, capturing_move)
-    possible_recaptures = [move for move in position_after_capture.get_all_legal_moves_for_side_to_move() if move.destination_square == square and move.is_capture()]
+    possible_recaptures = [move for move in position_after_capture.get_all_legal_moves_for_side_to_move() if
+                           move.destination_square == square and move.is_capture()]
     material_gain = MATERIAL_DICT[captured_piece]
     if not possible_recaptures:
         return material_gain
@@ -61,7 +123,30 @@ def evaluate_exchange_square(position: Position, square: str, init_possible_capt
         return material_gain - evaluate_exchange_square(position_after_capture, square, possible_recaptures)
 
 
-def find_hanging_material(position: Position) -> int:
+def calculate_material_threat_score(position: Position, side_just_moved: str) -> float:
+    attacked_color = opposite_color(side_just_moved)
+    copy_position = position.copy()
+    attacked_colors_pieces = copy_position.get_pieces_by_color(attacked_color)
+    copy_position.change_side_to_move()
+    copy_position.remove_en_passant_square()
+    attacked_colors_king_sq = attacked_colors_pieces.get_king_square()
+    all_captures = [move for move in copy_position.get_all_legal_moves_for_side_to_move() if move.is_capture() and move.destination_square != attacked_colors_king_sq]
+    material_threat_score = 0
+    for capture in all_captures:
+        captured_piece = copy_position.look_at_square(capture.destination_square).upper()
+        gain = MATERIAL_DICT[captured_piece]
+        new_position = branch_from_position(copy_position, capture)
+        capturing_piece_worth = MATERIAL_DICT[capture.piece_moved]
+        possible_recaptures = [move for move in new_position.get_all_legal_moves_for_side_to_move() if move.is_capture() and move.destination_square == capture.destination_square]
+        if possible_recaptures:
+            if (net_gain := gain - capturing_piece_worth) > 0:
+                material_threat_score += net_gain
+        else:
+            material_threat_score += gain
+    return material_threat_score * MATERIAL_THREAT_MULTIPLIER if not position.is_under_check(position.to_move()) else material_threat_score * MATERIAL_THREAT_MULTIPLIER * 3
+
+
+def find_hanging_material(position: Position) -> List[int]:
     all_possible_captures = [move for move in position.get_all_legal_moves_for_side_to_move() if move.is_capture()]
     capture_squares = [move.destination_square for move in all_possible_captures]
     material_gains = [0]
@@ -81,7 +166,7 @@ def find_hanging_material(position: Position) -> int:
         elif worth <= cost and material_gain > 0:
             material_gains.append(material_gain)
 
-    return max(material_gains)
+    return material_gains
 
 
 def all_legal_piece_moves(position: Position, color: str) -> List[LegalMove]:
@@ -97,10 +182,29 @@ def all_legal_piece_moves(position: Position, color: str) -> List[LegalMove]:
     return legal_piece_moves
 
 
-def piece_activity(position: Position, color: str) -> List[str]:
-    squares = []
+def square_around_enemy_king(square: str, opposing_pieces_position: ColorPosition):
+    enemy_king_position = opposing_pieces_position.get_king_square()
+    squares_around_king = scan_kn_scope('K', enemy_king_position)
+    return square in squares_around_king + [enemy_king_position]
+
+
+def get_piece_activity_score(position: Position, color: str) -> float:
+    score = 0
     own_pieces = position.get_pieces_by_color(color)
+    opposing_pieces = position.get_pieces_by_color(opposite_color(color))
     occupied_squares = position.get_occupied_squares()
+
+    def is_central_square(sq):
+        return sq in ('e4', 'd4', 'e5', 'd5')
+
+    def calculate_activity_multiplier(square, opposing_pieces_position):
+        multiplier = ACTIVITY_COUNT_MULTIPLIER
+        if square_around_enemy_king(square, opposing_pieces_position):
+            multiplier += SQUARE_AROUND_ENEMY_KING
+        if is_central_square(square):
+            multiplier += CENTRAL_SQUARE_BONUS
+        return multiplier
+
     for piece_type in own_pieces.list_unique_piece_types():
         if piece_type in ('Q', 'B', 'R'):
             for from_square in own_pieces.get_piece_type_squares(piece_type):
@@ -110,14 +214,14 @@ def piece_activity(position: Position, color: str) -> List[str]:
                         intervening_squares = get_intervening_squares(from_square, candidate_square, line_type)
                         blocked = any([sq in occupied_squares for sq in intervening_squares])
                         if not blocked:
-                            squares.append(candidate_square)
+                            score += calculate_activity_multiplier(candidate_square, opposing_pieces)
         elif piece_type == 'N':
             for from_square in own_pieces.get_piece_type_squares(piece_type):
                 scope = scan_kn_scope(piece_type, from_square)
                 for sq in scope:
                     if sq not in own_pieces.get_occupied_squares():
-                        squares.append(sq)
-    return squares
+                        score += calculate_activity_multiplier(sq, opposing_pieces)
+    return score
 
 
 def squares_controlled_by_pawns(position: Position, color: str) -> List[str]:
@@ -134,9 +238,10 @@ def squares_controlled_by_pawns(position: Position, color: str) -> List[str]:
     return squares_attacked
 
 
-def get_pawn_control_score(controlled_squares: List[str], color: str) -> float:
+def get_pawn_control_score(controlled_squares: List[str], color: str, opposing_pieces: ColorPosition) -> float:
     """
     Gets the score of the given color in a position from the squares it attacks by its pawns.
+    :param opposing_pieces:
     :param controlled_squares: The output of squares_controlled_by_pawns
     :param color: 'w' or 'b'
     :return: the total score
@@ -144,6 +249,7 @@ def get_pawn_control_score(controlled_squares: List[str], color: str) -> float:
     total = 0
     for sq in controlled_squares:
         total += WHITE_PAWN_CONTROL_SCORES[sq] if color == 'w' else BLACK_PAWN_CONTROL_SCORES[sq]
+        total += SQUARE_AROUND_ENEMY_KING if square_around_enemy_king(sq, opposing_pieces) else 0
     return total
 
 
@@ -176,12 +282,13 @@ def evaluate(position: Position) -> float:
     score = count_material_imbalance(position, side_evaluating_for)  # MATERIAL IMBALANCE
     own_pawn_controlled_squares = squares_controlled_by_pawns(position, side_evaluating_for)
     opposing_pawn_controlled_squares = squares_controlled_by_pawns(position, side_to_move)
-    activity = piece_activity(position, side_evaluating_for)
-    opposing_activity = piece_activity(position, side_to_move)
-    piece_moves_reduced = piece_moves_reduced_by_enemy_pawn_control(activity, opposing_pawn_controlled_squares)
-    opposing_piece_moves_reduced = piece_moves_reduced_by_enemy_pawn_control(opposing_activity,
-                                                                             own_pawn_controlled_squares)
-    score += ACTIVITY_COUNT_MULTIPLIER * (len(piece_moves_reduced) - len(opposing_piece_moves_reduced))  # LEGAL PIECE MOVES
-    score += get_pawn_control_score(own_pawn_controlled_squares, side_evaluating_for) - get_pawn_control_score(opposing_pawn_controlled_squares, side_to_move)  # SQUARES CONTROLLED BY PAWNS
-    score -= find_hanging_material(position)
+    activity = get_piece_activity_score(position, side_evaluating_for)
+    opposing_activity = get_piece_activity_score(position, side_to_move)
+    score += activity - opposing_activity  # PIECE ACTIVITY
+    score += get_pawn_control_score(own_pawn_controlled_squares, side_evaluating_for,
+                                    position.get_pieces_by_color(side_to_move)) - \
+             get_pawn_control_score(opposing_pawn_controlled_squares, side_to_move,
+                                    position.get_pieces_by_color(side_evaluating_for))  # SQUARES CONTROLLED BY PAWNS
+    score -= max(find_hanging_material(position))
+    score += calculate_material_threat_score(position, side_evaluating_for)
     return score

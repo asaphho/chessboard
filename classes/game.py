@@ -1,5 +1,6 @@
 from typing import Union, Tuple
 
+from classes.bot import Bot
 from classes.position import generate_starting_position, Position
 from classes.move import LegalMove
 from utils.parse_notation import check_for_castling, find_piece_moved_and_destination_square,\
@@ -254,9 +255,9 @@ class Game:
         else:
             return f'{last_move_played} taken back.'
 
-    def play_computer_move(self, return_move_for_gui: bool = False) -> Union[str, Tuple[str, LegalMove]]:
+    def play_computer_move(self, bot: Bot, return_move_for_gui: bool = False) -> Union[str, Tuple[str, LegalMove]]:
         legal_moves = self.current_position.get_all_legal_moves_for_side_to_move()
-        best_move_uci = choose_best_move(self.current_position)
+        best_move_uci = bot.choose_move(self.current_position)
         origin_square, destination_square = best_move_uci[:2], best_move_uci[2:4]
         if len(best_move_uci) == 5:
             promotion_piece = best_move_uci[-1].upper()
