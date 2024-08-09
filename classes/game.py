@@ -1,6 +1,6 @@
 from typing import Union, Tuple
 
-from classes.position import generate_starting_position
+from classes.position import generate_starting_position, Position
 from classes.move import LegalMove
 from utils.parse_notation import check_for_castling, find_piece_moved_and_destination_square,\
     check_for_disambiguating_string, piece_to_symbol, check_for_promotion_piece, pawn_capture_origin_file
@@ -10,12 +10,15 @@ from simple_bot.move_search import choose_best_move
 
 class Game:
 
-    def __init__(self):
-        self.current_position = generate_starting_position()
+    def __init__(self, starting_position: Position = None):
+        self.current_position = generate_starting_position() if starting_position is None else starting_position
         self.fen_record_dict = {self.current_position.generate_fen().rsplit(' ', maxsplit=2)[0]: 1}
         self.moves_record = {}
+        self.starting_position = self.current_position.copy()
 
     def process_move(self, legal_move: LegalMove, return_move_for_gui: bool = False) -> Union[str, Tuple[str, LegalMove]]:
+        side_that_moved = legal_move.color
+        move_number = self.current_position.get_move_number()
         move_notation = self.current_position.process_legal_move(legal_move)
         current_fen = self.current_position.generate_fen()
         current_fen_for_record = current_fen.rsplit(' ', maxsplit=2)[0]
@@ -23,14 +26,12 @@ class Game:
             self.fen_record_dict[current_fen_for_record] += 1
         else:
             self.fen_record_dict[current_fen_for_record] = 1
-        if self.current_position.to_move() == 'w':
-            notation_move_number = self.current_position.get_move_number() - 1
+        if side_that_moved == 'w':
+            self.moves_record[move_number] = [move_notation]
+        elif move_number not in self.moves_record:
+            self.moves_record[move_number] = [f'{move_number}. ...', move_notation]
         else:
-            notation_move_number = self.current_position.get_move_number()
-        if notation_move_number in self.moves_record:
-            self.moves_record[notation_move_number].append(move_notation)
-        else:
-            self.moves_record[notation_move_number] = [move_notation]
+            self.moves_record[move_number].append(move_notation)
         return (move_notation, legal_move) if return_move_for_gui else move_notation
 
     def drawn_by_repetition(self) -> bool:
@@ -199,7 +200,10 @@ class Game:
 
     def show_moves(self, return_string_for_window: bool = False) -> Union[str, None]:
         ret_str = '' if return_string_for_window else None
-        for move in self.moves_record:
+        move_numbers = list(self.moves_record.keys())
+        first_move = min(move_numbers)
+        last_move = max(move_numbers)
+        for move in range(first_move, last_move + 1):
             whites_move = self.moves_record[move][0].split(' ', maxsplit=1)[1]
             if len(self.moves_record[move]) == 2:
                 blacks_move = self.moves_record[move][1].split(' ', maxsplit=1)[1]
@@ -213,7 +217,7 @@ class Game:
         return ret_str
 
     def restart_game(self) -> None:
-        self.current_position = generate_starting_position()
+        self.current_position = self.starting_position.copy()
         self.fen_record_dict = {self.current_position.generate_fen().rsplit(' ', maxsplit=2)[0]: 1}
         self.moves_record = {}
 
@@ -229,6 +233,7 @@ class Game:
         self.restart_game()
         if flipped:
             self.current_position.flip_position()
+        min_move_number = min(list(current_moves.keys()))
         max_move_number = max(list(current_moves.keys()))
         if len(current_moves[max_move_number]) == 2:
             last_move_played = current_moves[max_move_number].pop(1)
@@ -237,7 +242,7 @@ class Game:
             current_moves.pop(max_move_number)
         if current_moves != {}:
             new_last_move_number = max(list(current_moves.keys()))
-            for move_num in range(1, new_last_move_number + 1):
+            for move_num in range(min_move_number, new_last_move_number + 1):
                 moves_list = current_moves[move_num]
                 whites_move_notation = moves_list[0].rsplit(' ', maxsplit=1)[1]
                 self.process_input_notation(whites_move_notation)

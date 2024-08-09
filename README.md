@@ -1,8 +1,8 @@
 # Chessboard
 
-A Python chess program I made myself as a coding exercise. Starts a new game of chess when run. Takes input in standard
-algebraic notation for both the black and white sides (no bot to play against). Does not allow illegal moves. Can be run 
-on a CLI or on a GUI. Includes the following game-ending conditions:
+A Python chess program I made myself as a coding exercise. Starts a new game of chess when run. Can move by clicking on a piece and then the destination square (for the GUI), or give the move in standard
+algebraic notation, for both the black and white sides (no bot to play against). Does not allow illegal moves. Can be run 
+on a CLI or on a GUI. Enforces the following game-ending conditions:
 
 - Checkmate: The side to move has no legal moves and is under check. The other side wins.
 - Stalemate: The side to move has no legal moves and is not under check. Game ends in a draw.
@@ -53,7 +53,7 @@ pyinstaller --onefile --windowed --add-data ".\images:images" --icon .\images\ic
 ```
 If the compilation is successful, the file gui_main.exe should appear in the dist folder in the project folder.
 
-For MacOS, the command is
+For macOS, the command is
 ```bash
 pyinstaller --onefile --windowed --add-data "./images:images" --icon ./images/icon.icns gui_main.py
 ```
@@ -93,7 +93,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## Acknowledgements
 
 - This project uses [PySimpleGUI](https://github.com/PySimpleGUI/PySimpleGUI) under a Hobbyist License.
-Image assets are sourced from Wikipedia Commons. Specific attributions:
+Image assets are sourced from Wikimedia Commons. Specific attributions:
   - By Cburnett - Own work, Public Domain, https://commons.wikimedia.org/w/index.php?curid=1496742
   - By Cburnett - Own work, Public Domain, https://commons.wikimedia.org/w/index.php?curid=1496741
   - By Cburnett - Own work, CC BY-SA 3.0, https://commons.wikimedia.org/w/index.php?curid=1496738
@@ -120,6 +120,30 @@ Image assets are sourced from Wikipedia Commons. Specific attributions:
   - By Cburnett - Own work, CC BY-SA 3.0, https://commons.wikimedia.org/w/index.php?curid=1496596
   - By Cburnett - Own work, CC BY-SA 3.0, https://commons.wikimedia.org/w/index.php?curid=1496595
   - By Cburnett - Own work, CC BY-SA 3.0, https://commons.wikimedia.org/w/index.php?curid=1496594
+  - By Rfc1394 - Own work, CC BY-SA 3.0, https://commons.wikimedia.org/w/index.php?curid=25250445
+  - By en:User:Rfc1394 - This W3C-unspecified vector image was created with Inkscape ., CC BY-SA 3.0, https://commons.wikimedia.org/w/index.php?curid=25250444
+  - By Rfc1394 - Own work, CC BY-SA 3.0, https://commons.wikimedia.org/w/index.php?curid=25250153
+  - By en:User:Rfc1394 - This W3C-unspecified vector image was created with Inkscape ., CC BY-SA 3.0, https://commons.wikimedia.org/w/index.php?curid=25250152
+  - By en:User:Rfc1394 - This W3C-unspecified vector image was created with Inkscape ., CC BY-SA 3.0, https://commons.wikimedia.org/w/index.php?curid=25250450
+  - en:User:Rfc1394, CC BY-SA 3.0 <https://creativecommons.org/licenses/by-sa/3.0>, via Wikimedia Commons
+  - By en:User:Rfc1394 - This W3C-unspecified vector image was created with Inkscape ., CC BY-SA 3.0, https://commons.wikimedia.org/w/index.php?curid=25250158
+  - By en:User:Rfc1394 - This W3C-unspecified vector image was created with Inkscape ., CC BY-SA 3.0, https://commons.wikimedia.org/w/index.php?curid=25250157
+  - By en:User:Rfc1394 - This W3C-unspecified vector image was created with Inkscape ., CC BY-SA 3.0, https://commons.wikimedia.org/w/index.php?curid=25250453
+  - By en:User:Rfc1394 - This W3C-unspecified vector image was created with Inkscape ., CC BY-SA 3.0, https://commons.wikimedia.org/w/index.php?curid=25250452
+  - By en:User:Rfc1394 - This W3C-unspecified vector image was created with Inkscape ., CC BY-SA 3.0, https://commons.wikimedia.org/w/index.php?curid=25249732
+  - By en:User:Rfc1394 - This W3C-unspecified vector image was created with Inkscape ., CC BY-SA 3.0, https://commons.wikimedia.org/w/index.php?curid=25250159
+  - By Rfc1394 - Own work, CC BY-SA 3.0, https://commons.wikimedia.org/w/index.php?curid=25250441
+  - By en:User:Rfc1394 - This W3C-unspecified vector image was created with Inkscape ., CC BY-SA 3.0, https://commons.wikimedia.org/w/index.php?curid=25250442
+  - By Rfc1394 - Own work, CC BY-SA 3.0, https://commons.wikimedia.org/w/index.php?curid=25250150
+  - By Rfc1394 - Own work, CC BY-SA 3.0, https://commons.wikimedia.org/w/index.php?curid=25250151
+  - By en:User:Rfc1394 - This W3C-unspecified vector image was created with Inkscape ., CC BY-SA 3.0, https://commons.wikimedia.org/w/index.php?curid=25250448
+  - By en:User:Rfc1394 - This W3C-unspecified vector image was created with Inkscape ., CC BY-SA 3.0, https://commons.wikimedia.org/w/index.php?curid=25250447
+  - By en:User:Rfc1394 - This W3C-unspecified vector image was created with Inkscape ., CC BY-SA 3.0, https://commons.wikimedia.org/w/index.php?curid=25250154
+  - By en:User:Rfc1394 - This W3C-unspecified vector image was created with Inkscape ., CC BY-SA 3.0, https://commons.wikimedia.org/w/index.php?curid=25250276
+  - By en:User:Rfc1394 - This W3C-unspecified vector image was created with Inkscape ., CC BY-SA 3.0, https://commons.wikimedia.org/w/index.php?curid=25250449
+  - By en:User:Rfc1394 - This W3C-unspecified vector image was created with Inkscape ., CC BY-SA 3.0, https://commons.wikimedia.org/w/index.php?curid=25250446
+  - By en:User:Rfc1394 - This W3C-unspecified vector image was created with Inkscape ., CC BY-SA 3.0, https://commons.wikimedia.org/w/index.php?curid=25250156
+  - By en:User:Rfc1394 - This W3C-unspecified vector image was created with Inkscape ., CC BY-SA 3.0, https://commons.wikimedia.org/w/index.php?curid=25250155
 
 
 ---

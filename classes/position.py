@@ -129,6 +129,12 @@ class Position:
     def reset_half_move_clock(self) -> None:
         self.half_move_clock = 0
 
+    def set_half_move_clock(self, val: int) -> None:
+        self.half_move_clock = val
+
+    def set_move_number(self, val: int) -> None:
+        self.move_number = val
+
     def increment_move_number(self) -> None:
         self.move_number += 1
 
