@@ -62,7 +62,7 @@ def get_path_to_image(filename: str) -> str:
 
 def update_position_layout_in_window(window: PySimpleGUI.PySimpleGUI.Window, move: LegalMove) -> None:
     origin_square = move.origin_square
-    piece_color = move.get_color().lower()[0]
+    piece_color = move.get_color()
     piece_type = move.piece_moved
     destination_square = move.destination_square
     destination_square_color = get_square_color(destination_square)
@@ -70,16 +70,17 @@ def update_position_layout_in_window(window: PySimpleGUI.PySimpleGUI.Window, mov
     origin_square_filename = f'{origin_square_color}_empty.png'
     origin_square_filepath = get_path_to_image(origin_square_filename)
     window[origin_square].update(filename=origin_square_filepath)
+    piece_to_name = {'P': 'pawn', 'N': 'knight', 'B': 'bishop', 'R': 'rook', 'Q': 'queen', 'K': 'king'}
     if not move.pawn_promotion_required():
-        destination_square_filename = f'{destination_square_color}_{piece_color}{piece_type}.png'
+        destination_square_filename = f'{destination_square_color}_{piece_color}{piece_to_name[piece_type]}.png'
     else:
-        destination_square_filename = f'{destination_square_color}_{piece_color}{move.promotion_piece}.png'
+        destination_square_filename = f'{destination_square_color}_{piece_color}{piece_to_name[move.promotion_piece]}.png'
     destination_square_filepath = get_path_to_image(destination_square_filename)
     window[destination_square].update(filename=destination_square_filepath)
-    if move.castling != 'None':
-        rook_home_file = 'h' if move.castling == 'kingside' else 'a'
+    if move.castling != 'N':
+        rook_home_file = 'h' if move.castling == 'k' else 'a'
         back_rank = '1' if piece_color == 'w' else '8'
-        rook_destination_file = 'f' if move.castling == 'kingside' else 'd'
+        rook_destination_file = 'f' if move.castling == 'k' else 'd'
         rook_home_square = rook_home_file + back_rank
         rook_home_square_color = get_square_color(rook_home_square)
         rook_home_square_filename = f'{rook_home_square_color}_empty.png'
@@ -120,7 +121,7 @@ def generate_layout(game: Game, output_from_prev_input: str = '', game_end_text:
     layout = [[sg.Text(intro_text)]]
     if game_end_text is None:
         side_to_move = position.to_move()
-        side_to_move = side_to_move.replace(side_to_move[0], side_to_move[0].upper(), 1)
+        side_to_move = 'White' if side_to_move == 'w' else 'Black'
         layout += [[sg.Text(f"{side_to_move} to move.", key='-TOMOVE-')]]
     else:
         layout += [[sg.Text('Game is over.')]]
@@ -140,7 +141,7 @@ def create_input_move_prompt(game):
     to_move = game.current_position.to_move()
     move_number = game.current_position.get_move_number()
     prompt = f'{move_number}'
-    if to_move == 'white':
+    if to_move == 'w':
         prompt += '. '
     else:
         prompt += '... '
@@ -206,13 +207,13 @@ while True:
             window['-TEXT-'].update(str(e))
             continue
         game_end_check = game.check_game_end_conditions()
-        if game_end_check == 'None':
+        if game_end_check == 'N':
             update_position_layout_in_window(window, move)
             window['-TEXT-'].update(res)
             window['-INPUT-'].update('')
             window['-INPUTPROMPT-'].update(create_input_move_prompt(game))
             side_to_move = game.current_position.to_move()
-            side_to_move = side_to_move.replace(side_to_move[0], side_to_move[0].upper(), 1)
+            side_to_move = 'White' if side_to_move == 'w' else 'Black'
             window['-TOMOVE-'].update(f'{side_to_move} to move.')
             # new_layout = generate_layout(game, res)
             # window.close()
