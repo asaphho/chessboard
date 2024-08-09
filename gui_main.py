@@ -124,7 +124,6 @@ def update_position_layout_in_window(window: PySimpleGUI.PySimpleGUI.Window, mov
     origin_square_color = get_square_color(origin_square)
     origin_square_filename = f'{origin_square_color}_empty.png'
     origin_square_filepath = get_path_to_image(origin_square_filename)
-    window[origin_square].update(filename=origin_square_filepath)
     piece_to_name = {'P': 'pawn', 'N': 'knight', 'B': 'bishop', 'R': 'rook', 'Q': 'queen', 'K': 'king'}
     window[square_to_key_mapping[origin_square]].update(filename=origin_square_filepath)
     if not move.pawn_promotion_required():
@@ -132,7 +131,7 @@ def update_position_layout_in_window(window: PySimpleGUI.PySimpleGUI.Window, mov
     else:
         destination_square_filename = f'{destination_square_color}_{piece_color}{piece_to_name[move.promotion_piece]}.png'
     destination_square_filepath = get_path_to_image(destination_square_filename)
-    window[destination_square].update(filename=destination_square_filepath)
+    window[square_to_key_mapping[destination_square]].update(filename=destination_square_filepath)
     if move.castling != 'N':
         rook_home_file = 'h' if move.castling == 'k' else 'a'
         back_rank = '1' if piece_color == 'w' else '8'
