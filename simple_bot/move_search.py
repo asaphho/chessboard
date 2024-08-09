@@ -1,7 +1,7 @@
-from typing import List, Callable
+from typing import List, Callable, Tuple
 
+from classes.move import LegalMove
 from classes.position import Position, opposite_color
-from simple_bot.parameters import CHECKMATE_SCORE
 from simple_bot.evaluation import evaluate
 from simple_bot.utils import branch_from_position
 
@@ -69,63 +69,51 @@ def collapse_node(node: Node, aggregator: Callable[[List[float]], float]):
     node.remove_all_children()
 
 
+def select_top_three_moves(position: Position) -> List[Tuple[LegalMove, Position, float]]:
+    to_move = position.to_move()
+    all_legal_moves = position.get_all_legal_moves_for_color(to_move)
+    positions = [branch_from_position(position, move) for move in all_legal_moves]
+    evaluations = [(i, evaluate(positions[i])) for i in range(len(positions))]
+    evaluations.sort(key=lambda x: x[1], reverse=True)
+    returned_list = []
+    for j in (0, 1, 2):
+        try:
+            i = evaluations[j][0]
+            move = all_legal_moves[i]
+            position = positions[i]
+            score = evaluations[j][1]
+            returned_list.append((move, position, score))
+        except IndexError:
+            return returned_list
+    return returned_list
+
+
 def make_4_ply_move_tree(position: Position) -> Node:
     side_to_move = position.to_move()
     opposing_side = opposite_color(side_to_move)
-    tree = Node('Current', evaluate(position, side_to_move))
-    all_legal_first_moves = position.get_all_legal_moves_for_color(side_to_move)
-    for first_move in all_legal_first_moves:
-        position_after_first_move = branch_from_position(position, first_move)
-        all_legal_first_replies = position_after_first_move.get_all_legal_moves_for_color(opposing_side)
-        if all_legal_first_replies:
-            # first move does not end game. Level 1 node added here
-            first_move_node = tree.add_child(first_move.generate_uci(), first_move)
-            for first_reply in all_legal_first_replies:
-                position_after_first_reply = branch_from_position(position_after_first_move, first_reply)
-                all_legal_second_moves = position_after_first_reply.get_all_legal_moves_for_color(side_to_move)
-                if all_legal_second_moves:
-                    # first reply does not end game. Level 2 node added here.
-                    first_reply_node = first_move_node.add_child(f'{first_move_node.get_name()}-{first_reply.generate_uci()}', first_reply)
-                    for second_move in all_legal_second_moves:
-                        position_after_second_move = branch_from_position(position_after_first_reply, second_move)
-                        all_legal_second_replies = position_after_second_move.get_all_legal_moves_for_color(opposing_side)
-                        if all_legal_second_replies:
-                            # second move does not end game. Level 3 node added here
-                            second_move_node = first_reply_node.add_child(f'{first_reply_node.get_name()}-{second_move.generate_uci()}', second_move)
-                            for second_reply in all_legal_second_replies:
-                                position_after_second_reply = branch_from_position(position_after_second_move, second_reply)
-                                all_legal_third_moves = position_after_second_reply.get_all_legal_moves_for_color(side_to_move)
-                                if all_legal_third_moves:
-                                    # second reply does not end game. Level 4 node is added here with evaluation as value.
-                                    second_reply_node = second_move_node.add_child(f'{second_move_node.get_name()}-{second_reply.generate_uci()}', evaluate(position_after_second_reply, side_to_move))
-                                else:
-                                    # second reply ends game. Level 4 node added here. Check if got checkmated or stalemated.
-                                    if position_after_second_reply.is_under_check(side_to_move):
-                                        second_reply_node = second_move_node.add_child(f'{second_move_node.get_name()}-{second_reply.generate_uci()}', -CHECKMATE_SCORE)
-                                    else:
-                                        second_reply_node = second_move_node.add_child(f'{second_move_node.get_name()}-{second_reply.generate_uci()}', 0)
-
-                        else:
-                            # second move ends game. Level 3 node added here, with appropriate value
-                            # check if checkmate or stalemate
-                            if position_after_second_move.is_under_check(opposing_side):
-                                second_move_node = first_reply_node.add_child(f'{first_reply_node.get_name()}-{second_move.generate_uci()}', CHECKMATE_SCORE)
-                            else:
-                                second_move_node = first_reply_node.add_child(f'{first_reply_node.get_name()}-{second_move.generate_uci()}', 0)
-                else:
-                    # first reply ends game. Level 2 node added here, with appropriate value
-                    # checks if got checkmated or stalemated.
-                    if position_after_first_reply.is_under_check(side_to_move):
-                        first_reply_node = first_move_node.add_child(f'{first_move_node.get_name()}-{first_reply.generate_uci()}', -CHECKMATE_SCORE)
-                    else:
-                        first_reply_node = first_move_node.add_child(f'{first_move_node.get_name()}-{first_reply.generate_uci()}', 0)
-        else:
-            # first move ends game. Level 1 node added here, with appropriate value
-            # checks if checkmate or stalemate
-            if position_after_first_move.is_under_check(opposing_side):
-                first_move_node = tree.add_child(first_move.generate_uci(), CHECKMATE_SCORE)
-            else:
-                first_move_node = tree.add_child(first_move.generate_uci(), 0)
+    tree = Node('Current', -evaluate(position))
+    top_three_first_moves = select_top_three_moves(position)
+    for first_move_tup in top_three_first_moves:
+        first_move = first_move_tup[0]
+        position_after_first_move = first_move_tup[1]
+        first_move_node = tree.add_child(first_move.generate_uci(), first_move_tup[2])
+        top_three_first_replies = select_top_three_moves(position_after_first_move)
+        for first_reply_tup in top_three_first_replies:
+            first_reply = first_reply_tup[0]
+            position_after_first_reply = first_reply_tup[1]
+            first_reply_node = first_move_node.add_child(f'{first_move_node.get_name()}-{first_reply.generate_uci()}',
+                                                         first_reply_tup[2])
+            top_three_second_moves = select_top_three_moves(position_after_first_reply)
+            for second_move_tup in top_three_second_moves:
+                second_move = second_move_tup[0]
+                position_after_second_move = second_move_tup[1]
+                second_move_node = first_reply_node.add_child(f'{first_move_node.get_name()}-{second_move.generate_uci()}',
+                                                              second_move_tup[2])
+                top_three_second_replies = select_top_three_moves(position_after_second_move)
+                for second_reply_tup in top_three_second_replies:
+                    second_reply = second_reply_tup[0]
+                    second_reply_node = second_move_node.add_child(f'{second_move_node.get_name()}-{second_reply.generate_uci()}',
+                                                                   second_reply_tup[2])
     return tree
 
 
@@ -152,9 +140,9 @@ def choose_best_move(position: Position) -> str:
     :return:
     """
     tree = make_4_ply_move_tree(position)
-    collapse_at_level(tree, 4, min)
+    collapse_at_level(tree, 4, lambda x: -max(x))
     collapse_at_level(tree, 3, max)
-    collapse_at_level(tree, 2, min)
+    collapse_at_level(tree, 2, lambda x: -max(x))
     candidate_moves = tree.get_children()
     best_move = candidate_moves[0].get_name()
     best_score = candidate_moves[0].get_value()
