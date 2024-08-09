@@ -1,7 +1,7 @@
 # Chessboard
 
-A Python chess program I made myself as a coding exercise. Starts a new game of chess when run. Can move by clicking on a piece and then the destination square (for the GUI), or give the move in standard
-algebraic notation, for both the black and white sides (no bot to play against). Does not allow illegal moves. Can be run 
+A Python chess program I made myself as a coding exercise. Starts a new game of chess when run. You can move by clicking on a piece and then the destination square (on the GUI), or give the move in standard
+algebraic notation. Does not allow illegal moves. Can be run 
 on a CLI or on a GUI. Enforces the following game-ending conditions:
 
 - Checkmate: The side to move has no legal moves and is under check. The other side wins.
