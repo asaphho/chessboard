@@ -35,13 +35,13 @@ def check_squares_in_line(square1: str, square2: str) -> str:
         raise ValueError
     file_diff, rank_diff = get_rank_and_file_diffs(square1, square2)
     if file_diff > 0 and rank_diff == 0:
-        return 'rank'
+        return 'r'
     elif file_diff == 0 and rank_diff > 0:
-        return 'file'
+        return 'f'
     elif file_diff == rank_diff:
-        return 'diagonal'
+        return 'd'
     else:
-        return 'Not in line'
+        return 'N'
 
 
 def get_rank_and_file_diffs(square1: str, square2: str) -> Tuple[int, int]:
