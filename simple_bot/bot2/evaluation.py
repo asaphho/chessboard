@@ -360,8 +360,7 @@ def evaluate_exchange_on_square(position: Position, square: str, initiating_capt
     else:
         captured_piece = 'P'
     position_after_capture = branch_from_position(position, initiating_capture)
-    possible_recaptures = [move for move in position_after_capture.get_all_legal_moves_for_side_to_move() if
-                           move.destination_square == square and move.is_capture()]
+    possible_recaptures = position_after_capture.scan_all_captures_to_square(square)
     material_gain = MATERIAL_DICT[captured_piece]
     if not possible_recaptures:
         return material_gain
@@ -495,4 +494,5 @@ def new_evaluate(position: Position) -> Dict[str, float]:
         threatened_capture = lightest_threatened_piece_captures[threatened_capture_square]
         material_threat = find_material_hanging_on_square(position_with_pass_move, threatened_capture)
         threat_score += material_threat * MATERIAL_THREAT_MULTIPLIER
+        score += material_threat * MATERIAL_THREAT_MULTIPLIER
     return {'eval': score, 'threat': threat_score}

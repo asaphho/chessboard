@@ -1,7 +1,7 @@
 from typing import List
 from classes.color_position import ColorPosition, generate_starting_position_for_color
 from classes.move import LegalMove, VirtualMove
-from utils.board_functions import get_intervening_squares, LETTER_TO_NUM, NUM_TO_LETTER, scan_qbr_scope, scan_kn_scope
+from utils.board_functions import get_intervening_squares, LETTER_TO_NUM, NUM_TO_LETTER, scan_qbr_scope, scan_kn_scope, check_squares_in_line, is_knight_move
 from utils.parse_notation import piece_to_symbol
 
 ALL_SQUARES = []
@@ -231,6 +231,71 @@ class Position:
                 for square in squares_occupied_by_that_piece_type:
                     attacked_squares.extend(self.scan_pawn_attacked_squares(color, square))
         return attacked_squares
+
+    def scan_all_captures_to_square(self, square: str) -> List[LegalMove]:
+        """
+        Use only if certain that there is an enemy piece (king excepted) on that square
+        :param square:
+        :return:
+        """
+        possible_captures = []
+        to_move = self.to_move()
+        own_pieces = self.get_pieces_by_color(to_move)
+        occupied_squares = self.get_occupied_squares()
+        for piece in own_pieces.list_unique_piece_types():
+            if piece in ('Q', 'R', 'B', 'K') and square != self.get_en_passant_square():
+                origin_squares = own_pieces.get_piece_type_squares(piece)
+                for origin_sq in origin_squares:
+                    line_type = check_squares_in_line(origin_sq, square)
+                    if line_type == 'N':
+                        continue
+                    intervening_squares = get_intervening_squares(origin_sq, square, line_type)
+                    if not intervening_squares and piece == 'K':
+                        virtual_move = VirtualMove(to_move, piece, origin_sq, square)
+                        is_legal = self.virtual_move_is_legal(virtual_move)
+                        if is_legal:
+                            possible_captures.append(self.translate_virtual_move_to_legal(virtual_move))
+                    else:
+                        blocked = any([int_sq in occupied_squares for int_sq in intervening_squares])
+                        if blocked:
+                            continue
+                        if piece == 'Q':
+                            virtual_move = VirtualMove(to_move, piece, origin_sq, square)
+                            is_legal = self.virtual_move_is_legal(virtual_move)
+                            if is_legal:
+                                possible_captures.append(self.translate_virtual_move_to_legal(virtual_move))
+                        elif piece == 'R' and line_type in ('r', 'f'):
+                            virtual_move = VirtualMove(to_move, piece, origin_sq, square)
+                            is_legal = self.virtual_move_is_legal(virtual_move)
+                            if is_legal:
+                                possible_captures.append(self.translate_virtual_move_to_legal(virtual_move))
+                        elif piece == 'B' and line_type == 'd':
+                            virtual_move = VirtualMove(to_move, piece, origin_sq, square)
+                            is_legal = self.virtual_move_is_legal(virtual_move)
+                            if is_legal:
+                                possible_captures.append(self.translate_virtual_move_to_legal(virtual_move))
+            elif piece == 'N' and square != self.get_en_passant_square():
+                origin_squares = own_pieces.get_piece_type_squares('N')
+                for sq in origin_squares:
+                    if is_knight_move(sq, square):
+                        virtual_move = VirtualMove(to_move, piece, sq, square)
+                        is_legal = self.virtual_move_is_legal(virtual_move)
+                        if is_legal:
+                            possible_captures.append(self.translate_virtual_move_to_legal(virtual_move))
+            elif piece == 'P':
+                pawn_squares = own_pieces.get_piece_type_squares('P')
+                for pawn_sq in pawn_squares:
+                    attacked_squares = self.scan_pawn_attacked_squares(to_move, pawn_sq)
+                    if square in attacked_squares:
+                        virtual_move = VirtualMove(to_move, piece, pawn_sq, square)
+                        is_legal = self.virtual_move_is_legal(virtual_move)
+                        promotion = virtual_move.results_in_promotion()
+                        if is_legal and promotion:
+                            for pp in ('Q', 'R', 'N', 'B'):
+                                possible_captures.append(self.translate_virtual_move_to_legal(virtual_move, pp))
+                        elif is_legal and not promotion:
+                            possible_captures.append(self.translate_virtual_move_to_legal(virtual_move))
+        return possible_captures
 
     def is_under_check(self, color: str, virtual: bool = False) -> bool:
         own_pieces = self.get_pieces_by_color(color, virtual)

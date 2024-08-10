@@ -101,7 +101,7 @@ def select_top_three_moves(position: Position, evaluate: Callable[[Position], Di
 def make_4_ply_move_tree(position: Position, evaluate: Callable[[Position], Dict[str, float]]) -> Node:
     side_to_move = position.to_move()
     opposing_side = opposite_color(side_to_move)
-    tree = Node('Current', -evaluate(position)['eval'])
+    tree = Node('Current', 0)
     top_three_first_moves = select_top_three_moves(position, evaluate)
     for first_move_tup in top_three_first_moves:
         first_move = first_move_tup[0]
