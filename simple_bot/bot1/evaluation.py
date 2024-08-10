@@ -1,10 +1,10 @@
-from typing import List, Iterable
+from typing import List, Iterable, Dict
 
 from classes.color_position import ColorPosition
 from utils.board_functions import scan_qbr_scope, scan_kn_scope, get_intervening_squares
 from classes.move import LegalMove
 from classes.position import Position, opposite_color
-from simple_bot.utils import branch_from_position
+from simple_bot.utils import branch_from_position, check_if_move_ends_game
 
 SYMBOL_TO_PIECE = {'P': 'pawn', 'K': 'king', 'Q': 'queen', 'R': 'rook', 'B': 'bishop', 'N': 'knight'}
 MATERIAL_DICT = {'K': 10, 'P': 1, 'N': 3, 'B': 3, 'R': 5, 'Q': 9}
@@ -62,12 +62,22 @@ for square in WHITE_PAWN_CONTROL_SCORES:
 LEGAL_PIECE_MOVE_MULTIPLIER = 0.1
 
 # ACTIVITY MULTIPLIER
-ACTIVITY_COUNT_MULTIPLIER = 0.1  # BASE
-CENTRAL_SQUARE_BONUS = 0.05
-SQUARE_AROUND_ENEMY_KING = 0.1
+ACTIVITY_COUNT_MULTIPLIER = 0.05  # BASE
+CENTRAL_SQUARE_BONUS = 0.03
+SQUARE_AROUND_ENEMY_KING = 0.03
 
 # MATERIAL THREAT MULTIPLIER
-MATERIAL_THREAT_MULTIPLIER = 0.35
+MATERIAL_THREAT_MULTIPLIER = 0.05
+CHECKMATE_THREAT_SCORE = 5
+
+# DEVELOPMENT SCORE PENALTY
+DEVELOPMENT_SCORE_PENALTY = -0.4
+
+# SEVENTH RANK BONUS
+SEVENTH_RANK_BONUS = 0.05
+
+# CENTRALIZED KNIGHT BONUS
+CENTRALIZED_KNIGHT_BONUS = 0.05
 
 
 def count_material(position: Position, color: str) -> int:
@@ -123,27 +133,47 @@ def evaluate_exchange_square(position: Position, square: str, init_possible_capt
         return material_gain - evaluate_exchange_square(position_after_capture, square, possible_recaptures)
 
 
-def calculate_material_threat_score(position: Position, side_just_moved: str) -> float:
+def calculate_threat_score(position: Position, side_just_moved: str, include_mate_threat: bool = False) -> float:
     attacked_color = opposite_color(side_just_moved)
     copy_position = position.copy()
     attacked_colors_pieces = copy_position.get_pieces_by_color(attacked_color)
     copy_position.change_side_to_move()
     copy_position.remove_en_passant_square()
     attacked_colors_king_sq = attacked_colors_pieces.get_king_square()
-    all_captures = [move for move in copy_position.get_all_legal_moves_for_side_to_move() if move.is_capture() and move.destination_square != attacked_colors_king_sq]
-    material_threat_score = 0
-    for capture in all_captures:
-        captured_piece = copy_position.look_at_square(capture.destination_square).upper()
-        gain = MATERIAL_DICT[captured_piece]
-        new_position = branch_from_position(copy_position, capture)
-        capturing_piece_worth = MATERIAL_DICT[capture.piece_moved]
-        possible_recaptures = [move for move in new_position.get_all_legal_moves_for_side_to_move() if move.is_capture() and move.destination_square == capture.destination_square]
-        if possible_recaptures:
-            if (net_gain := gain - capturing_piece_worth) > 0:
-                material_threat_score += net_gain
+    all_legal_moves = copy_position.get_all_legal_moves_for_side_to_move()
+    all_material_gaining_moves = [move for move in all_legal_moves if (move.is_capture() and move.destination_square != attacked_colors_king_sq) or move.pawn_promotion_required()]
+    threat_score = 0
+    checkmate_threat_score = 0
+    if not position.is_under_check(attacked_color) and include_mate_threat:
+        for move in all_legal_moves:
+            if check_if_move_ends_game(copy_position, move) == 'checkmate':
+                checkmate_threat_score += CHECKMATE_THREAT_SCORE
+    for move in all_material_gaining_moves:
+        if not move.pawn_promotion_required():
+            captured_piece = copy_position.look_at_square(move.destination_square).upper()
+            gain = MATERIAL_DICT[captured_piece]
+            new_position = branch_from_position(copy_position, move)
+            capturing_piece_worth = MATERIAL_DICT[move.piece_moved]
+            possible_recaptures = [mv for mv in new_position.get_all_legal_moves_for_side_to_move() if mv.is_capture() and mv.destination_square == move.destination_square]
+            if possible_recaptures:
+                if (net_gain := gain - capturing_piece_worth) > 0:
+                    threat_score += net_gain
+            else:
+                threat_score += gain
+        elif not move.is_capture():
+            new_position = branch_from_position(position, move)
+            possible_captures = [mv for mv in new_position.get_all_legal_moves_for_side_to_move() if mv.is_capture() and mv.destination_square == move.destination_square]
+            if not possible_captures:
+                threat_score += MATERIAL_DICT[move.promotion_piece] - 1
         else:
-            material_threat_score += gain
-    return material_threat_score * MATERIAL_THREAT_MULTIPLIER if not position.is_under_check(position.to_move()) else material_threat_score * MATERIAL_THREAT_MULTIPLIER * 3
+            captured_piece = copy_position.look_at_square(move.destination_square).upper()
+            net_gain = MATERIAL_DICT[captured_piece] + MATERIAL_DICT[move.promotion_piece] - 1
+            new_position = branch_from_position(copy_position, move)
+            possible_recaptures = [mv for mv in new_position.get_all_legal_moves_for_side_to_move() if mv.is_capture() and mv.destination_square == move.destination_square]
+            if possible_recaptures:
+                net_gain -= MATERIAL_DICT[move.promotion_piece]
+            threat_score += net_gain
+    return (threat_score * MATERIAL_THREAT_MULTIPLIER if not position.is_under_check(position.to_move()) else threat_score * MATERIAL_THREAT_MULTIPLIER * 1.5) + checkmate_threat_score
 
 
 def find_hanging_material(position: Position) -> List[int]:
@@ -266,6 +296,25 @@ def piece_moves_reduced_by_enemy_pawn_control(unreduced_piece_moves: List[str],
     return [sq for sq in unreduced_piece_moves if sq not in squares_controlled]
 
 
+def development_score(position: Position, side_evaluating_for: str) -> int:
+    """
+    gives DEVELOPMENT SCORE PENALTY for each minor piece on back rank. Should be zero or negative.
+    :param position:
+    :param side_evaluating_for:
+    :return:
+    """
+    back_rank = '1' if side_evaluating_for == 'w' else '8'
+    score = 0
+    pieces_positions = position.get_pieces_by_color(side_evaluating_for)
+    for piece in pieces_positions.list_unique_piece_types():
+        if piece == 'N' or piece == 'B':
+            squares = pieces_positions.get_piece_type_squares(piece)
+            for sq in squares:
+                if sq[1] == back_rank:
+                    score += DEVELOPMENT_SCORE_PENALTY
+    return score
+
+
 def evaluate(position: Position) -> float:
     """
     The evaluation function to be called to evaluate how good or bad a position is for the side that has just moved.
@@ -290,5 +339,157 @@ def evaluate(position: Position) -> float:
              get_pawn_control_score(opposing_pawn_controlled_squares, side_to_move,
                                     position.get_pieces_by_color(side_evaluating_for))  # SQUARES CONTROLLED BY PAWNS
     score -= max(find_hanging_material(position))
-    score += calculate_material_threat_score(position, side_evaluating_for)
+    score += calculate_threat_score(position, side_evaluating_for)
+    score += development_score(position, side_evaluating_for) - development_score(position, side_to_move)
     return score
+
+
+def evaluate_exchange_on_square(position: Position, square: str, initiating_capture: LegalMove) -> int:
+    """
+    Counts the amount of material that the side to move stands to gain from initiating a series of captures and
+    recaptures on the given square. Both sides "dogpile" onto the square, sending their least valuable pieces to capture
+    first, until one side cannot recapture.
+    :param initiating_capture:
+    :param square:
+    :param position:
+    :return:
+    """
+
+    if not initiating_capture.is_en_passant_capture():
+        captured_piece = position.look_at_square(square).upper()
+    else:
+        captured_piece = 'P'
+    position_after_capture = branch_from_position(position, initiating_capture)
+    possible_recaptures = [move for move in position_after_capture.get_all_legal_moves_for_side_to_move() if
+                           move.destination_square == square and move.is_capture()]
+    material_gain = MATERIAL_DICT[captured_piece]
+    if not possible_recaptures:
+        return material_gain
+    else:
+        recapture = min(possible_recaptures, key=lambda x: MATERIAL_DICT[x.piece_moved])
+        return material_gain - evaluate_exchange_on_square(position_after_capture, square, recapture)
+
+
+def find_material_hanging_on_square(position: Position, capture: LegalMove) -> int:
+    square_captured_on = capture.destination_square
+    if position.get_en_passant_square() != square_captured_on:
+        first_capturable_piece = position.look_at_square(square_captured_on).upper()
+    else:
+        first_capturable_piece = 'P'
+    cost = MATERIAL_DICT[capture.piece_moved]
+    worth = MATERIAL_DICT[first_capturable_piece]
+    material_gain = evaluate_exchange_on_square(position, square_captured_on, capture)
+    if material_gain == worth:
+        return material_gain
+    elif material_gain <= worth - cost and worth > cost:
+        return worth - cost
+    elif worth <= cost and material_gain > 0:
+        return material_gain
+    return 0
+
+
+def new_evaluate(position: Position) -> Dict[str, float]:
+    side_to_move = position.to_move()
+    side_evaluating_for = opposite_color(side_to_move)
+    score = 0
+    threat_score = 0
+    position_with_pass_move = position.copy()
+    position_with_pass_move.change_side_to_move()
+    position_with_pass_move.remove_en_passant_square()
+    square_piece_dict = position.white_pieces.get_square_piece_symbol_dict() | position.black_pieces.get_square_piece_symbol_dict(lowercase=True)
+    all_legal_moves_in_position = position.get_all_legal_moves_for_side_to_move()
+    if not all_legal_moves_in_position:
+        if position.is_under_check(side_to_move):
+            return {'eval': CHECKMATE_SCORE, 'threat': CHECKMATE_SCORE}
+        else:
+            return {'eval': 0, 'threat': 0}
+    all_legal_moves_in_pass_position = position_with_pass_move.get_all_legal_moves_for_side_to_move()
+
+    for sq in square_piece_dict:
+        piece = square_piece_dict[sq]
+        if piece.isupper():
+            score += MATERIAL_DICT[piece] if side_evaluating_for == 'w' else -MATERIAL_DICT[piece]
+        else:
+            score += MATERIAL_DICT[piece.upper()] if side_evaluating_for == 'b' else -MATERIAL_DICT[piece.upper()]
+        back_rank = '1' if side_evaluating_for == 'w' else '8'
+        enemy_back_rank = '1' if side_evaluating_for == 'b' else '1'
+        minor_pieces = ('b', 'n', 'B', 'N')
+        if piece in minor_pieces:
+            own_minor_piece = (piece.isupper() and side_evaluating_for == 'w') or \
+                              (piece.islower() and side_evaluating_for == 'b')
+            score += DEVELOPMENT_SCORE_PENALTY if sq[1] == back_rank and own_minor_piece else 0
+            score -= DEVELOPMENT_SCORE_PENALTY if sq[1] == enemy_back_rank and not own_minor_piece else 0
+            if piece in ('n', 'N'):
+                score += CENTRALIZED_KNIGHT_BONUS if own_minor_piece and sq in ('e4', 'e5', 'e4', 'd5') else 0
+                score -= CENTRALIZED_KNIGHT_BONUS if not own_minor_piece and sq in ('e4', 'e5', 'd4', 'd5') else 0
+        if piece in ('p', 'P'):
+            if piece == 'p':
+                squares_controlled = position.scan_pawn_attacked_squares('b', sq)
+                for controlled_square in squares_controlled:
+                    score += BLACK_PAWN_CONTROL_SCORES[controlled_square] if side_evaluating_for == 'b' else -BLACK_PAWN_CONTROL_SCORES[controlled_square]
+            else:
+                squares_controlled = position.scan_pawn_attacked_squares('w', sq)
+                for controlled_square in squares_controlled:
+                    score += WHITE_PAWN_CONTROL_SCORES[controlled_square] if side_evaluating_for == 'w' else -WHITE_PAWN_CONTROL_SCORES[controlled_square]
+
+    lightest_piece_captures_in_reply = {}
+    for mv in all_legal_moves_in_position:
+        if mv.piece_moved in ('Q', 'R', 'B', 'N'):
+            score -= ACTIVITY_COUNT_MULTIPLIER
+            if mv.destination_square in ('e4', 'd4', 'e5', 'd5'):
+                score -= CENTRAL_SQUARE_BONUS
+            if mv.piece_moved == 'R':
+                score -= SEVENTH_RANK_BONUS if (side_evaluating_for == 'w' and mv.destination_square[1] == '2') or\
+                                               (side_evaluating_for == 'b' and mv.destination_square[1] == '7') \
+                    else 0
+        if mv.piece_moved != 'K':
+            if square_around_enemy_king(mv.destination_square, position.get_pieces_by_color(side_evaluating_for)):
+                score -= SQUARE_AROUND_ENEMY_KING
+        if mv.is_capture():
+            destination_sq = mv.destination_square
+            if destination_sq not in lightest_piece_captures_in_reply:
+                lightest_piece_captures_in_reply[destination_sq] = mv
+            else:
+                existing_mv = lightest_piece_captures_in_reply[destination_sq]
+                if MATERIAL_DICT[mv.piece_moved] < MATERIAL_DICT[existing_mv.piece_moved]:
+                    lightest_piece_captures_in_reply[destination_sq] = mv
+
+    hanging_material = [0]
+    for capturable_square in lightest_piece_captures_in_reply:
+        capture = lightest_piece_captures_in_reply[capturable_square]
+        hanging_material.append(find_material_hanging_on_square(position, capture))
+    score -= max(hanging_material)
+
+    lightest_threatened_piece_captures = {}
+    enemy_king_position = position.get_pieces_by_color(side_to_move).get_king_square()
+    under_check = position.is_under_check(side_to_move)
+    for mv in all_legal_moves_in_pass_position:
+        if mv.destination_square == enemy_king_position:
+            continue
+        if not under_check:
+            if check_if_move_ends_game(position_with_pass_move, mv) == 'checkmate':
+                threat_score += CHECKMATE_THREAT_SCORE
+        if mv.piece_moved in ('Q', 'R', 'B', 'N'):
+            score += ACTIVITY_COUNT_MULTIPLIER
+            if mv.destination_square in ('e4', 'd4', 'e5', 'd5'):
+                score += CENTRAL_SQUARE_BONUS
+            if mv.piece_moved == 'R':
+                score += SEVENTH_RANK_BONUS if (side_evaluating_for == 'w' and mv.destination_square[1] == '7') or\
+                                               (side_evaluating_for == 'b' and mv.destination_square[1] == '2') \
+                    else 0
+        if mv.piece_moved != 'K':
+            if square_around_enemy_king(mv.destination_square, position.get_pieces_by_color(side_to_move)):
+                score += SQUARE_AROUND_ENEMY_KING
+        if mv.is_capture():
+            if mv.destination_square not in lightest_threatened_piece_captures:
+                lightest_threatened_piece_captures[mv.destination_square] = mv
+            else:
+                existing_mv = lightest_threatened_piece_captures[mv.destination_square]
+                if MATERIAL_DICT[mv.piece_moved] < MATERIAL_DICT[existing_mv.piece_moved]:
+                    lightest_threatened_piece_captures[mv.destination_square] = mv
+
+    for threatened_capture_square in lightest_threatened_piece_captures:
+        threatened_capture = lightest_threatened_piece_captures[threatened_capture_square]
+        material_threat = find_material_hanging_on_square(position_with_pass_move, threatened_capture)
+        threat_score += material_threat * MATERIAL_THREAT_MULTIPLIER
+    return {'eval': score, 'threat': threat_score}

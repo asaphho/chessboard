@@ -1,4 +1,4 @@
-from typing import List, Callable, Tuple
+from typing import List, Callable, Tuple, Dict
 
 from classes.move import LegalMove
 from classes.position import Position, opposite_color
@@ -69,29 +69,39 @@ def collapse_node(node: Node, aggregator: Callable[[List[float]], float]):
     node.remove_all_children()
 
 
-def select_top_three_moves(position: Position, evaluate: Callable[[Position], float]) -> List[Tuple[LegalMove, Position, float]]:
+def select_top_three_moves(position: Position, evaluate: Callable[[Position], Dict[str, float]]) -> List[Tuple[LegalMove, Position, float]]:
     to_move = position.to_move()
     all_legal_moves = position.get_all_legal_moves_for_color(to_move)
     positions = [branch_from_position(position, move) for move in all_legal_moves]
-    evaluations = [(i, evaluate(positions[i])) for i in range(len(positions))]
+    evaluations = [(i, evaluate(positions[i])['eval']) for i in range(len(positions))]
+    threat_scores = [(i, evaluate(positions[i])['threat']) for i in range(len(positions))]
     evaluations.sort(key=lambda x: x[1], reverse=True)
+    threat_scores.sort(key=lambda x: x[1], reverse=True)
     returned_list = []
-    for j in (0, 1, 2):
+    for j in (0, 1):
         try:
-            i = evaluations[j][0]
+            i = threat_scores[j][0]
             move = all_legal_moves[i]
             position = positions[i]
-            score = evaluations[j][1]
+            score = evaluations[i][1]
             returned_list.append((move, position, score))
         except IndexError:
             return returned_list
+    for j in range(len(evaluations)):
+        i = evaluations[j][0]
+        move = all_legal_moves[i]
+        if move.generate_uci() not in [tup[0].generate_uci() for tup in returned_list]:
+            position = positions[i]
+            score = evaluations[j][1]
+            returned_list.append((move, position, score))
+            break
     return returned_list
 
 
-def make_4_ply_move_tree(position: Position, evaluate: Callable[[Position], float]) -> Node:
+def make_4_ply_move_tree(position: Position, evaluate: Callable[[Position], Dict[str, float]]) -> Node:
     side_to_move = position.to_move()
     opposing_side = opposite_color(side_to_move)
-    tree = Node('Current', -evaluate(position))
+    tree = Node('Current', -evaluate(position)['eval'])
     top_three_first_moves = select_top_three_moves(position, evaluate)
     for first_move_tup in top_three_first_moves:
         first_move = first_move_tup[0]
@@ -133,7 +143,7 @@ def collapse_at_level(tree: Node, level: int, aggregator: Callable[[List[float]]
             collapsed_node_names.append(parent.get_name())
 
 
-def choose_best_move(position: Position, evaluation_func: Callable[[Position], float]) -> str:
+def choose_best_move(position: Position, evaluation_func: Callable[[Position], Dict[str, float]]) -> str:
     """
     Returns a UCI notation e.g. 'd1h5'
     :param evaluation_func:
