@@ -161,7 +161,7 @@ def find_hanging_material(position: Position) -> List[int]:
         material_gain = evaluate_exchange_square(position, square, possible_captures)
         if material_gain == worth:
             material_gains.append(material_gain)
-        elif material_gain < worth - cost and worth > cost:
+        elif material_gain <= worth - cost and worth > cost:
             material_gains.append(worth - cost)
         elif worth <= cost and material_gain > 0:
             material_gains.append(material_gain)
