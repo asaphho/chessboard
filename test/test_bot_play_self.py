@@ -1,10 +1,9 @@
 from classes.game import Game
 from classes.bot import Bot
 import simple_bot.bot1.evaluation as bot1_params
-import simple_bot.bot2.evaluation as bot2_params
 
-bot1 = Bot(bot1_params.quick_evaluate, bot1_params.quick_evaluate, 4, 3)
-bot2 = Bot(bot2_params.quick_evaluate, bot2_params.quick_evaluate, 4, 2)
+bot1 = Bot(bot1_params.quick_evaluate, bot1_params.quick_evaluate, 4, 1, 0.1)
+bot2 = Bot(bot1_params.quick_evaluate, bot1_params.quick_evaluate, 4, 3, 0.1)
 players = {'w': bot1, 'b': bot2}
 game = Game()
 

@@ -1,7 +1,7 @@
 from typing import List, Iterable, Dict
 
 from classes.color_position import ColorPosition
-from utils.board_functions import scan_qbr_scope, scan_kn_scope, get_intervening_squares, INT_SQUARES_MAP
+from utils.board_functions import scan_qbr_scope, scan_kn_scope, get_intervening_squares, INT_SQUARES_MAP, LINE_EXTEND_MAP, PIECE_MOVE_TYPE_DICT
 from classes.move import LegalMove, VirtualMove
 from classes.position import Position, opposite_color
 from simple_bot.utils import branch_from_position, check_if_move_ends_game
@@ -17,16 +17,16 @@ for f in 'abcdefgh':
 CHECKMATE_SCORE = 999999
 
 # SCORES FOR SQUARES CONTROLLED BY PAWNS
-CENTRAL_FILE_4TH_RANK = 0.15
-CENTRAL_FILE_5TH_RANK = 0.18
-CENTRAL_FILE_6TH_RANK = 0.20
-BISHOP_FILE_4TH_RANK = 0.13
-BISHOP_FILE_5TH_RANK = 0.15
-BISHOP_FILE_6TH_RANK = 0.18
-SEVENTH_RANK = 0.20
-EIGHTH_RANK = 0.25
-KNIGHT_FILE_5TH_RANK = 0.13
-KNIGHT_FILE_6TH_RANK = 0.15
+CENTRAL_FILE_4TH_RANK = 0.12
+CENTRAL_FILE_5TH_RANK = 0.15
+CENTRAL_FILE_6TH_RANK = 0.17
+BISHOP_FILE_4TH_RANK = 0.11
+BISHOP_FILE_5TH_RANK = 0.12
+BISHOP_FILE_6TH_RANK = 0.14
+SEVENTH_RANK = 0.16
+EIGHTH_RANK = 0.2
+KNIGHT_FILE_5TH_RANK = 0.1
+KNIGHT_FILE_6TH_RANK = 0.12
 ALL_OTHERS = 0.1
 
 SEVENTH_RANK_SCORES = {}
@@ -509,6 +509,24 @@ def invert_piece_scope_dict(piece_scope_dict: Dict[str, List[str]]) -> Dict[str,
     return square_covering_piece_dict
 
 
+def detect_battery_or_x_ray(target_sq: str, first_attacking_pns: str, square_piece_dict: Dict[str, str], color: str,
+                            x_ray_defense: bool = False) -> List[str]:
+    map_key = f'{target_sq}{first_attacking_pns[1:]}'
+    pieces = [] if x_ray_defense else [first_attacking_pns]
+    line_type = INT_SQUARES_MAP[map_key]['line']
+    extended_line = LINE_EXTEND_MAP[map_key]
+    for sq in extended_line:
+        if sq in square_piece_dict:
+            piece = square_piece_dict[sq]
+            own_piece = piece.isupper() if color == 'w' else piece.islower()
+            if not own_piece or piece.upper() in ('P', 'K', 'N'):
+                break
+            if line_type not in PIECE_MOVE_TYPE_DICT[piece.upper()]:
+                break
+            pieces.append(f'{piece.upper()}{sq}')
+    return pieces
+
+
 def quick_evaluate(position: Position) -> Dict[str, float]:
     side_to_move = position.to_move()
     side_evaluating_for = opposite_color(side_to_move)
@@ -653,27 +671,61 @@ def quick_evaluate(position: Position) -> Dict[str, float]:
         if attacked_square in own_squares_occupied:
             piece_at_square = square_piece_dict[attacked_square].upper()
             if attacked_square not in own_square_covering_piece_dict:
-                hanging_material_list.append(MATERIAL_DICT[piece_at_square])
+                hanging_material_list.append((f'{piece_at_square}{attacked_square}', MATERIAL_DICT[piece_at_square]))
             else:
+                defenders_pns = own_square_covering_piece_dict[attacked_square]
+                n_defenders = 0
+                for pns in defenders_pns:
+                    n_defenders += 1
+                    defender_sq = pns[1:]
+                    if f'{attacked_square}{defender_sq}' in INT_SQUARES_MAP and pns[0] != 'K':
+                        battery = detect_battery_or_x_ray(attacked_square, pns, square_piece_dict, side_evaluating_for)
+                        n_defenders += len(battery) - 1
+                attackers_pns = opposing_square_covering_piece_dict[attacked_square]
+                n_attackers = 0
+                for pns in attackers_pns:
+                    n_attackers += 1
+                    attacker_square = pns[1:]
+                    if f'{attacked_square}{attacker_square}' in INT_SQUARES_MAP and pns[0] != 'K':
+                        battery = detect_battery_or_x_ray(attacked_square, pns, square_piece_dict, side_to_move)
+                        n_attackers += len(battery) - 1
+                        x_ray = detect_battery_or_x_ray(attacked_square, pns, square_piece_dict, side_evaluating_for, True)
+                        n_defenders += len(x_ray)
+
                 capturing_pieces_pns = opposing_square_covering_piece_dict[attacked_square]
                 capturing_piece_worth = min([MATERIAL_DICT[pns[0]] for pns in capturing_pieces_pns])
                 hanging_material = MATERIAL_DICT[piece_at_square] - capturing_piece_worth
                 if hanging_material > 0:
-                    hanging_material_list.append(hanging_material)
-    score -= max(hanging_material_list) if hanging_material_list else 0
+                    hanging_material_list.append((f'{piece_at_square}{attacked_square}', hanging_material))
+    score -= max([m[1] for m in hanging_material_list]) if hanging_material_list else 0
 
+    threat_contributing_pieces = {}
     for attacked_square in own_square_covering_piece_dict:
+        capturing_pns = own_square_covering_piece_dict[attacked_square]
+        lightest_capturing_pns = min(capturing_pns, key=lambda x: MATERIAL_DICT[x[0]])
         if attacked_square in opposing_squares_occupied:
             if attacked_square == opposing_king_square:
                 continue
             piece_at_square = square_piece_dict[attacked_square].upper()
             if attacked_square not in opposing_square_covering_piece_dict:
-                threat_score += MATERIAL_DICT[piece_at_square]
+                if lightest_capturing_pns not in threat_contributing_pieces:
+                    threat_contributing_pieces[lightest_capturing_pns] = [MATERIAL_DICT[piece_at_square]]
+                else:
+                    threat_contributing_pieces[lightest_capturing_pns].append(MATERIAL_DICT[piece_at_square])
             else:
                 capturing_pns = own_square_covering_piece_dict[attacked_square]
                 capturing_piece_worth = min([MATERIAL_DICT[pns[0]] for pns in capturing_pns])
                 threatened_material = MATERIAL_DICT[piece_at_square] - capturing_piece_worth
                 if threatened_material > 0:
-                    threat_score += threatened_material
+                    if lightest_capturing_pns not in threat_contributing_pieces:
+                        threat_contributing_pieces[lightest_capturing_pns] = [threatened_material]
+                    else:
+                        threat_contributing_pieces[lightest_capturing_pns].append(threatened_material)
+
+    for hanging_pns, m in hanging_material_list:
+        if hanging_pns in threat_contributing_pieces:
+            threat_contributing_pieces.pop(hanging_pns)
+    for pns in threat_contributing_pieces:
+        threat_score += sum(threat_contributing_pieces[pns])
 
     return {'eval': score, 'threat': threat_score}
