@@ -1,8 +1,8 @@
 from typing import List, Iterable, Dict
 
 from classes.color_position import ColorPosition
-from utils.board_functions import scan_qbr_scope, scan_kn_scope, get_intervening_squares
-from classes.move import LegalMove
+from utils.board_functions import scan_qbr_scope, scan_kn_scope, get_intervening_squares, INT_SQUARES_MAP
+from classes.move import LegalMove, VirtualMove
 from classes.position import Position, opposite_color
 from simple_bot.utils import branch_from_position, check_if_move_ends_game
 
@@ -67,7 +67,7 @@ CENTRAL_SQUARE_BONUS = 0.03
 SQUARE_AROUND_ENEMY_KING = 0.03
 
 # MATERIAL THREAT MULTIPLIER
-MATERIAL_THREAT_MULTIPLIER = 0.05
+MATERIAL_THREAT_MULTIPLIER = 0.2
 CHECKMATE_THREAT_SCORE = 5
 
 # DEVELOPMENT SCORE PENALTY
@@ -382,8 +382,10 @@ def find_material_hanging_on_square(position: Position, capture: LegalMove) -> i
         return material_gain
     elif material_gain <= worth - cost and worth > cost:
         return worth - cost
-    elif worth <= cost and material_gain > 0:
+    elif 0 < material_gain <= worth <= cost:
         return material_gain
+    elif cost > worth and material_gain >= worth:
+        return worth
     return 0
 
 
@@ -492,4 +494,170 @@ def new_evaluate(position: Position) -> Dict[str, float]:
         material_threat = find_material_hanging_on_square(position_with_pass_move, threatened_capture)
         threat_score += material_threat * MATERIAL_THREAT_MULTIPLIER
         score += material_threat * MATERIAL_THREAT_MULTIPLIER
+    return {'eval': score, 'threat': threat_score}
+
+
+def invert_piece_scope_dict(piece_scope_dict: Dict[str, List[str]]) -> Dict[str, List[str]]:
+    square_covering_piece_dict = {}
+    for piece_n_square in piece_scope_dict:
+        covered_squares = piece_scope_dict[piece_n_square]
+        for square in covered_squares:
+            if square not in square_covering_piece_dict:
+                square_covering_piece_dict[square] = [piece_n_square]
+            else:
+                square_covering_piece_dict[square].append(piece_n_square)
+    return square_covering_piece_dict
+
+
+def quick_evaluate(position: Position) -> Dict[str, float]:
+    side_to_move = position.to_move()
+    side_evaluating_for = opposite_color(side_to_move)
+    score = 0
+    threat_score = 0
+    square_piece_dict = position.white_pieces.get_square_piece_symbol_dict() | position.black_pieces.get_square_piece_symbol_dict(lowercase=True)
+    own_squares_occupied = position.get_pieces_by_color(side_evaluating_for).get_occupied_squares()
+    own_king_square = position.get_pieces_by_color(side_evaluating_for).get_king_square()
+    opposing_squares_occupied = position.get_pieces_by_color(side_to_move).get_occupied_squares()
+    own_piece_covered_square_dict = position.get_piece_scope_dict(side_evaluating_for)
+    opposing_piece_covered_square_dict = position.get_piece_scope_dict(side_to_move)
+    own_square_covering_piece_dict = invert_piece_scope_dict(own_piece_covered_square_dict)
+    opposing_square_covering_piece_dict = invert_piece_scope_dict(opposing_piece_covered_square_dict)
+    opposing_king_square = position.get_pieces_by_color(side_to_move).get_king_square()
+    is_under_check = opposing_king_square in own_square_covering_piece_dict
+    if is_under_check:
+        potential_escape_squares = [esc_sq for esc_sq in opposing_piece_covered_square_dict[f'K{opposing_king_square}'] if esc_sq not in opposing_squares_occupied and esc_sq not in own_square_covering_piece_dict]
+        no_legal_king_move = not any([position.virtual_move_is_legal(VirtualMove(side_to_move, 'K', opposing_king_square, attempt)) for attempt in potential_escape_squares])
+        checking_pieces = own_square_covering_piece_dict[opposing_king_square]  # ['Re1', 'Nf6'] (delivering double check on a king on e8)
+        double_check = len(checking_pieces) > 1
+        if no_legal_king_move and double_check:
+            return {'eval': CHECKMATE_SCORE, 'threat': CHECKMATE_SCORE}
+        elif double_check:
+            threat_score += 3
+        else:
+            checking_piece_square = checking_pieces[0][1:]
+            if checking_piece_square not in opposing_square_covering_piece_dict:
+                can_capture = False
+                legal_capturing_pns = []
+            else:
+                potential_capturing_piece_n_squares = opposing_square_covering_piece_dict[checking_piece_square]
+                legal_capturing_pns = [pns for pns in potential_capturing_piece_n_squares if position.virtual_move_is_legal(VirtualMove(side_to_move, pns[0], pns[1:], checking_piece_square))]
+                can_capture = len(legal_capturing_pns) > 0
+            if f'{checking_piece_square}{opposing_king_square}' not in INT_SQUARES_MAP:
+                legal_blocking_pns = []
+                can_block = False
+            else:
+                intervening_squares = INT_SQUARES_MAP[f'{checking_piece_square}{opposing_king_square}']['int']
+                legal_blocking_pns = []
+                for int_sq in intervening_squares:
+                    if int_sq in opposing_square_covering_piece_dict:
+                        potential_blocking_pns = opposing_square_covering_piece_dict[int_sq]
+                        legal_blocking_pns.extend([{'pns': pns, 'int': int_sq, 'm': MATERIAL_DICT[pns[0]]} for pns in potential_blocking_pns if position.virtual_move_is_legal(VirtualMove(side_to_move, pns[0], pns[1:], int_sq)) and pns[0] not in ('P', 'K')])
+                    pawns_on_same_file = [pns for pns in opposing_piece_covered_square_dict if pns[0] == 'P' and pns[1] == int_sq[0]]
+                    for pns in pawns_on_same_file:
+                        squares_it_can_move_to = position.scan_pawn_non_capture_moves(side_to_move, pns[1:])
+                        if int_sq in squares_it_can_move_to:
+                            is_legal = position.virtual_move_is_legal(VirtualMove(side_to_move, 'P', pns[1:], int_sq))
+                            if is_legal:
+                                legal_blocking_pns.append({'pns': pns, 'int': int_sq, 'm': 1})
+                can_block = len(legal_blocking_pns) > 0
+            if no_legal_king_move and (not can_capture) and (not can_block):
+                return {'eval': CHECKMATE_SCORE, 'threat': CHECKMATE_SCORE}
+            if can_block and no_legal_king_move and not can_capture:
+                blocking_convergence = {}
+                for pns_dict in legal_blocking_pns:
+                    if pns_dict['int'] not in blocking_convergence:
+                        blocking_convergence[pns_dict['int']] = [pns_dict['m']]
+                    else:
+                        blocking_convergence[pns_dict['int']].append(pns_dict['m'])
+                if max([len(blocks) for blocks in list(blocking_convergence.values())]) == 1:
+                    threat_score += 3
+            if no_legal_king_move and not can_block and can_capture:
+                if len(legal_capturing_pns) == 1 and checking_piece_square in own_square_covering_piece_dict:
+                    checking_piece_worth = MATERIAL_DICT[checking_pieces[0][0]]
+                    capturing_piece_worth = MATERIAL_DICT[legal_capturing_pns[0][0]]
+                    if (net_gain := capturing_piece_worth - checking_piece_worth) > 0:
+                        threat_score += net_gain
+
+    for sq in square_piece_dict:
+        piece = square_piece_dict[sq]
+        own_piece = piece.isupper() if side_evaluating_for == 'w' else piece.islower()
+        score += MATERIAL_DICT[piece.upper()] if own_piece else -MATERIAL_DICT[piece.upper()]
+        if piece.upper() in ('B', 'N'):
+            back_rank = '1' if piece.isupper() else '8'
+            if sq[1] == back_rank:
+                score += DEVELOPMENT_SCORE_PENALTY if own_piece else -DEVELOPMENT_SCORE_PENALTY
+            if piece.upper() == 'N':
+                if sq in ('e4', 'e5', 'd4', 'd5'):
+                    score += CENTRALIZED_KNIGHT_BONUS if own_piece else -CENTRALIZED_KNIGHT_BONUS
+
+    for pns in own_piece_covered_square_dict:
+        piece = pns[0]
+        squares_covered = own_piece_covered_square_dict[pns]
+        if piece in ('Q', 'R', 'B', 'N'):
+            for covered_square in squares_covered:
+                score += ACTIVITY_COUNT_MULTIPLIER
+                if covered_square in ('e4', 'e5', 'd4', 'd5'):
+                    score += CENTRAL_SQUARE_BONUS
+                if covered_square in opposing_piece_covered_square_dict[f'K{opposing_king_square}'] + [opposing_king_square]:
+                    score += SQUARE_AROUND_ENEMY_KING
+                if piece == 'R':
+                    seventh_rank = '7' if side_evaluating_for == 'w' else '2'
+                    if covered_square[1] == seventh_rank:
+                        score += SEVENTH_RANK_BONUS
+        elif piece == 'P':
+            pawn_control_score_map = WHITE_PAWN_CONTROL_SCORES if side_evaluating_for == 'w' else BLACK_PAWN_CONTROL_SCORES
+            for covered_square in squares_covered:
+                score += pawn_control_score_map[covered_square]
+                if covered_square in opposing_piece_covered_square_dict[f'K{opposing_king_square}'] + [opposing_king_square]:
+                    score += SQUARE_AROUND_ENEMY_KING
+
+    for pns in opposing_piece_covered_square_dict:
+        piece = pns[0]
+        squares_covered = opposing_piece_covered_square_dict[pns]
+        if piece in ('Q', 'R', 'B', 'N'):
+            for covered_square in squares_covered:
+                score -= ACTIVITY_COUNT_MULTIPLIER
+                if covered_square in ('e4', 'e5', 'd4', 'd5'):
+                    score -= CENTRAL_SQUARE_BONUS
+                if covered_square in own_piece_covered_square_dict[f'K{own_king_square}'] + [own_king_square]:
+                    score -= SQUARE_AROUND_ENEMY_KING
+                if piece == 'R':
+                    seventh_rank = '7' if side_to_move == 'w' else '2'
+                    if covered_square[1] == seventh_rank:
+                        score -= SEVENTH_RANK_BONUS
+        elif piece == 'P':
+            pawn_control_score_map = WHITE_PAWN_CONTROL_SCORES if side_to_move == 'w' else BLACK_PAWN_CONTROL_SCORES
+            for covered_square in squares_covered:
+                score -= pawn_control_score_map[covered_square]
+                if covered_square in own_piece_covered_square_dict[f'K{own_king_square}'] + [own_king_square]:
+                    score -= SQUARE_AROUND_ENEMY_KING
+
+    hanging_material_list = []
+    for attacked_square in opposing_square_covering_piece_dict:
+        if attacked_square in own_squares_occupied:
+            piece_at_square = square_piece_dict[attacked_square].upper()
+            if attacked_square not in own_square_covering_piece_dict:
+                hanging_material_list.append(MATERIAL_DICT[piece_at_square])
+            else:
+                capturing_pieces_pns = opposing_square_covering_piece_dict[attacked_square]
+                capturing_piece_worth = min([MATERIAL_DICT[pns[0]] for pns in capturing_pieces_pns])
+                hanging_material = MATERIAL_DICT[piece_at_square] - capturing_piece_worth
+                if hanging_material > 0:
+                    hanging_material_list.append(hanging_material)
+    score -= max(hanging_material_list) if hanging_material_list else 0
+
+    for attacked_square in own_square_covering_piece_dict:
+        if attacked_square in opposing_squares_occupied:
+            if attacked_square == opposing_king_square:
+                continue
+            piece_at_square = square_piece_dict[attacked_square].upper()
+            if attacked_square not in opposing_square_covering_piece_dict:
+                threat_score += MATERIAL_DICT[piece_at_square]
+            else:
+                capturing_pns = own_square_covering_piece_dict[attacked_square]
+                capturing_piece_worth = min([MATERIAL_DICT[pns[0]] for pns in capturing_pns])
+                threatened_material = MATERIAL_DICT[piece_at_square] - capturing_piece_worth
+                if threatened_material > 0:
+                    threat_score += threatened_material
+
     return {'eval': score, 'threat': threat_score}
