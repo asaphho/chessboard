@@ -606,10 +606,18 @@ def quick_evaluate(position: Position) -> Dict[str, float]:
                         score += SEVENTH_RANK_BONUS
         elif piece == 'P':
             pawn_control_score_map = WHITE_PAWN_CONTROL_SCORES if side_evaluating_for == 'w' else BLACK_PAWN_CONTROL_SCORES
+            already_controlled_squares = []
+            already_controlled_squares_around_king = []
             for covered_square in squares_covered:
-                score += pawn_control_score_map[covered_square]
+                if covered_square not in already_controlled_squares:
+                    score += pawn_control_score_map[covered_square]
+                    already_controlled_squares.append(covered_square)
+                else:
+                    score += pawn_control_score_map[covered_square] / 2
                 if covered_square in opposing_piece_covered_square_dict[f'K{opposing_king_square}'] + [opposing_king_square]:
-                    score += SQUARE_AROUND_ENEMY_KING
+                    if covered_square not in already_controlled_squares_around_king:
+                        score += SQUARE_AROUND_ENEMY_KING
+                        already_controlled_squares_around_king.append(covered_square)
 
     for pns in opposing_piece_covered_square_dict:
         piece = pns[0]
@@ -627,10 +635,18 @@ def quick_evaluate(position: Position) -> Dict[str, float]:
                         score -= SEVENTH_RANK_BONUS
         elif piece == 'P':
             pawn_control_score_map = WHITE_PAWN_CONTROL_SCORES if side_to_move == 'w' else BLACK_PAWN_CONTROL_SCORES
+            already_controlled_squares = []
+            already_controlled_squares_around_king = []
             for covered_square in squares_covered:
-                score -= pawn_control_score_map[covered_square]
+                if covered_square not in already_controlled_squares:
+                    score -= pawn_control_score_map[covered_square]
+                    already_controlled_squares.append(covered_square)
+                else:
+                    score -= pawn_control_score_map[covered_square] / 2
                 if covered_square in own_piece_covered_square_dict[f'K{own_king_square}'] + [own_king_square]:
-                    score -= SQUARE_AROUND_ENEMY_KING
+                    if covered_square not in already_controlled_squares_around_king:
+                        score -= SQUARE_AROUND_ENEMY_KING
+                        already_controlled_squares_around_king.append(covered_square)
 
     hanging_material_list = []
     for attacked_square in opposing_square_covering_piece_dict:
