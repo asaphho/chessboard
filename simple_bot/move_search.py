@@ -69,7 +69,8 @@ def collapse_node(node: Node, aggregator: Callable[[List[float]], float]):
     node.remove_all_children()
 
 
-def select_top_two_moves(position: Position, evaluate: Callable[[Position], Dict[str, float]]) -> List[Tuple[LegalMove, Position, float]]:
+def select_top_n_moves(position: Position, evaluate: Callable[[Position], Dict[str, float]], n: int,
+                       pick_n_threatening: int) -> List[Tuple[LegalMove, Position, float]]:
     to_move = position.to_move()
     all_legal_moves = position.get_all_legal_moves_for_color(to_move)
     positions = [branch_from_position(position, move) for move in all_legal_moves]
@@ -80,7 +81,7 @@ def select_top_two_moves(position: Position, evaluate: Callable[[Position], Dict
     evaluations.sort(key=lambda x: x[1], reverse=True)
     threat_scores.sort(key=lambda x: x[1], reverse=True)
     returned_list = []
-    for j in (0,):
+    for j in range(pick_n_threatening):
         try:
 
             i = threat_scores[j][0]
@@ -94,7 +95,7 @@ def select_top_two_moves(position: Position, evaluate: Callable[[Position], Dict
         except IndexError:
             return returned_list
     for j in range(len(evaluations)):
-        if len(returned_list) >= 2:
+        if len(returned_list) >= n:
             break
         i = evaluations[j][0]
         move = all_legal_moves[i]
@@ -107,29 +108,30 @@ def select_top_two_moves(position: Position, evaluate: Callable[[Position], Dict
 
 
 def make_4_ply_move_tree(position: Position, evaluate: Callable[[Position], Dict[str, float]],
-                         quick_evaluate: Callable[[Position], Dict[str, float]]) -> Node:
+                         quick_evaluate: Callable[[Position], Dict[str, float]], n: int,
+                         pick_n_threatening: int) -> Node:
     side_to_move = position.to_move()
     opposing_side = opposite_color(side_to_move)
     tree = Node('Current', 0)
-    top_two_first_moves = select_top_two_moves(position, quick_evaluate)
-    for first_move_tup in top_two_first_moves:
+    top_first_moves = select_top_n_moves(position, quick_evaluate, n, pick_n_threatening)
+    for first_move_tup in top_first_moves:
         first_move = first_move_tup[0]
         position_after_first_move = first_move_tup[1]
         first_move_node = tree.add_child(first_move.generate_uci(), first_move_tup[2])
-        top_two_first_replies = select_top_two_moves(position_after_first_move, quick_evaluate)
-        for first_reply_tup in top_two_first_replies:
+        top_first_replies = select_top_n_moves(position_after_first_move, quick_evaluate, n, pick_n_threatening)
+        for first_reply_tup in top_first_replies:
             first_reply = first_reply_tup[0]
             position_after_first_reply = first_reply_tup[1]
             first_reply_node = first_move_node.add_child(f'{first_move_node.get_name()}-{first_reply.generate_uci()}',
                                                          first_reply_tup[2])
-            top_two_second_moves = select_top_two_moves(position_after_first_reply, quick_evaluate)
-            for second_move_tup in top_two_second_moves:
+            top_second_moves = select_top_n_moves(position_after_first_reply, quick_evaluate, n, pick_n_threatening)
+            for second_move_tup in top_second_moves:
                 second_move = second_move_tup[0]
                 position_after_second_move = second_move_tup[1]
                 second_move_node = first_reply_node.add_child(f'{first_move_node.get_name()}-{second_move.generate_uci()}',
                                                               second_move_tup[2])
-                top_two_second_replies = select_top_two_moves(position_after_second_move, evaluate)
-                for second_reply_tup in top_two_second_replies:
+                top_second_replies = select_top_n_moves(position_after_second_move, evaluate, n, pick_n_threatening)
+                for second_reply_tup in top_second_replies:
                     second_reply = second_reply_tup[0]
                     second_reply_node = second_move_node.add_child(f'{second_move_node.get_name()}-{second_reply.generate_uci()}',
                                                                    second_reply_tup[2])
@@ -153,15 +155,18 @@ def collapse_at_level(tree: Node, level: int, aggregator: Callable[[List[float]]
 
 
 def choose_best_move(position: Position, evaluation_func: Callable[[Position], Dict[str, float]],
-                     quick_evaluate: Callable[[Position], Dict[str, float]]) -> str:
+                     quick_evaluate: Callable[[Position], Dict[str, float]], breadth: int,
+                     aggression: int) -> str:
     """
     Returns a UCI notation e.g. 'd1h5'
+    :param breadth:
+    :param aggression:
     :param quick_evaluate:
     :param evaluation_func:
     :param position:
     :return:
     """
-    tree = make_4_ply_move_tree(position, evaluation_func, quick_evaluate)
+    tree = make_4_ply_move_tree(position, evaluation_func, quick_evaluate, breadth, aggression)
     collapse_at_level(tree, 4, lambda x: -max(x))
     collapse_at_level(tree, 3, max)
     collapse_at_level(tree, 2, lambda x: -max(x))
