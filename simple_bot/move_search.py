@@ -1,5 +1,5 @@
 from typing import List, Callable, Tuple, Dict
-from random import uniform
+from random import uniform, shuffle
 from classes.move import LegalMove
 from classes.position import Position, opposite_color
 from simple_bot.utils import branch_from_position
@@ -107,13 +107,28 @@ def select_top_n_moves(position: Position, evaluate: Callable[[Position], Dict[s
     return returned_list
 
 
+def select_random_n_moves(position: Position, evaluate: Callable[[Position], Dict[str, float]], n: int) -> List[Tuple[LegalMove, Position, float]]:
+    all_legal_moves = position.get_all_legal_moves_for_side_to_move()
+    shuffle(all_legal_moves)
+    returned_list = []
+    for i in range(n):
+        try:
+            move = all_legal_moves[i]
+            new_position = branch_from_position(position, move)
+            score = evaluate(new_position)['eval']
+            returned_list.append((move, new_position, score))
+        except IndexError:
+            return returned_list
+    return returned_list
+
+
 def make_4_ply_move_tree(position: Position, evaluate: Callable[[Position], Dict[str, float]],
                          quick_evaluate: Callable[[Position], Dict[str, float]], n: int,
-                         pick_n_threatening: int, fluctuation: float) -> Node:
+                         pick_n_threatening: int, fluctuation: float, shuffle_first_level: bool = False) -> Node:
     side_to_move = position.to_move()
     opposing_side = opposite_color(side_to_move)
     tree = Node('Current', 0)
-    top_first_moves = select_top_n_moves(position, quick_evaluate, n, pick_n_threatening, fluctuation)
+    top_first_moves = select_top_n_moves(position, quick_evaluate, n, pick_n_threatening, fluctuation) if not shuffle_first_level else select_random_n_moves(position, quick_evaluate, n)
     for first_move_tup in top_first_moves:
         first_move = first_move_tup[0]
         position_after_first_move = first_move_tup[1]
@@ -167,7 +182,25 @@ def choose_best_move(position: Position, evaluation_func: Callable[[Position], D
     :param position:
     :return:
     """
-    tree = make_4_ply_move_tree(position, evaluation_func, quick_evaluate, breadth, aggression, fluctuation)
+    initial_score = -quick_evaluate(position)['eval']
+    best_move, best_score = converge(aggression, breadth, evaluation_func, fluctuation, position, quick_evaluate)
+    if best_score < initial_score:
+        retry_attempts = 0
+        curr_best_score = best_score
+        curr_best_move = best_move
+        while retry_attempts <= 5:
+            best_move, best_score = converge(aggression, breadth, evaluation_func, fluctuation, position, quick_evaluate, True)
+            if best_score > curr_best_score:
+                curr_best_score = best_score
+                curr_best_move = best_move
+
+            retry_attempts += 1
+        return curr_best_move
+    return best_move
+
+
+def converge(aggression, breadth, evaluation_func, fluctuation, position, quick_evaluate, shuffle=False):
+    tree = make_4_ply_move_tree(position, evaluation_func, quick_evaluate, breadth, aggression, fluctuation, shuffle)
     collapse_at_level(tree, 4, lambda x: -max(x))
     collapse_at_level(tree, 3, max)
     collapse_at_level(tree, 2, lambda x: -max(x))
@@ -179,5 +212,5 @@ def choose_best_move(position: Position, evaluation_func: Callable[[Position], D
         if move_score > best_score:
             best_score = move_score
             best_move = move.get_name()
-    return best_move
+    return best_move, best_score
 

@@ -670,27 +670,29 @@ def quick_evaluate(position: Position) -> Dict[str, float]:
     for attacked_square in opposing_square_covering_piece_dict:
         if attacked_square in own_squares_occupied:
             piece_at_square = square_piece_dict[attacked_square].upper()
+            if piece_at_square == 'K':
+                continue
             if attacked_square not in own_square_covering_piece_dict:
                 hanging_material_list.append((f'{piece_at_square}{attacked_square}', MATERIAL_DICT[piece_at_square]))
             else:
-                defenders_pns = own_square_covering_piece_dict[attacked_square]
-                n_defenders = 0
-                for pns in defenders_pns:
-                    n_defenders += 1
-                    defender_sq = pns[1:]
-                    if f'{attacked_square}{defender_sq}' in INT_SQUARES_MAP and pns[0] != 'K':
-                        battery = detect_battery_or_x_ray(attacked_square, pns, square_piece_dict, side_evaluating_for)
-                        n_defenders += len(battery) - 1
-                attackers_pns = opposing_square_covering_piece_dict[attacked_square]
-                n_attackers = 0
-                for pns in attackers_pns:
-                    n_attackers += 1
-                    attacker_square = pns[1:]
-                    if f'{attacked_square}{attacker_square}' in INT_SQUARES_MAP and pns[0] != 'K':
-                        battery = detect_battery_or_x_ray(attacked_square, pns, square_piece_dict, side_to_move)
-                        n_attackers += len(battery) - 1
-                        x_ray = detect_battery_or_x_ray(attacked_square, pns, square_piece_dict, side_evaluating_for, True)
-                        n_defenders += len(x_ray)
+                # defenders_pns = own_square_covering_piece_dict[attacked_square]
+                # n_defenders = 0
+                # for pns in defenders_pns:
+                #     n_defenders += 1
+                #     defender_sq = pns[1:]
+                #     if f'{attacked_square}{defender_sq}' in INT_SQUARES_MAP and pns[0] != 'K':
+                #         battery = detect_battery_or_x_ray(attacked_square, pns, square_piece_dict, side_evaluating_for)
+                #         n_defenders += len(battery) - 1
+                # attackers_pns = opposing_square_covering_piece_dict[attacked_square]
+                # n_attackers = 0
+                # for pns in attackers_pns:
+                #     n_attackers += 1
+                #     attacker_square = pns[1:]
+                #     if f'{attacked_square}{attacker_square}' in INT_SQUARES_MAP and pns[0] != 'K':
+                #         battery = detect_battery_or_x_ray(attacked_square, pns, square_piece_dict, side_to_move)
+                #         n_attackers += len(battery) - 1
+                #         x_ray = detect_battery_or_x_ray(attacked_square, pns, square_piece_dict, side_evaluating_for, True)
+                #         n_defenders += len(x_ray)
 
                 capturing_pieces_pns = opposing_square_covering_piece_dict[attacked_square]
                 capturing_piece_worth = min([MATERIAL_DICT[pns[0]] for pns in capturing_pieces_pns])
