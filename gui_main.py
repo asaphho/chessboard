@@ -3,8 +3,8 @@ from classes.move import LegalMove
 import PySimpleGUI as sg
 import PySimpleGUI.PySimpleGUI
 import sys
-from classes.position import Position, ALL_SQUARES
-from utils.board_functions import square_color_int
+from classes.position import Position
+from utils.board_functions import square_color_int, ALL_SQUARES
 from utils.parse_notation import piece_to_symbol
 from version import software_version
 from classes.game import Game
