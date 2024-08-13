@@ -6,6 +6,8 @@ import sys
 from classes.position import Position
 from utils.board_functions import square_color_int, ALL_SQUARES
 from utils.parse_notation import piece_to_symbol
+from simple_bot.bot1.evaluation import quick_evaluate
+from classes.bot import Bot
 from version import software_version
 from classes.game import Game
 from typing import List, Dict
@@ -241,6 +243,19 @@ def create_input_move_prompt(game):
     return prompt
 
 
+def play_computer_move(bot, game, window):
+    window['-TEXT-'].update('Bot is thinking.')
+    res, move = game.play_computer_move(bot, True)
+    game_end_check = game.check_game_end_conditions()
+    if game_end_check == 'N':
+        update_window_layout_after_move_game_continues(game, move, res, window)
+        return False
+    else:
+        update_layout(game, window, res, game_end_text=game_end_check)
+        exit_signal = enter_game_end_loop(game, game_end_check, window)
+        return exit_signal
+
+
 def display_moves(game: Game) -> None:
     moves = game.show_moves(return_string_for_window=True)
     new_window_layout = [[sg.Text(moves)]]
@@ -248,7 +263,15 @@ def display_moves(game: Game) -> None:
 
 
 def main(game):
-    layout = generate_layout(game)
+    bot = Bot(quick_evaluate, 3, 2, 0.1)
+    bot_color = 'b'
+    playing_against_bot = True
+    if playing_against_bot and bot_color == 'w':
+        res = game.play_computer_move(bot)
+        game.current_position.flip_position()
+        layout = generate_layout(game, res)
+    else:
+        layout = generate_layout(game)
     window = sg.Window(TITLE, layout, element_padding=(0, 0))
     while True:
         event, values = window.read()
@@ -268,6 +291,9 @@ def main(game):
                 game.restart_game()
                 update_layout(game, window, 'Game restarted.')
         elif event == 'Take back last move':
+            if playing_against_bot:
+                window['-TEXT-'].update('Taking back not supported when playing against bot yet.')
+                continue
             text = game.take_back_last_move(silent=True)
             update_layout(game, window, text)
         elif event == 'Enter move':
@@ -282,6 +308,10 @@ def main(game):
             game_end_check = game.check_game_end_conditions()
             if game_end_check == 'N':
                 update_window_layout_after_move_game_continues(game, move, res, window)
+                if playing_against_bot:
+                    exit_signal = play_computer_move(bot, game, window)
+                    if exit_signal:
+                        break
             else:
                 update_layout(game, window, res, game_end_text=game_end_check)
                 exit_signal = enter_game_end_loop(game, game_end_check, window)
@@ -318,6 +348,9 @@ def main(game):
                         update_layout(game, window, 'Game restarted.')
                         break
                 elif event == 'Take back last move':
+                    if playing_against_bot:
+                        window['-TEXT-'].update('Taking back not supported when playing against bot yet.')
+                        continue
                     text = game.take_back_last_move(silent=True)
                     update_layout(game, window, text)
                     break
@@ -366,6 +399,10 @@ def main(game):
                         game_end_check = game.check_game_end_conditions()
                         if game_end_check == 'N':
                             update_window_layout_after_move_game_continues(game, move, res, window)
+                            if playing_against_bot:
+                                exit_signal = play_computer_move(bot, game, window)
+                                if exit_signal:
+                                    break
                             break
                         else:
                             update_layout(game, window, res, game_end_text=game_end_check)
