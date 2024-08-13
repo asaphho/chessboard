@@ -669,7 +669,14 @@ def quick_evaluate(position: Position) -> Dict[str, float]:
                 back_rank = '1' if color == 'w' else '8'
                 yet_traversed_squares = LINE_EXTEND_MAP[f'{sq[0]}{back_rank}{sq}']
                 sq_in_front_attacked = False
-                # TODO: FINISH
+                square_covering_piece_dict = opposing_square_covering_piece_dict if own_piece else own_square_covering_piece_dict
+                for sq in yet_traversed_squares:
+                    if sq in square_covering_piece_dict:
+                        if any([pns.startswith('P') for pns in square_covering_piece_dict[sq]]):
+                            sq_in_front_attacked = True
+                            break
+                if not sq_in_front_attacked:
+                    score += 0.5 if own_piece else -0.5
 
     own_pawn_unique_controlled_squares = []
     already_pawn_controlled_squares_around_king = []
