@@ -189,8 +189,11 @@ def choose_best_move(position: Position, evaluate: Callable[[Position], Dict[str
     :return:
     """
     best_move, best_score = converge(aggression, breadth, evaluate, fluctuation, position)
-    ran_best_move, ran_best_score = converge(aggression, breadth - 1, evaluate, fluctuation, position, True)
-    return best_move if best_score > ran_best_score else ran_best_move
+    run2_best_move, run2_best_score = converge(aggression, breadth, evaluate, fluctuation, position, True)
+    run3_best_move, run3_best_score = converge(aggression, breadth, evaluate, fluctuation, position, True)
+    candidates = [(best_move, best_score), (run2_best_move, run2_best_score), (run3_best_move, run3_best_score)]
+    candidates.sort(key=lambda x: x[1], reverse=True)
+    return candidates[0][0]
 
 
 def converge(aggression, breadth, evaluation_func, fluctuation, position, shuffle=False):

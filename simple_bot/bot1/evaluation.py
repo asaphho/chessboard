@@ -565,7 +565,13 @@ def is_pinned(king_sq: str, king_color: str, pns: str, target_sq: str, square_pi
 
 def count_pawns_in_front_on_file(square: str, color: str, square_piece_dict: Dict[str, str]) -> int:
     file = square[0]
-    squares_in_front = LINE_EXTEND_MAP[f'{file}1{square}'] if color == 'w' else LINE_EXTEND_MAP[f'{file}8{square}']
+    back_rank = 1 if color == 'w' else 8
+    if square == f'{file}{back_rank}':
+        destination_rank = 9 - back_rank
+        direction = 1 if color == 'w' else -1
+        squares_in_front = [f'{file}{i}' for i in range(back_rank + direction, destination_rank + direction, direction)]
+    else:
+        squares_in_front = LINE_EXTEND_MAP[f'{file}1{square}'] if color == 'w' else LINE_EXTEND_MAP[f'{file}8{square}']
     return len([sq for sq in square_piece_dict if sq in squares_in_front and square_piece_dict[sq].upper() == 'P'])
 
 
