@@ -563,6 +563,12 @@ def is_pinned(king_sq: str, king_color: str, pns: str, target_sq: str, square_pi
     return False
 
 
+def count_pawns_in_front_on_file(square: str, color: str, square_piece_dict: Dict[str, str]) -> int:
+    file = square[0]
+    squares_in_front = LINE_EXTEND_MAP[f'{file}1{square}'] if color == 'w' else LINE_EXTEND_MAP[f'{file}8{square}']
+    return len([sq for sq in square_piece_dict if sq in squares_in_front and square_piece_dict[sq].upper() == 'P'])
+
+
 def quick_evaluate(position: Position) -> Dict[str, float]:
     side_to_move = position.to_move()
     side_evaluating_for = opposite_color(side_to_move)
@@ -636,13 +642,34 @@ def quick_evaluate(position: Position) -> Dict[str, float]:
         piece = square_piece_dict[sq]
         own_piece = piece.isupper() if side_evaluating_for == 'w' else piece.islower()
         score += MATERIAL_DICT[piece.upper()] if own_piece else -MATERIAL_DICT[piece.upper()]
-        if piece.upper() in ('B', 'N'):
-            back_rank = '1' if piece.isupper() else '8'
+        color = 'w' if piece.isupper() else 'b'
+        if piece.upper() == 'R':
+            n_pawns_in_front = count_pawns_in_front_on_file(sq, color, square_piece_dict)
+            if n_pawns_in_front == 1:
+                score += 0.05 if own_piece else -0.05
+            elif n_pawns_in_front == 0:
+                score += 0.1 if own_piece else -0.1
+        elif piece.upper() in ('B', 'N'):
+            back_rank = '1' if color == 'w' else '8'
             if sq[1] == back_rank:
                 score += DEVELOPMENT_SCORE_PENALTY if own_piece else -DEVELOPMENT_SCORE_PENALTY
             if piece.upper() == 'N':
                 if sq in ('e4', 'e5', 'd4', 'd5'):
                     score += CENTRALIZED_KNIGHT_BONUS if own_piece else -CENTRALIZED_KNIGHT_BONUS
+            if piece.upper() == 'B':
+                opposing_color = 'w' if piece.islower() else 'b'
+                own_color = opposite_color(opposing_color)
+                n_bishops = len(position.get_pieces_by_color(own_color).get_piece_type_squares('B'))
+                n_opposing_bishops = len(position.get_pieces_by_color(opposing_color).get_piece_type_squares('B'))
+                if n_bishops == 2 and n_opposing_bishops == 1:
+                    score += 0.25 if own_piece else -0.25
+        elif piece.upper() == 'P':
+            n_pawns_in_front = count_pawns_in_front_on_file(sq, color, square_piece_dict)
+            if n_pawns_in_front == 0:
+                back_rank = '1' if color == 'w' else '8'
+                yet_traversed_squares = LINE_EXTEND_MAP[f'{sq[0]}{back_rank}{sq}']
+                sq_in_front_attacked = False
+                # TODO: FINISH
 
     own_pawn_unique_controlled_squares = []
     already_pawn_controlled_squares_around_king = []
@@ -839,9 +866,14 @@ def quick_evaluate(position: Position) -> Dict[str, float]:
         if square in own_square_covering_piece_dict:
             threat_score += 0.4
             score += 0.08
+            if any([pns.startswith('Q') for pns in own_square_covering_piece_dict[square]]) and len(own_square_covering_piece_dict[square]) > 1:
+                threat_score += 0.2
+                score += 0.08
 
     for square in own_piece_covered_square_dict[f'K{own_king_square}']:
         if square in opposing_square_covering_piece_dict:
             score -= 0.08
+            if any([pns.startswith('Q') for pns in opposing_square_covering_piece_dict[square]]) and len(opposing_square_covering_piece_dict[square]) > 1:
+                score -= 0.08
 
     return {'eval': score, 'threat': threat_score}
