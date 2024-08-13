@@ -77,7 +77,7 @@ def make_virtual_position(square_piece_dict: Dict[str, str], side_to_move: str) 
     black_pieces = {}
     for square in square_piece_dict:
         fen_symbol = square_piece_dict[square]
-        piece = FEN_UPPERCASE_SYMBOL_TO_PIECE[fen_symbol.upper()]
+        piece = fen_symbol.upper()
         if fen_symbol.isupper():
             if piece not in white_pieces:
                 white_pieces[piece] = [square]
@@ -88,8 +88,8 @@ def make_virtual_position(square_piece_dict: Dict[str, str], side_to_move: str) 
                 black_pieces[piece] = [square]
             else:
                 black_pieces[piece].append(square)
-    white_position = ColorPosition('white', white_pieces)
-    black_position = ColorPosition('black', black_pieces)
+    white_position = ColorPosition('w', white_pieces)
+    black_position = ColorPosition('b', black_pieces)
     return Position(white_pieces=white_position, black_pieces=black_position, side_to_move=side_to_move)
 
 
@@ -107,21 +107,21 @@ def scan_possible_castling_potential(virtual_position: Position) -> Dict[str, Li
     """
     Checks if the kings and rooks are still on their home squares to determine if castling potential is still possible
     :param virtual_position:
-    :return: a dictionary of the following form: {'white': ['kingside', 'queenside'], 'black': ['kingside']}. If one side cannot castle, the value will be an empty list. e.g. {'white': [], 'black': ['kingside']}
+    :return: a dictionary of the following form: {'w': ['k', 'q'], 'b': ['k']}. If one side cannot castle, the value will be an empty list. e.g. {'w': [], 'b': ['k']}
     """
-    possible_castling_potential = {'white': [], 'black': []}
+    possible_castling_potential = {'w': [], 'b': []}
     for color in possible_castling_potential:
         pieces = virtual_position.get_pieces_by_color(color)
-        back_rank = '1' if color == 'white' else '8'
+        back_rank = '1' if color == 'w' else '8'
         king_on_home_square = pieces.get_king_square() == f'e{back_rank}'
-        has_rooks = 'rook' in pieces.list_unique_piece_types()
+        has_rooks = 'R' in pieces.list_unique_piece_types()
         if king_on_home_square and has_rooks:
-            rook_squares = pieces.get_piece_type_squares('rook')
+            rook_squares = pieces.get_piece_type_squares('R')
             for square in rook_squares:
                 if square == f'a{back_rank}':
-                    possible_castling_potential[color].append('queenside')
+                    possible_castling_potential[color].append('q')
                 elif square == f'h{back_rank}':
-                    possible_castling_potential[color].append('kingside')
+                    possible_castling_potential[color].append('k')
     return possible_castling_potential
 
 
@@ -133,11 +133,11 @@ def list_possible_en_passant_squares(virtual_position: Position) -> List[str]:
     :return:
     """
     side_not_to_move = opposite_color(virtual_position.to_move())
-    if 'pawn' not in virtual_position.get_pieces_by_color(side_not_to_move).list_unique_piece_types():
+    if 'P' not in virtual_position.get_pieces_by_color(side_not_to_move).list_unique_piece_types():
         return []
-    two_square_move_rank = '4' if side_not_to_move == 'white' else '5'
-    ranks_to_be_empty = ['2', '3'] if side_not_to_move == 'white' else ['7', '6']
-    pawn_squares = virtual_position.get_pieces_by_color(side_not_to_move).get_piece_type_squares('pawn')
+    two_square_move_rank = '4' if side_not_to_move == 'w' else '5'
+    ranks_to_be_empty = ['2', '3'] if side_not_to_move == 'w' else ['7', '6']
+    pawn_squares = virtual_position.get_pieces_by_color(side_not_to_move).get_piece_type_squares('P')
     possible_en_passant_squares = []
     squares_on_correct_rank = [square for square in pawn_squares if square[1] == two_square_move_rank]
     if len(squares_on_correct_rank) == 0:
@@ -165,9 +165,9 @@ def parse_full_fen(full_fen: str) -> Position:
     except IndexError:
         raise ValueError('No active side')
     if active_side_symbol.lower() == 'w':
-        side_to_move = 'white'
+        side_to_move = 'w'
     elif active_side_symbol.lower() == 'b':
-        side_to_move = 'black'
+        side_to_move = 'b'
     else:
         raise ValueError(f'Could not recognise {active_side_symbol} as active side. Must be \'w\' or \'b\'.')
     virtual_position = make_virtual_position(square_piece_dict, side_to_move)
@@ -181,16 +181,16 @@ def parse_full_fen(full_fen: str) -> Position:
         raise ValueError('No castling rights indicated.')
     castling_potential = scan_possible_castling_potential(virtual_position)
     if 'K' in castling_rights:
-        if 'kingside' not in castling_potential['white']:
+        if 'k' not in castling_potential['w']:
             castling_rights = castling_rights.replace('K', '')
     if 'k' in castling_rights:
-        if 'kingside' not in castling_potential['black']:
+        if 'k' not in castling_potential['b']:
             castling_rights = castling_rights.replace('k', '')
     if 'Q' in castling_rights:
-        if 'queenside' not in castling_potential['white']:
+        if 'q' not in castling_potential['w']:
             castling_rights = castling_rights.replace('Q', '')
     if 'q' in castling_rights:
-        if 'queenside' not in castling_potential['black']:
+        if 'q' not in castling_potential['b']:
             castling_rights = castling_rights.replace('q', '')
     if 'K' not in castling_rights:
         virtual_position.white_pieces.disable_short_castling()

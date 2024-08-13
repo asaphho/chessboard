@@ -70,7 +70,7 @@ def collapse_node(node: Node, aggregator: Callable[[List[float]], float]):
 
 
 def select_top_n_moves(position: Position, evaluate: Callable[[Position], Dict[str, float]], n: int,
-                       pick_n_threatening: int, fluctuation: float) -> List[Tuple[LegalMove, Position, float]]:
+                       pick_n_threatening: int, fluctuation: float, print_score: bool = False) -> List[Tuple[LegalMove, Position, float]]:
     to_move = position.to_move()
     all_legal_moves = position.get_all_legal_moves_for_color(to_move)
     positions = [branch_from_position(position, move) for move in all_legal_moves]
@@ -93,6 +93,8 @@ def select_top_n_moves(position: Position, evaluate: Callable[[Position], Dict[s
             score = evaluations[i][1]
             returned_list.append((move, position, score))
         except IndexError:
+            if print_score:
+                print("Top moves and scores: ", [(tup[0].generate_uci(), tup[2]) for tup in returned_list])
             return returned_list
     for j in range(len(evaluations)):
         if len(returned_list) >= n:
@@ -103,7 +105,8 @@ def select_top_n_moves(position: Position, evaluate: Callable[[Position], Dict[s
             position = positions[i]
             score = evaluations[j][1]
             returned_list.append((move, position, score))
-
+    if print_score:
+        print("Top moves and scores: ", [(tup[0].generate_uci(), tup[2]) for tup in returned_list])
     return returned_list
 
 
@@ -111,35 +114,39 @@ def select_random_n_moves(position: Position, evaluate: Callable[[Position], Dic
     all_legal_moves = position.get_all_legal_moves_for_side_to_move()
     shuffle(all_legal_moves)
     returned_list = []
-    for i in range(n):
+    i = 0
+    while len(returned_list) < n:
         try:
             move = all_legal_moves[i]
+            if move.pawn_promotion_required() and move.promotion_piece != 'Q':
+                i += 1
+                continue
             new_position = branch_from_position(position, move)
             score = evaluate(new_position)['eval']
             returned_list.append((move, new_position, score))
+            i += 1
         except IndexError:
             return returned_list
     return returned_list
 
 
-def make_4_ply_move_tree(position: Position, evaluate: Callable[[Position], Dict[str, float]],
-                         quick_evaluate: Callable[[Position], Dict[str, float]], n: int,
+def make_4_ply_move_tree(position: Position, evaluate: Callable[[Position], Dict[str, float]], n: int,
                          pick_n_threatening: int, fluctuation: float, shuffle_first_level: bool = False) -> Node:
     side_to_move = position.to_move()
     opposing_side = opposite_color(side_to_move)
     tree = Node('Current', 0)
-    top_first_moves = select_top_n_moves(position, quick_evaluate, n, pick_n_threatening, fluctuation) if not shuffle_first_level else select_random_n_moves(position, quick_evaluate, n)
+    top_first_moves = select_top_n_moves(position, evaluate, n, pick_n_threatening, fluctuation) if not shuffle_first_level else select_random_n_moves(position, evaluate, n)
     for first_move_tup in top_first_moves:
         first_move = first_move_tup[0]
         position_after_first_move = first_move_tup[1]
         first_move_node = tree.add_child(first_move.generate_uci(), first_move_tup[2])
-        top_first_replies = select_top_n_moves(position_after_first_move, quick_evaluate, n, pick_n_threatening, fluctuation)
+        top_first_replies = select_top_n_moves(position_after_first_move, evaluate, n, pick_n_threatening, fluctuation)
         for first_reply_tup in top_first_replies:
             first_reply = first_reply_tup[0]
             position_after_first_reply = first_reply_tup[1]
             first_reply_node = first_move_node.add_child(f'{first_move_node.get_name()}-{first_reply.generate_uci()}',
                                                          first_reply_tup[2])
-            top_second_moves = select_top_n_moves(position_after_first_reply, quick_evaluate, n, pick_n_threatening, fluctuation)
+            top_second_moves = select_top_n_moves(position_after_first_reply, evaluate, n, pick_n_threatening, fluctuation)
             for second_move_tup in top_second_moves:
                 second_move = second_move_tup[0]
                 position_after_second_move = second_move_tup[1]
@@ -169,38 +176,25 @@ def collapse_at_level(tree: Node, level: int, aggregator: Callable[[List[float]]
             collapsed_node_names.append(parent.get_name())
 
 
-def choose_best_move(position: Position, evaluation_func: Callable[[Position], Dict[str, float]],
-                     quick_evaluate: Callable[[Position], Dict[str, float]], breadth: int,
+def choose_best_move(position: Position, evaluate: Callable[[Position], Dict[str, float]],
+                     breadth: int,
                      aggression: int, fluctuation: float) -> str:
     """
     Returns a UCI notation e.g. 'd1h5'
     :param fluctuation:
     :param breadth:
     :param aggression:
-    :param quick_evaluate:
-    :param evaluation_func:
+    :param evaluate:
     :param position:
     :return:
     """
-    initial_score = -quick_evaluate(position)['eval']
-    best_move, best_score = converge(aggression, breadth, evaluation_func, fluctuation, position, quick_evaluate)
-    if best_score < initial_score:
-        retry_attempts = 0
-        curr_best_score = best_score
-        curr_best_move = best_move
-        while retry_attempts <= 5:
-            best_move, best_score = converge(aggression, breadth, evaluation_func, fluctuation, position, quick_evaluate, True)
-            if best_score > curr_best_score:
-                curr_best_score = best_score
-                curr_best_move = best_move
-
-            retry_attempts += 1
-        return curr_best_move
-    return best_move
+    best_move, best_score = converge(aggression, breadth, evaluate, fluctuation, position)
+    ran_best_move, ran_best_score = converge(aggression, breadth - 1, evaluate, fluctuation, position, True)
+    return best_move if best_score > ran_best_score else ran_best_move
 
 
-def converge(aggression, breadth, evaluation_func, fluctuation, position, quick_evaluate, shuffle=False):
-    tree = make_4_ply_move_tree(position, evaluation_func, quick_evaluate, breadth, aggression, fluctuation, shuffle)
+def converge(aggression, breadth, evaluation_func, fluctuation, position, shuffle=False):
+    tree = make_4_ply_move_tree(position, evaluation_func, breadth, aggression, fluctuation, shuffle)
     collapse_at_level(tree, 4, lambda x: -max(x))
     collapse_at_level(tree, 3, max)
     collapse_at_level(tree, 2, lambda x: -max(x))
