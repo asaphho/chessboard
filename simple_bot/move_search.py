@@ -140,7 +140,7 @@ def make_4_ply_move_tree(position: Position, evaluate: Callable[[Position], Dict
         first_move = first_move_tup[0]
         position_after_first_move = first_move_tup[1]
         first_move_node = tree.add_child(first_move.generate_uci(), first_move_tup[2])
-        top_first_replies = select_top_n_moves(position_after_first_move, evaluate, n, pick_n_threatening, fluctuation)
+        top_first_replies = select_top_n_moves(position_after_first_move, evaluate, n, 1, fluctuation)
         for first_reply_tup in top_first_replies:
             first_reply = first_reply_tup[0]
             position_after_first_reply = first_reply_tup[1]
@@ -152,7 +152,7 @@ def make_4_ply_move_tree(position: Position, evaluate: Callable[[Position], Dict
                 position_after_second_move = second_move_tup[1]
                 second_move_node = first_reply_node.add_child(f'{first_move_node.get_name()}-{second_move.generate_uci()}',
                                                               second_move_tup[2])
-                top_second_replies = select_top_n_moves(position_after_second_move, evaluate, n, pick_n_threatening, fluctuation)
+                top_second_replies = select_top_n_moves(position_after_second_move, evaluate, n, 1, fluctuation)
                 for second_reply_tup in top_second_replies:
                     second_reply = second_reply_tup[0]
                     second_reply_node = second_move_node.add_child(f'{second_move_node.get_name()}-{second_reply.generate_uci()}',
