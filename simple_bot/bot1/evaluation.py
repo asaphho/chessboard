@@ -58,28 +58,24 @@ for square in WHITE_PAWN_CONTROL_SCORES:
     mirrored_square = square[0] + str(black_rank)
     BLACK_PAWN_CONTROL_SCORES[mirrored_square] = WHITE_PAWN_CONTROL_SCORES[square]
 
-# MULTIPLIER FOR NUMBER OF LEGAL PIECE MOVES AVAILABLE. DEFUNCT.
-LEGAL_PIECE_MOVE_MULTIPLIER = 0.1
-
 # ACTIVITY SCORES FOR EACH SQUARE A PIECE (NOT K OR P) CONTROLS
-ACTIVITY_BASE_SCORE = 0.05  # BASE
-CENTRAL_SQUARE_BONUS = 0.03
-SQUARE_AROUND_ENEMY_KING = 0.03
-
-# MATERIAL THREAT MULTIPLIER. DEFUNCT.
-MATERIAL_THREAT_MULTIPLIER = 0.2
-CHECKMATE_THREAT_SCORE = 5
-
-# DEVELOPMENT SCORE PENALTY. APPLIES FOR EACH MINOR PIECE ON ITS HOME SQUARE.
-DEVELOPMENT_SCORE_PENALTY = -0.4
-
-# SEVENTH RANK BONUS. APPLIES FOR EACH SQUARE A ROOK COVERS THAT IS ON THE SEVENTH RANK.
-SEVENTH_RANK_BONUS = 0.05
-
-# CENTRALIZED KNIGHT BONUS FOR KNIGHT ON e4, d4, e5, or d5
-CENTRALIZED_KNIGHT_BONUS = 0.05
-
+ACTIVITY_BASE_SCORE = 0.05  # BASE SCORE AWARDED FOR EACH SQUARE COVERED BY EACH PIECE (Q, R, B, N)
+CENTRAL_SQUARE_BONUS = 0.04  # ADDITIONAL SCORE AWARDED FOR EACH SQUARE IN e4, d4, e5, or d5 COVERED BY EACH PIECE (Q, R, B, N)
+SIXTH_RANK_PIECE_CONTROL_BONUS = 0.04  # ADDITIONAL SCORE AWARDED FOR EACH SQUARE ON THE SIXTH RANK COVERED BY EACH PIECE (Q, R, B, N)
+SQUARE_AROUND_ENEMY_KING = 0.03 # ADDITIONAL SCORE AWARDED FOR EACH SQUARE AROUND THE ENEMY KING COVERED BY EACH PIECE (Q, R, B, N) OR P
+DEVELOPMENT_SCORE_PENALTY = -0.4  # APPLIES FOR EACH MINOR PIECE ON ITS HOME SQUARE.
+SEVENTH_RANK_BONUS = 0.05  # APPLIES FOR EACH SQUARE A ROOK COVERS THAT IS ON THE SEVENTH RANK.
+CENTRALIZED_KNIGHT_BONUS = 0.05  # FOR KNIGHT ON e4, d4, e5, or d5
 PASSED_PAWN_SCORE = 0.5
+ROOK_SEMI_OPEN_FILE_SCORE = 0.05
+ROOK_OPEN_FILE_SCORE = 0.1
+BISHOP_PAIR_SCORE = 0.5
+PRESSURED_PIECE_SCORE = 0.08
+PRESSURED_PIECE_THREAT_SCORE = 0.4
+UNIQUE_SQUARE_AROUND_ENEMY_KING_SCORE = 0.08  # ADDITIONAL SCORE FOR EACH UNIQUE SQUARE AROUND THE ENEMY KING CONTROLLED BY ANY PIECE
+UNIQUE_SQUARE_AROUND_ENEMY_KING_THREAT_SCORE = 0.4  # THREAT SCORE FOR EACH UNIQUE SQUARE AROUND THE ENEMY KING CONTROLLED BY ANY PIECE
+SUPPORTED_QUEEN_AROUND_ENEMY_KING_SCORE = 0.08  # ADDITIONAL SCORE FOR EACH UNIQUE SQUARE AROUND THE ENEMY KING CONTROLLED BY A QUEEN AND AT LEAST ONE ADDITIONAL PIECE
+SUPPORTED_QUEEN_AROUND_ENEMY_KING_THREAT_SCORE = 0.2  # ADDITIONAL THREAT SCORE FOR EACH UNIQUE SQUARE AROUND THE ENEMY KING CONTROLLED BY A QUEEN AND AT LEAST ONE ADDITIONAL PIECE
 
 
 def square_around_enemy_king(square: str, opposing_pieces_position: ColorPosition):
@@ -288,9 +284,9 @@ def quick_evaluate(position: Position) -> Dict[str, float]:
         if piece.upper() == 'R':
             n_pawns_in_front = count_pawns_in_front_on_file(sq, color, square_piece_dict)
             if n_pawns_in_front == 1:
-                score += 0.05 if own_piece else -0.05
+                score += ROOK_SEMI_OPEN_FILE_SCORE if own_piece else -ROOK_SEMI_OPEN_FILE_SCORE
             elif n_pawns_in_front == 0:
-                score += 0.1 if own_piece else -0.1
+                score += ROOK_OPEN_FILE_SCORE if own_piece else -ROOK_OPEN_FILE_SCORE
         elif piece.upper() in ('B', 'N'):
             back_rank = '1' if color == 'w' else '8'
             if sq[1] == back_rank:
@@ -304,7 +300,7 @@ def quick_evaluate(position: Position) -> Dict[str, float]:
                 n_bishops = len(position.get_pieces_by_color(own_color).get_piece_type_squares('B'))
                 n_opposing_bishops = len(position.get_pieces_by_color(opposing_color).get_piece_type_squares('B'))
                 if n_bishops == 2 and n_opposing_bishops == 1:
-                    score += 0.25 if own_piece else -0.25
+                    score += BISHOP_PAIR_SCORE/2 if own_piece else -BISHOP_PAIR_SCORE/2
         elif piece.upper() == 'P':
             n_pawns_in_front = count_pawns_in_front_on_file(sq, color, square_piece_dict)
             if n_pawns_in_front == 0:
@@ -318,7 +314,7 @@ def quick_evaluate(position: Position) -> Dict[str, float]:
                             sq_in_front_attacked = True
                             break
                 if not sq_in_front_attacked:
-                    score += 0.5 if own_piece else -0.5
+                    score += PASSED_PAWN_SCORE if own_piece else -PASSED_PAWN_SCORE
 
     own_pawn_unique_controlled_squares = []
     already_pawn_controlled_squares_around_king = []
@@ -336,6 +332,9 @@ def quick_evaluate(position: Position) -> Dict[str, float]:
                     seventh_rank = '7' if side_evaluating_for == 'w' else '2'
                     if covered_square[1] == seventh_rank:
                         score += SEVENTH_RANK_BONUS
+                sixth_rank = '6' if side_evaluating_for == 'w' else '3'
+                if covered_square[1] == sixth_rank:
+                    score += SIXTH_RANK_PIECE_CONTROL_BONUS
         elif piece == 'P':
             pawn_control_score_map = WHITE_PAWN_CONTROL_SCORES if side_evaluating_for == 'w' else BLACK_PAWN_CONTROL_SCORES
             for covered_square in squares_covered:
@@ -365,6 +364,9 @@ def quick_evaluate(position: Position) -> Dict[str, float]:
                     seventh_rank = '7' if side_to_move == 'w' else '2'
                     if covered_square[1] == seventh_rank:
                         score -= SEVENTH_RANK_BONUS
+                sixth_rank = '6' if side_to_move == 'w' else '3'
+                if covered_square[1] == sixth_rank:
+                    score -= SIXTH_RANK_PIECE_CONTROL_BONUS
         elif piece == 'P':
             pawn_control_score_map = WHITE_PAWN_CONTROL_SCORES if side_to_move == 'w' else BLACK_PAWN_CONTROL_SCORES
             for covered_square in squares_covered:
@@ -382,7 +384,7 @@ def quick_evaluate(position: Position) -> Dict[str, float]:
     for attacked_square in opposing_square_covering_piece_dict:
         if attacked_square in own_squares_occupied:
             if attacked_square not in own_pawn_unique_controlled_squares:
-                score -= 0.08
+                score -= PRESSURED_PIECE_SCORE
             piece_at_square = square_piece_dict[attacked_square].upper()
             if piece_at_square == 'K':
                 continue
@@ -485,8 +487,8 @@ def quick_evaluate(position: Position) -> Dict[str, float]:
             if attacked_square == opposing_king_square:
                 continue
             if attacked_square not in opposing_pawn_unique_controlled_squares:
-                threat_score += 0.4
-                score += 0.08
+                threat_score += PRESSURED_PIECE_THREAT_SCORE
+                score += PRESSURED_PIECE_THREAT_SCORE
             capturing_pns = own_square_covering_piece_dict[attacked_square]
             lightest_capturing_pns = min(capturing_pns, key=lambda x: MATERIAL_DICT[x[0]])
             piece_at_square = square_piece_dict[attacked_square].upper()
@@ -513,16 +515,16 @@ def quick_evaluate(position: Position) -> Dict[str, float]:
 
     for square in opposing_piece_covered_square_dict[f'K{opposing_king_square}']:
         if square in own_square_covering_piece_dict:
-            threat_score += 0.4
-            score += 0.08
+            threat_score += UNIQUE_SQUARE_AROUND_ENEMY_KING_THREAT_SCORE
+            score += UNIQUE_SQUARE_AROUND_ENEMY_KING_SCORE
             if any([pns.startswith('Q') for pns in own_square_covering_piece_dict[square]]) and len(own_square_covering_piece_dict[square]) > 1:
-                threat_score += 0.2
-                score += 0.08
+                threat_score += SUPPORTED_QUEEN_AROUND_ENEMY_KING_THREAT_SCORE
+                score += SUPPORTED_QUEEN_AROUND_ENEMY_KING_SCORE
 
     for square in own_piece_covered_square_dict[f'K{own_king_square}']:
         if square in opposing_square_covering_piece_dict:
-            score -= 0.08
+            score -= UNIQUE_SQUARE_AROUND_ENEMY_KING_SCORE
             if any([pns.startswith('Q') for pns in opposing_square_covering_piece_dict[square]]) and len(opposing_square_covering_piece_dict[square]) > 1:
-                score -= 0.08
+                score -= SUPPORTED_QUEEN_AROUND_ENEMY_KING_SCORE
 
     return {'eval': score, 'threat': threat_score}
