@@ -79,6 +79,7 @@ PROMOTION_THREAT_SCORE = 3
 BASE_CHECK_THREAT_SCORE = 2
 FORCED_KING_MOVE_THREAT_SCORE = 3
 FORCED_FREE_PIECE_BLOCK_THREAT_SCORE = 3
+MATERIAL_THREAT_SCORE_FACTOR = 0.5
 
 
 def square_around_enemy_king(square: str, opposing_pieces_position: ColorPosition):
@@ -509,18 +510,18 @@ def quick_evaluate(position: Position) -> Dict[str, float]:
             piece_at_square = square_piece_dict[attacked_square].upper()
             if attacked_square not in opposing_square_covering_piece_dict:
                 if lightest_capturing_pns not in threat_contributing_pieces:
-                    threat_contributing_pieces[lightest_capturing_pns] = [MATERIAL_DICT[piece_at_square]]
+                    threat_contributing_pieces[lightest_capturing_pns] = [MATERIAL_DICT[piece_at_square] * MATERIAL_THREAT_SCORE_FACTOR]
                 else:
-                    threat_contributing_pieces[lightest_capturing_pns].append(MATERIAL_DICT[piece_at_square])
+                    threat_contributing_pieces[lightest_capturing_pns].append(MATERIAL_DICT[piece_at_square] * MATERIAL_THREAT_SCORE_FACTOR)
             else:
                 capturing_pns = own_square_covering_piece_dict[attacked_square]
                 capturing_piece_worth = min([MATERIAL_DICT[pns[0]] for pns in capturing_pns])
                 threatened_material = MATERIAL_DICT[piece_at_square] - capturing_piece_worth
                 if threatened_material > 0:
                     if lightest_capturing_pns not in threat_contributing_pieces:
-                        threat_contributing_pieces[lightest_capturing_pns] = [threatened_material]
+                        threat_contributing_pieces[lightest_capturing_pns] = [threatened_material * MATERIAL_THREAT_SCORE_FACTOR]
                     else:
-                        threat_contributing_pieces[lightest_capturing_pns].append(threatened_material)
+                        threat_contributing_pieces[lightest_capturing_pns].append(threatened_material * MATERIAL_THREAT_SCORE_FACTOR)
 
     for hanging_pns, m in hanging_material_list:
         if hanging_pns in threat_contributing_pieces:

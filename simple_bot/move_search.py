@@ -73,6 +73,7 @@ def collapse_node(node: Node, aggregator: Callable[[List[float]], float]):
 def select_top_n_moves(position: Position, evaluate: Callable[[Position], Dict[str, float]], n: int,
                        pick_n_threatening: int, fluctuation: float) -> Dict[str, List[Tuple[LegalMove, Position, float]]]:
     to_move = position.to_move()
+    initial_score = -evaluate(position)['eval']
     all_legal_moves = position.get_all_legal_moves_for_color(to_move)
     positions = [branch_from_position(position, move) for move in all_legal_moves]
     evaluation_scores = [evaluate(positions[i]) for i in range(len(positions))]
@@ -87,8 +88,9 @@ def select_top_n_moves(position: Position, evaluate: Callable[[Position], Dict[s
             break
         try:
             i = threat_scores[j][0]
+            eval_score = evaluation_scores[i]['eval']
             bare_threat_score = evaluation_scores[i]['threat']
-            if bare_threat_score < 2:
+            if bare_threat_score < 2 or initial_score - eval_score > 1.5:
                 break
             move = all_legal_moves[i]
             position = positions[i]
@@ -199,11 +201,13 @@ def select_n_random_mpe(breadth, evaluate, initial_score, uci_mpe_dict):
         mpe = uci_mpe_dict[random_choice_uci]
         score = mpe[2]
         if initial_score - score > 1.5:
-            position = mpe[1]
-            threat_score = evaluate(position)['threat']
-            if threat_score < 7:
-                uci_mpe_dict.pop(random_choice_uci)
-                continue
+            # position = mpe[1]
+            # threat_score = evaluate(position)['threat']
+            # if threat_score < 11:
+            #     uci_mpe_dict.pop(random_choice_uci)
+            #     continue
+            uci_mpe_dict.pop(random_choice_uci)
+            continue
         next_n_mpe.append(mpe)
         uci_mpe_dict.pop(random_choice_uci)
     return next_n_mpe
