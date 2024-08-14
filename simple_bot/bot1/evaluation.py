@@ -58,7 +58,6 @@ for square in WHITE_PAWN_CONTROL_SCORES:
     mirrored_square = square[0] + str(black_rank)
     BLACK_PAWN_CONTROL_SCORES[mirrored_square] = WHITE_PAWN_CONTROL_SCORES[square]
 
-# ACTIVITY SCORES FOR EACH SQUARE A PIECE (NOT K OR P) CONTROLS
 ACTIVITY_BASE_SCORE = 0.05  # BASE SCORE AWARDED FOR EACH SQUARE COVERED BY EACH PIECE (Q, R, B, N)
 CENTRAL_SQUARE_BONUS = 0.04  # ADDITIONAL SCORE AWARDED FOR EACH SQUARE IN e4, d4, e5, or d5 COVERED BY EACH PIECE (Q, R, B, N)
 SIXTH_RANK_PIECE_CONTROL_BONUS = 0.04  # ADDITIONAL SCORE AWARDED FOR EACH SQUARE ON THE SIXTH RANK COVERED BY EACH PIECE (Q, R, B, N)
@@ -76,6 +75,10 @@ UNIQUE_SQUARE_AROUND_ENEMY_KING_SCORE = 0.08  # ADDITIONAL SCORE FOR EACH UNIQUE
 UNIQUE_SQUARE_AROUND_ENEMY_KING_THREAT_SCORE = 0.4  # THREAT SCORE FOR EACH UNIQUE SQUARE AROUND THE ENEMY KING CONTROLLED BY ANY PIECE
 SUPPORTED_QUEEN_AROUND_ENEMY_KING_SCORE = 0.08  # ADDITIONAL SCORE FOR EACH UNIQUE SQUARE AROUND THE ENEMY KING CONTROLLED BY A QUEEN AND AT LEAST ONE ADDITIONAL PIECE
 SUPPORTED_QUEEN_AROUND_ENEMY_KING_THREAT_SCORE = 0.2  # ADDITIONAL THREAT SCORE FOR EACH UNIQUE SQUARE AROUND THE ENEMY KING CONTROLLED BY A QUEEN AND AT LEAST ONE ADDITIONAL PIECE
+PROMOTION_THREAT_SCORE = 3
+BASE_CHECK_THREAT_SCORE = 2
+FORCED_KING_MOVE_THREAT_SCORE = 3
+FORCED_FREE_PIECE_BLOCK_THREAT_SCORE = 3
 
 
 def square_around_enemy_king(square: str, opposing_pieces_position: ColorPosition):
@@ -221,8 +224,9 @@ def quick_evaluate(position: Position) -> Dict[str, float]:
     own_square_covering_piece_dict = invert_piece_scope_dict(own_piece_covered_square_dict)
     opposing_square_covering_piece_dict = invert_piece_scope_dict(opposing_piece_covered_square_dict)
     opposing_king_square = position.get_pieces_by_color(side_to_move).get_king_square()
-    is_under_check = opposing_king_square in own_square_covering_piece_dict
-    if is_under_check:
+    check_given = opposing_king_square in own_square_covering_piece_dict
+    if check_given:
+        threat_score += BASE_CHECK_THREAT_SCORE
         potential_escape_squares = [esc_sq for esc_sq in opposing_piece_covered_square_dict[f'K{opposing_king_square}'] if esc_sq not in opposing_squares_occupied and esc_sq not in own_square_covering_piece_dict]
         no_legal_king_move = not any([position.virtual_move_is_legal(VirtualMove(side_to_move, 'K', opposing_king_square, attempt)) for attempt in potential_escape_squares])
         checking_pieces = own_square_covering_piece_dict[opposing_king_square]  # ['Re1', 'Nf6'] (delivering double check on a king on e8)
@@ -230,7 +234,7 @@ def quick_evaluate(position: Position) -> Dict[str, float]:
         if no_legal_king_move and double_check:
             return {'eval': CHECKMATE_SCORE, 'threat': CHECKMATE_SCORE}
         elif double_check:
-            threat_score += 3
+            threat_score += FORCED_KING_MOVE_THREAT_SCORE
         else:
             checking_piece_square = checking_pieces[0][1:]
             if checking_piece_square not in opposing_square_covering_piece_dict:
@@ -260,6 +264,8 @@ def quick_evaluate(position: Position) -> Dict[str, float]:
                 can_block = len(legal_blocking_pns) > 0
             if no_legal_king_move and (not can_capture) and (not can_block):
                 return {'eval': CHECKMATE_SCORE, 'threat': CHECKMATE_SCORE}
+            if not (can_block or can_capture):
+                threat_score += FORCED_KING_MOVE_THREAT_SCORE
             if can_block and no_legal_king_move and not can_capture:
                 blocking_convergence = {}
                 for pns_dict in legal_blocking_pns:
@@ -268,7 +274,7 @@ def quick_evaluate(position: Position) -> Dict[str, float]:
                     else:
                         blocking_convergence[pns_dict['int']].append(pns_dict['m'])
                 if max([len(blocks) for blocks in list(blocking_convergence.values())]) == 1:
-                    threat_score += 3
+                    threat_score += FORCED_FREE_PIECE_BLOCK_THREAT_SCORE
             if no_legal_king_move and not can_block and can_capture:
                 if len(legal_capturing_pns) == 1 and checking_piece_square in own_square_covering_piece_dict:
                     checking_piece_worth = MATERIAL_DICT[checking_pieces[0][0]]
@@ -315,6 +321,15 @@ def quick_evaluate(position: Position) -> Dict[str, float]:
                             break
                 if not sq_in_front_attacked:
                     score += PASSED_PAWN_SCORE if own_piece else -PASSED_PAWN_SCORE
+            if own_piece:
+                seventh_rank, promotion_rank = (7, 8) if piece == 'P' else (2, 1)
+                if int(sq[1]) == seventh_rank:
+                    promotion_square = f'{sq[0]}{promotion_rank}'
+                    if promotion_square not in opposing_squares_occupied and promotion_square not in opposing_square_covering_piece_dict:
+                        threat_score += PROMOTION_THREAT_SCORE
+                    elif promotion_square not in opposing_squares_occupied and promotion_square in opposing_square_covering_piece_dict:
+                        if promotion_square in own_square_covering_piece_dict or detect_battery_or_x_ray(promotion_square, sq, square_piece_dict, side_evaluating_for, True):
+                            threat_score += PROMOTION_THREAT_SCORE
 
     own_pawn_unique_controlled_squares = []
     already_pawn_controlled_squares_around_king = []
