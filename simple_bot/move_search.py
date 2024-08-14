@@ -111,6 +111,7 @@ def select_top_n_moves(position: Position, evaluate: Callable[[Position], Dict[s
 
 
 def select_random_n_moves(position: Position, evaluate: Callable[[Position], Dict[str, float]], n: int) -> List[Tuple[LegalMove, Position, float]]:
+    initial_score = -evaluate(position)['eval']
     all_legal_moves = position.get_all_legal_moves_for_side_to_move()
     shuffle(all_legal_moves)
     returned_list = []
@@ -122,7 +123,11 @@ def select_random_n_moves(position: Position, evaluate: Callable[[Position], Dic
                 i += 1
                 continue
             new_position = branch_from_position(position, move)
-            score = evaluate(new_position)['eval']
+            evaluation_dict = evaluate(new_position)
+            score, threat_score = evaluation_dict['eval'], evaluation_dict['threat']
+            if initial_score - score > 1.5 and threat_score < 7:
+                i += 1
+                continue
             returned_list.append((move, new_position, score))
             i += 1
         except IndexError:
@@ -132,8 +137,6 @@ def select_random_n_moves(position: Position, evaluate: Callable[[Position], Dic
 
 def make_4_ply_move_tree(position: Position, evaluate: Callable[[Position], Dict[str, float]], n: int,
                          pick_n_threatening: int, fluctuation: float, shuffle_first_level: bool = False) -> Node:
-    side_to_move = position.to_move()
-    opposing_side = opposite_color(side_to_move)
     tree = Node('Current', 0)
     top_first_moves = select_top_n_moves(position, evaluate, n, pick_n_threatening, fluctuation) if not shuffle_first_level else select_random_n_moves(position, evaluate, n)
     for first_move_tup in top_first_moves:
