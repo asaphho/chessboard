@@ -63,7 +63,7 @@ If the compilation is successful, the executable gui_main.app should appear in t
 ## Usage
 
 As mentioned, chessboard can be run on a CLI or on a GUI. To run it on the CLI, you simply need to run the main.py script
-using Python 3.8 and above, without the need for any installation of the project dependencies.
+using Python 3.9 and above, without the need for any installation of the project dependencies.
 
 ```bash
 python main.py
