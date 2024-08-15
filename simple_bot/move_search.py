@@ -71,42 +71,50 @@ def collapse_node(node: Node, aggregator: Callable[[List[float]], float]):
 
 
 def select_top_n_moves(position: Position, evaluate: Callable[[Position], Dict[str, float]], n: int,
-                       pick_n_threatening: int, fluctuation: float) -> Dict[str, List[Tuple[LegalMove, Position, float]]]:
+                       pick_n_threatening: int, fluctuation: float = 0) -> Dict[str, List[Tuple[LegalMove, Position, float]]]:
     to_move = position.to_move()
     initial_score = -evaluate(position)['eval']
     all_legal_moves = position.get_all_legal_moves_for_color(to_move)
     positions = [branch_from_position(position, move) for move in all_legal_moves]
-    evaluation_scores = [evaluate(positions[i]) for i in range(len(positions))]
-    all_mpe = [(all_legal_moves[i], positions[i], evaluation_scores[i]['eval']) for i in range(len(all_legal_moves))]
-    evaluations = [(i, evaluation_scores[i]['eval'] + uniform(-fluctuation, fluctuation)) for i in range(len(positions))]
-    threat_scores = [(i, evaluation_scores[i]['threat'] + evaluation_scores[i]['eval'] + uniform(-fluctuation, fluctuation)) for i in range(len(positions))]
-    evaluations.sort(key=lambda x: x[1], reverse=True)
-    threat_scores.sort(key=lambda x: x[1], reverse=True)
+    evaluation_scores = [evaluate(posn) for posn in positions]
+    uci_bare_evaluation_dict: Dict[str, Dict[str, float]] = {}
+    for i in range(len(all_legal_moves)):
+        uci_bare_evaluation_dict[all_legal_moves[i].generate_uci()] = evaluation_scores[i]
+    all_mpe = [(all_legal_moves[i], positions[i], evaluation_scores[i]['eval'] + uniform(-fluctuation, fluctuation)) for i in range(len(all_legal_moves))]
+    if len(all_mpe) <= n:
+        return {'top': all_mpe, 'all': all_mpe}
+    all_mpe_with_threat_score_added = [(all_legal_moves[i], positions[i], all_mpe[i][2] + evaluation_scores[i]['threat']) for i in range(len(all_legal_moves))]
+    all_mpe.sort(key=lambda x: x[2], reverse=True)
+    all_mpe_with_threat_score_added.sort(key=lambda x: x[2], reverse=True)
     returned_list = []
     for j in range(pick_n_threatening):
         if len(returned_list) >= n:
             break
         try:
-            i = threat_scores[j][0]
-            eval_score = evaluation_scores[i]['eval']
-            bare_threat_score = evaluation_scores[i]['threat']
-            if bare_threat_score < 2 or initial_score - eval_score > 1.5:
+            move_uci = all_mpe_with_threat_score_added[j][0].generate_uci()
+            eval_score = uci_bare_evaluation_dict[move_uci]['eval']
+            bare_threat_score = uci_bare_evaluation_dict[move_uci]['threat']
+            if bare_threat_score < 2:
                 break
-            move = all_legal_moves[i]
-            position = positions[i]
-            score = evaluations[i][1]
-            returned_list.append((move, position, score))
+            if initial_score - eval_score > 1.5 and bare_threat_score < 7:
+                break
+            move = all_mpe_with_threat_score_added[j][0]
+            position = all_mpe_with_threat_score_added[j][1]
+            returned_list.append((move, position, eval_score))
+            uci_bare_evaluation_dict.pop(move_uci)
         except IndexError:
             return {'top': returned_list, 'all': all_mpe}
-    for j in range(len(evaluations)):
+    for j in range(n):
         if len(returned_list) >= n:
             break
-        i = evaluations[j][0]
-        move = all_legal_moves[i]
-        if move.generate_uci() not in [tup[0].generate_uci() for tup in returned_list]:
-            position = positions[i]
-            score = evaluations[j][1]
-            returned_list.append((move, position, score))
+        try:
+            move = all_mpe[j][0]
+            if move.generate_uci() in uci_bare_evaluation_dict:
+                position = all_mpe[j][1]
+                score = all_mpe[j][2]
+                returned_list.append((move, position, score))
+        except IndexError:
+            return {'top': returned_list, 'all': all_mpe}
     return {'top': returned_list, 'all': all_mpe}
 
 
@@ -184,10 +192,10 @@ def choose_best_move(position: Position, evaluate: Callable[[Position], Dict[str
         return best_move
     run2_best_move, run2_best_score = converge(aggression, breadth, evaluate, fluctuation, next_n_mpe)
     candidates = [(best_move, best_score), (run2_best_move, run2_best_score)]
-    next_n_mpe = select_n_random_mpe(breadth, evaluate, initial_score, uci_mpe_dict)
-    if next_n_mpe:
-        run3_best_move, run3_best_score = converge(aggression, breadth, evaluate, fluctuation, next_n_mpe)
-        candidates.append((run3_best_move, run3_best_score))
+    # next_n_mpe = select_n_random_mpe(breadth, evaluate, initial_score, uci_mpe_dict)
+    # if next_n_mpe:
+    #     run3_best_move, run3_best_score = converge(aggression, breadth, evaluate, fluctuation, next_n_mpe)
+    #     candidates.append((run3_best_move, run3_best_score))
     candidates.sort(key=lambda x: x[1], reverse=True)
     return candidates[0][0]
 
@@ -201,13 +209,12 @@ def select_n_random_mpe(breadth, evaluate, initial_score, uci_mpe_dict):
         mpe = uci_mpe_dict[random_choice_uci]
         score = mpe[2]
         if initial_score - score > 1.5:
-            # position = mpe[1]
-            # threat_score = evaluate(position)['threat']
-            # if threat_score < 11:
-            #     uci_mpe_dict.pop(random_choice_uci)
-            #     continue
-            uci_mpe_dict.pop(random_choice_uci)
-            continue
+            position = mpe[1]
+            threat_score = evaluate(position)['threat']
+            if threat_score < 7:
+                uci_mpe_dict.pop(random_choice_uci)
+                continue
+
         next_n_mpe.append(mpe)
         uci_mpe_dict.pop(random_choice_uci)
     return next_n_mpe
