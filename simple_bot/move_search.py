@@ -83,23 +83,23 @@ def select_top_n_moves(position: Position, evaluate: Callable[[Position], Dict[s
     all_mpe = [(all_legal_moves[i], positions[i], evaluation_scores[i]['eval'] + uniform(-fluctuation, fluctuation)) for i in range(len(all_legal_moves))]
     if len(all_mpe) <= n:
         return {'top': all_mpe, 'all': all_mpe}
-    all_mpe_with_threat_score_added = [(all_legal_moves[i], positions[i], all_mpe[i][2] + evaluation_scores[i]['threat']) for i in range(len(all_legal_moves))]
+    all_mpe_threat_scores = [(all_legal_moves[i], positions[i], evaluation_scores[i]['threat']) for i in range(len(all_legal_moves))]
     all_mpe.sort(key=lambda x: x[2], reverse=True)
-    all_mpe_with_threat_score_added.sort(key=lambda x: x[2], reverse=True)
+    all_mpe_threat_scores.sort(key=lambda x: x[2], reverse=True)
     returned_list = []
     for j in range(pick_n_threatening):
         if len(returned_list) >= n:
             break
         try:
-            move_uci = all_mpe_with_threat_score_added[j][0].generate_uci()
+            move_uci = all_mpe_threat_scores[j][0].generate_uci()
             eval_score = uci_bare_evaluation_dict[move_uci]['eval']
-            bare_threat_score = uci_bare_evaluation_dict[move_uci]['threat']
+            bare_threat_score = all_mpe_threat_scores[j][2]
             if bare_threat_score < 2:
                 break
             if initial_score - eval_score > 1.5 and bare_threat_score < 7:
-                break
-            move = all_mpe_with_threat_score_added[j][0]
-            position = all_mpe_with_threat_score_added[j][1]
+                continue
+            move = all_mpe_threat_scores[j][0]
+            position = all_mpe_threat_scores[j][1]
             returned_list.append((move, position, eval_score))
             uci_bare_evaluation_dict.pop(move_uci)
         except IndexError:

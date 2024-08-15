@@ -66,6 +66,8 @@ DEVELOPMENT_SCORE_PENALTY = -0.4  # APPLIES FOR EACH MINOR PIECE ON ITS HOME SQU
 SEVENTH_RANK_BONUS = 0.05  # APPLIES FOR EACH SQUARE A ROOK COVERS THAT IS ON THE SEVENTH RANK.
 CENTRALIZED_KNIGHT_BONUS = 0.08  # FOR KNIGHT ON e4, d4, e5, or d5
 PASSED_PAWN_SCORE = 0.5
+PASSED_PAWN_ADVANCEMENT_BONUS_PER_RANK = 0.1
+PASSED_PAWN_ADVANCEMENT_THREAT_SCORE_PER_RANK = 0.5  # FOR EVERY RANK PAST THE FOURTH RANK
 ROOK_SEMI_OPEN_FILE_SCORE = 0.08
 ROOK_OPEN_FILE_SCORE = 0.12
 BISHOP_PAIR_SCORE = 0.5
@@ -216,6 +218,7 @@ def quick_evaluate(position: Position) -> Dict[str, float]:
     side_evaluating_for = opposite_color(side_to_move)
     score = 0
     threat_score = 0
+    threat_contributing_pieces = {}
     square_piece_dict = position.white_pieces.get_square_piece_symbol_dict() | position.black_pieces.get_square_piece_symbol_dict(lowercase=True)
     own_squares_occupied = position.get_pieces_by_color(side_evaluating_for).get_occupied_squares()
     own_king_square = position.get_pieces_by_color(side_evaluating_for).get_king_square()
@@ -283,6 +286,7 @@ def quick_evaluate(position: Position) -> Dict[str, float]:
                     if (net_gain := capturing_piece_worth - checking_piece_worth) > 0:
                         threat_score += net_gain
 
+    own_passed_pawns = {}
     for sq in square_piece_dict:
         piece = square_piece_dict[sq]
         own_piece = piece.isupper() if side_evaluating_for == 'w' else piece.islower()
@@ -322,15 +326,22 @@ def quick_evaluate(position: Position) -> Dict[str, float]:
                             break
                 if not sq_in_front_attacked:
                     score += PASSED_PAWN_SCORE if own_piece else -PASSED_PAWN_SCORE
+                    rank = int(sq[1])
+                    ranks_advanced = rank - 2 if color == 'w' else (9 - rank) - 2
+                    score += ranks_advanced * PASSED_PAWN_ADVANCEMENT_BONUS_PER_RANK if own_piece else -ranks_advanced * PASSED_PAWN_ADVANCEMENT_BONUS_PER_RANK
+                    if own_piece:
+                        own_passed_pawns[f'P{sq}'] = PASSED_PAWN_SCORE + ranks_advanced * PASSED_PAWN_ADVANCEMENT_BONUS_PER_RANK
+                        if ranks_advanced >= 3:
+                            threat_contributing_pieces[f'P{sq}'] = [(ranks_advanced - 2) * PASSED_PAWN_ADVANCEMENT_THREAT_SCORE_PER_RANK]
             if own_piece:
                 seventh_rank, promotion_rank = (7, 8) if piece == 'P' else (2, 1)
                 if int(sq[1]) == seventh_rank:
                     promotion_square = f'{sq[0]}{promotion_rank}'
                     if promotion_square not in opposing_squares_occupied and promotion_square not in opposing_square_covering_piece_dict:
-                        threat_score += PROMOTION_THREAT_SCORE
+                        threat_contributing_pieces[f'P{sq}'] = [PROMOTION_THREAT_SCORE]
                     elif promotion_square not in opposing_squares_occupied and promotion_square in opposing_square_covering_piece_dict:
                         if promotion_square in own_square_covering_piece_dict or detect_battery_or_x_ray(promotion_square, sq, square_piece_dict, side_evaluating_for, True):
-                            threat_score += PROMOTION_THREAT_SCORE
+                            threat_contributing_pieces[f'P{sq}'] = [PROMOTION_THREAT_SCORE]
 
     own_pawn_unique_controlled_squares = []
     already_pawn_controlled_squares_around_king = []
@@ -398,14 +409,18 @@ def quick_evaluate(position: Position) -> Dict[str, float]:
 
     hanging_material_list = []
     for attacked_square in opposing_square_covering_piece_dict:
-        if attacked_square in own_squares_occupied:
-            if attacked_square not in own_pawn_unique_controlled_squares:
+        if attacked_square in own_squares_occupied or (attacked_square == position.get_en_passant_square() and any([pns[0] == 'P' for pns in opposing_square_covering_piece_dict[attacked_square]])):
+            if (attacked_square not in own_pawn_unique_controlled_squares) and attacked_square != position.get_en_passant_square():
                 score -= PRESSURED_PIECE_SCORE
-            piece_at_square = square_piece_dict[attacked_square].upper()
+            piece_at_square = square_piece_dict[attacked_square].upper() if attacked_square != position.get_en_passant_square() else 'P'
             if piece_at_square == 'K':
                 continue
             if attacked_square not in own_square_covering_piece_dict:
-                hanging_material_list.append((f'{piece_at_square}{attacked_square}', MATERIAL_DICT[piece_at_square]))
+                if attacked_square != position.get_en_passant_square():
+                    hanging_material_list.append((f'{piece_at_square}{attacked_square}', MATERIAL_DICT[piece_at_square]))
+                else:
+                    en_passant_pawn_rank = '4' if side_evaluating_for == 'w' else '5'
+                    hanging_material_list.append((f'P{attacked_square[0]}{en_passant_pawn_rank}', 1))
             else:
                 defenders_pns = own_square_covering_piece_dict[attacked_square]
                 defenders_array = []
@@ -453,7 +468,11 @@ def quick_evaluate(position: Position) -> Dict[str, float]:
                         if len(curr_battery) > 1:
                             defenders_array.append(curr_battery)
                 if (not defenders_array) and len(attackers_array) > 0:
-                    hanging_material_list.append((f'{piece_at_square}{attacked_square}', MATERIAL_DICT[piece_at_square]))
+                    if attacked_square != position.get_en_passant_square():
+                        hanging_material_list.append((f'{piece_at_square}{attacked_square}', MATERIAL_DICT[piece_at_square]))
+                    else:
+                        en_passant_pawn_rank = '4' if side_evaluating_for == 'w' else '5'
+                        hanging_material_list.append((f'P{attacked_square[0]}{en_passant_pawn_rank}', 1))
                     continue
                 if not attackers_array:
                     continue
@@ -494,10 +513,13 @@ def quick_evaluate(position: Position) -> Dict[str, float]:
                     if not defenders_array[0][0].startswith('A'):
                         curr_material_change += MATERIAL_DICT[piece_on_exchange_square]
                 if curr_material_change < 0:
-                    hanging_material_list.append((f'{piece_at_square}{attacked_square}', -curr_material_change))
+                    if attacked_square != position.get_en_passant_square():
+                        hanging_material_list.append((f'{piece_at_square}{attacked_square}', -curr_material_change))
+                    else:
+                        en_passant_pawn_rank = '4' if side_evaluating_for == 'w' else '5'
+                        hanging_material_list.append((f'P{attacked_square[0]}{en_passant_pawn_rank}', -curr_material_change))
     score -= max([m[1] for m in hanging_material_list]) if hanging_material_list else 0
 
-    threat_contributing_pieces = {}
     for attacked_square in own_square_covering_piece_dict:
         if attacked_square in opposing_squares_occupied:
             if attacked_square == opposing_king_square:
@@ -526,6 +548,8 @@ def quick_evaluate(position: Position) -> Dict[str, float]:
     for hanging_pns, m in hanging_material_list:
         if hanging_pns in threat_contributing_pieces:
             threat_contributing_pieces.pop(hanging_pns)
+        if hanging_pns in own_passed_pawns:
+            score -= own_passed_pawns.pop(hanging_pns)
     for pns in threat_contributing_pieces:
         threat_score += sum(threat_contributing_pieces[pns])
 
