@@ -1,4 +1,4 @@
-from typing import List, Callable, Tuple, Dict, Union
+from typing import List, Callable, Tuple, Dict, Union, Iterable
 from random import uniform
 import random
 from classes.move import LegalMove
@@ -162,27 +162,21 @@ def make_move_tree(initial_mpe_list: List[Tuple[LegalMove, Position, float]],
         agg = aggression if (current_depth % 2) else assumed_opp_aggression
         if current_depth == 1:
             for mpe in initial_mpe_list:
-                tree.add_child(create_new_node_name(tree, mpe[0]), mpe[1])
-            current_depth += 1
-        elif current_depth == ply_depth:
-            current_leaves = search_downstream(tree)
-            for leaf in current_leaves:
-                position: Position = leaf.get_value()
-                top_n_moves = select_top_n_moves(position, evaluate, n=breadth, pick_n_threatening=agg,
-                                                 fluctuation=fluctuation)['top']
-                for mpe in top_n_moves:
-                    leaf.add_child(create_new_node_name(leaf, mpe[0]), mpe[2])
-            current_depth += 1
+                tree.add_child(create_new_node_name(tree, mpe[0]), {'P': mpe[1], 'S': mpe[2]})
         else:
             current_leaves = search_downstream(tree)
             for leaf in current_leaves:
-                position: Position = leaf.get_value()
+                position: Position = leaf.get_value()['P']
                 top_n_moves = select_top_n_moves(position, evaluate, n=breadth, pick_n_threatening=agg,
                                                  fluctuation=fluctuation)['top']
                 for mpe in top_n_moves:
-                    leaf.add_child(create_new_node_name(leaf, mpe[0]), mpe[1])
-            current_depth += 1
+                    leaf.add_child(create_new_node_name(leaf, mpe[0]), {'P': mpe[1], 'S': mpe[2]})
+        current_depth += 1
     return tree
+
+
+def aggregator(leaf_vals: List[Dict[str, Union[Position, float]]]) -> float:
+    return max([leaf_val['S'] for leaf_val in leaf_vals])
 
 
 def collapse_at_level(tree: Node, level: int, aggregator: Callable[[List[Union[Position, float]]], float]):
@@ -224,13 +218,15 @@ def choose_best_move(position: Position, evaluate: Callable[[Position], Dict[str
     uci_mpe_dict = {}
     for mpe in all_mpe:
         uci_mpe_dict[mpe[0].generate_uci()] = mpe
-    best_move, best_score = converge(aggression, breadth, evaluate, fluctuation, top_mpe, assumed_opp_aggression=assumed_opp_aggression)
+    best_move, best_score = converge(top_mpe, evaluate, breadth, aggression, fluctuation,
+                                     assumed_opp_aggression=assumed_opp_aggression)
     for uci in top_moves_uci:
         uci_mpe_dict.pop(uci)
     next_n_mpe = select_n_random_mpe(breadth, evaluate, initial_score, uci_mpe_dict)
     if not next_n_mpe:
         return best_move
-    run2_best_move, run2_best_score = converge(aggression, breadth, evaluate, fluctuation, next_n_mpe, assumed_opp_aggression=assumed_opp_aggression)
+    run2_best_move, run2_best_score = converge(next_n_mpe, evaluate, breadth, aggression, fluctuation,
+                                               assumed_opp_aggression=assumed_opp_aggression)
     candidates = [(best_move, best_score), (run2_best_move, run2_best_score)]
     # next_n_mpe = select_n_random_mpe(breadth, evaluate, initial_score, uci_mpe_dict)
     # if next_n_mpe:
@@ -240,7 +236,8 @@ def choose_best_move(position: Position, evaluate: Callable[[Position], Dict[str
     return candidates[0][0]
 
 
-def select_n_random_mpe(breadth, evaluate, initial_score, uci_mpe_dict):
+def select_n_random_mpe(breadth: int, evaluate: Callable[[Position], Dict[str, float]], initial_score: float,
+                        uci_mpe_dict: Dict[str, Tuple[LegalMove, Position, float]]) -> List[Tuple[LegalMove, Position, float]]:
     next_n_mpe = []
     while len(next_n_mpe) < breadth:
         if not uci_mpe_dict:
@@ -260,7 +257,8 @@ def select_n_random_mpe(breadth, evaluate, initial_score, uci_mpe_dict):
     return next_n_mpe
 
 
-def converge(aggression, breadth, evaluation_func, fluctuation, mpe_list, assumed_opp_aggression=0):
+def converge(mpe_list, evaluation_func, breadth: int = 3, aggression: int = 1, fluctuation: float = 0,
+             assumed_opp_aggression: int = 0, tree_ply_depth: int = 4, aggregator: Callable[[Iterable], float] = max) -> Tuple[str, float]:
     tree = make_4_ply_move_tree(mpe_list, evaluation_func, breadth, aggression, fluctuation, assumed_opp_aggression=assumed_opp_aggression)
     collapse_at_level(tree, 4, lambda x: -max(x))
     collapse_at_level(tree, 3, max)
