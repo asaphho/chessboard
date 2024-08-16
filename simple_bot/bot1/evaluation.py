@@ -1,4 +1,4 @@
-from typing import List, Iterable, Dict
+from typing import List, Iterable, Dict, Union
 
 from classes.color_position import ColorPosition
 from utils.board_functions import scan_qbr_scope, scan_kn_scope, get_intervening_squares, INT_SQUARES_MAP, LINE_EXTEND_MAP, PIECE_MOVE_TYPE_DICT
@@ -73,6 +73,8 @@ ROOK_OPEN_FILE_SCORE = 0.12
 BISHOP_PAIR_SCORE = 0.5
 PRESSURED_PIECE_SCORE = 0.08
 PRESSURED_PIECE_THREAT_SCORE = 0.4
+PINNED_PIECE_THREAT_SCORE = 0.5
+PINNED_THREATENED_MATERIAL_MULTIPLIER = 1.5
 UNIQUE_SQUARE_AROUND_ENEMY_KING_SCORE = 0.08  # ADDITIONAL SCORE FOR EACH UNIQUE SQUARE AROUND THE ENEMY KING CONTROLLED BY ANY PIECE
 UNIQUE_SQUARE_AROUND_ENEMY_KING_THREAT_SCORE = 0.4  # THREAT SCORE FOR EACH UNIQUE SQUARE AROUND THE ENEMY KING CONTROLLED BY ANY PIECE
 SUPPORTED_QUEEN_AROUND_ENEMY_KING_SCORE = 0.08  # ADDITIONAL SCORE FOR EACH UNIQUE SQUARE AROUND THE ENEMY KING CONTROLLED BY A QUEEN AND AT LEAST ONE ADDITIONAL PIECE
@@ -165,11 +167,12 @@ def detect_battery_or_x_ray(target_sq: str, first_attacking_pns: str, square_pie
     return pieces
 
 
-def is_pinned(king_sq: str, king_color: str, pns: str, target_sq: str, square_piece_dict: Dict[str, str]) -> bool:
+def is_pinned(king_sq: str, king_color: str, pns: str, target_sq: str, square_piece_dict: Dict[str, str], ignore_target_sq: bool=False) -> Union[str, None]:
     """
-    Returns True if the piece indicated by pns (Piece and square it is standing on. e.g. 'Ne5') is unable to move to target_sq because of an absolute pin. False otherwise.
+    Returns the pinning piece and square (e.g. 'Re1') if the piece indicated by pns (Piece and square it is standing on. e.g. 'Ne5') is unable to move to target_sq because of an absolute pin. False otherwise.
     Note that this will return True only if it attempts to move out of the line of the pin. For example, a rook being pinned along the e-file will still be able to move along the e-file.
     Use only when established that pns and king_sq are in line, and that the movement of pns to target_sq is according to its normal allowed movement type and is not blocked from moving there.
+    :param ignore_target_sq: If True, simply returns the pinning piece and square if a pin exists, without regard for the target_sq that the piece is trying to move to.
     :param king_color:
     :param king_sq:
     :param pns:
@@ -181,24 +184,25 @@ def is_pinned(king_sq: str, king_color: str, pns: str, target_sq: str, square_pi
     try:
         line_extended = LINE_EXTEND_MAP[map_key]
     except KeyError:
-        return False
+        return None
     squares_between_king_and_pns, line_type = INT_SQUARES_MAP[map_key]['int'], INT_SQUARES_MAP[map_key]['line']
     for int_sq in squares_between_king_and_pns:
         if int_sq in square_piece_dict:
-            return False
+            return None
     for sq in line_extended:
         if sq in square_piece_dict:
             piece_at_square = square_piece_dict[sq]
             if piece_at_square.upper() in ('P', 'K', 'N'):
-                return False
+                return None
             enemy_of_king = piece_at_square.islower() if king_color == 'w' else piece_at_square.isupper()
             if not enemy_of_king:
-                return False
+                return None
             if line_type in PIECE_MOVE_TYPE_DICT[piece_at_square.upper()]:
-                return not (target_sq in squares_between_king_and_pns or target_sq in line_extended)
-            else:
-                return False
-    return False
+                if ignore_target_sq or not (target_sq in squares_between_king_and_pns or target_sq in line_extended):
+                    return f'{piece_at_square.upper()}{sq}'
+                else:
+                    return None
+    return None
 
 
 def count_pawns_in_front_on_file(square: str, color: str, square_piece_dict: Dict[str, str]) -> int:
@@ -530,6 +534,12 @@ def quick_evaluate(position: Position) -> Dict[str, float]:
             capturing_pns = own_square_covering_piece_dict[attacked_square]
             lightest_capturing_pns = min(capturing_pns, key=lambda x: MATERIAL_DICT[x[0]])
             piece_at_square = square_piece_dict[attacked_square].upper()
+            pinning_pns = is_pinned(opposing_king_square, side_to_move, f'{piece_at_square}{attacked_square}', '', square_piece_dict, ignore_target_sq=True)
+            if pinning_pns:
+                if pinning_pns in threat_contributing_pieces:
+                    threat_contributing_pieces[pinning_pns].append(PINNED_PIECE_THREAT_SCORE)
+                else:
+                    threat_contributing_pieces[pinning_pns] = [PINNED_PIECE_THREAT_SCORE]
             if attacked_square not in opposing_square_covering_piece_dict:
                 if lightest_capturing_pns not in threat_contributing_pieces:
                     threat_contributing_pieces[lightest_capturing_pns] = [MATERIAL_DICT[piece_at_square] * MATERIAL_THREAT_SCORE_FACTOR]
@@ -540,10 +550,11 @@ def quick_evaluate(position: Position) -> Dict[str, float]:
                 capturing_piece_worth = min([MATERIAL_DICT[pns[0]] for pns in capturing_pns])
                 threatened_material = MATERIAL_DICT[piece_at_square] - capturing_piece_worth
                 if threatened_material > 0:
+                    m = PINNED_THREATENED_MATERIAL_MULTIPLIER if pinning_pns else 1
                     if lightest_capturing_pns not in threat_contributing_pieces:
-                        threat_contributing_pieces[lightest_capturing_pns] = [threatened_material * MATERIAL_THREAT_SCORE_FACTOR]
+                        threat_contributing_pieces[lightest_capturing_pns] = [threatened_material * MATERIAL_THREAT_SCORE_FACTOR * m]
                     else:
-                        threat_contributing_pieces[lightest_capturing_pns].append(threatened_material * MATERIAL_THREAT_SCORE_FACTOR)
+                        threat_contributing_pieces[lightest_capturing_pns].append(threatened_material * MATERIAL_THREAT_SCORE_FACTOR * m)
 
     for hanging_pns, m in hanging_material_list:
         if hanging_pns in threat_contributing_pieces:
