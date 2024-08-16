@@ -557,14 +557,20 @@ def quick_evaluate(position: Position) -> Dict[str, float]:
         if square in own_square_covering_piece_dict:
             threat_score += UNIQUE_SQUARE_AROUND_ENEMY_KING_THREAT_SCORE
             score += UNIQUE_SQUARE_AROUND_ENEMY_KING_SCORE
-            if any([pns.startswith('Q') for pns in own_square_covering_piece_dict[square]]) and len(own_square_covering_piece_dict[square]) > 1:
-                threat_score += SUPPORTED_QUEEN_AROUND_ENEMY_KING_THREAT_SCORE
-                score += SUPPORTED_QUEEN_AROUND_ENEMY_KING_SCORE
+            if any([pns.startswith('Q') for pns in own_square_covering_piece_dict[square]]):
+                queen_pns = [pns for pns in own_square_covering_piece_dict[square] if pns[0] == 'Q'][0]
+                battery = detect_battery_or_x_ray(square, queen_pns, square_piece_dict, color='w' if side_evaluating_for == 'w' else 'b')
+                if len(own_square_covering_piece_dict[square]) > 1 or len(battery) > 1:
+                    threat_score += SUPPORTED_QUEEN_AROUND_ENEMY_KING_THREAT_SCORE
+                    score += SUPPORTED_QUEEN_AROUND_ENEMY_KING_SCORE
 
     for square in own_piece_covered_square_dict[f'K{own_king_square}']:
         if square in opposing_square_covering_piece_dict:
             score -= UNIQUE_SQUARE_AROUND_ENEMY_KING_SCORE
-            if any([pns.startswith('Q') for pns in opposing_square_covering_piece_dict[square]]) and len(opposing_square_covering_piece_dict[square]) > 1:
-                score -= SUPPORTED_QUEEN_AROUND_ENEMY_KING_SCORE
+            if any([pns.startswith('Q') for pns in opposing_square_covering_piece_dict[square]]):
+                queen_pns = [pns for pns in opposing_square_covering_piece_dict[square] if pns[0] == 'Q'][0]
+                battery = detect_battery_or_x_ray(square, queen_pns, square_piece_dict, color='w' if side_to_move == 'w' else 'b')
+                if len(opposing_square_covering_piece_dict[square]) > 1 or len(battery) > 1:
+                    score -= SUPPORTED_QUEEN_AROUND_ENEMY_KING_SCORE
 
     return {'eval': score, 'threat': threat_score}
