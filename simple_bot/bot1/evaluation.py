@@ -84,6 +84,7 @@ BASE_CHECK_THREAT_SCORE = 2
 FORCED_KING_MOVE_THREAT_SCORE = 3
 FORCED_FREE_PIECE_BLOCK_THREAT_SCORE = 3
 MATERIAL_THREAT_SCORE_FACTOR = 0.5
+MATERIAL_THREAT_SIMULTANEOUS_WITH_CHECK = 4
 
 
 def square_around_enemy_king(square: str, opposing_pieces_position: ColorPosition):
@@ -289,7 +290,8 @@ def quick_evaluate(position: Position) -> Dict[str, float]:
                     capturing_piece_worth = MATERIAL_DICT[legal_capturing_pns[0][0]]
                     if (net_gain := capturing_piece_worth - checking_piece_worth) > 0:
                         threat_score += net_gain
-
+    else:
+        checking_pieces = []
     own_passed_pawns = {}
     for sq in square_piece_dict:
         piece = square_piece_dict[sq]
@@ -413,6 +415,8 @@ def quick_evaluate(position: Position) -> Dict[str, float]:
 
     hanging_material_list = []
     for attacked_square in opposing_square_covering_piece_dict:
+        if check_given and not all([pns[1:] == attacked_square for pns in checking_pieces]):
+            continue
         if attacked_square in own_squares_occupied or (attacked_square == position.get_en_passant_square() and any([pns[0] == 'P' for pns in opposing_square_covering_piece_dict[attacked_square]])):
             if (attacked_square not in own_pawn_unique_controlled_squares) and attacked_square != position.get_en_passant_square():
                 score -= PRESSURED_PIECE_SCORE
@@ -546,8 +550,7 @@ def quick_evaluate(position: Position) -> Dict[str, float]:
                 else:
                     threat_contributing_pieces[lightest_capturing_pns].append(MATERIAL_DICT[piece_at_square] * MATERIAL_THREAT_SCORE_FACTOR)
             else:
-                capturing_pns = own_square_covering_piece_dict[attacked_square]
-                capturing_piece_worth = min([MATERIAL_DICT[pns[0]] for pns in capturing_pns])
+                capturing_piece_worth = MATERIAL_DICT[lightest_capturing_pns[0]]
                 threatened_material = MATERIAL_DICT[piece_at_square] - capturing_piece_worth
                 if threatened_material > 0:
                     m = PINNED_THREATENED_MATERIAL_MULTIPLIER if pinning_pns else 1
@@ -555,6 +558,8 @@ def quick_evaluate(position: Position) -> Dict[str, float]:
                         threat_contributing_pieces[lightest_capturing_pns] = [threatened_material * MATERIAL_THREAT_SCORE_FACTOR * m]
                     else:
                         threat_contributing_pieces[lightest_capturing_pns].append(threatened_material * MATERIAL_THREAT_SCORE_FACTOR * m)
+                    if check_given and not all([pns == lightest_capturing_pns for pns in checking_pieces]):
+                        threat_score += MATERIAL_THREAT_SIMULTANEOUS_WITH_CHECK
 
     for hanging_pns, m in hanging_material_list:
         if hanging_pns in threat_contributing_pieces:
