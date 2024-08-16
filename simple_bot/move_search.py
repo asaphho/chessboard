@@ -259,7 +259,14 @@ def select_n_random_mpe(breadth: int, evaluate: Callable[[Position], Dict[str, f
 
 def converge(mpe_list, evaluation_func, breadth: int = 3, aggression: int = 1, fluctuation: float = 0,
              assumed_opp_aggression: int = 0, tree_ply_depth: int = 4, aggregator: Callable[[Iterable], float] = max) -> Tuple[str, float]:
-    tree = make_4_ply_move_tree(mpe_list, evaluation_func, breadth, aggression, fluctuation, assumed_opp_aggression=assumed_opp_aggression)
+    tree = make_move_tree(initial_mpe_list=mpe_list, evaluate=evaluation_func, breadth=breadth, aggression=aggression,
+                          fluctuation=fluctuation, assumed_opp_aggression=assumed_opp_aggression,
+                          ply_depth=tree_ply_depth)
+    for i in range(tree_ply_depth, 1, -1):
+        if i % 2:
+            collapse_at_level(tree=tree, level=i, aggregator=aggregator)
+        else:
+            collapse_at_level(tree=tree, level=i, aggregator=lambda x: -aggregator(x))
     collapse_at_level(tree, 4, lambda x: -max(x))
     collapse_at_level(tree, 3, max)
     collapse_at_level(tree, 2, lambda x: -max(x))
