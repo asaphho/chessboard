@@ -131,7 +131,7 @@ def make_4_ply_move_tree(initial_mpe_list: List[Tuple[LegalMove, Position, float
         position_after_first_move = first_move_tup[1]
         first_move_node = tree.add_child(first_move.generate_uci(), first_move_tup[2])
         top_first_replies = \
-        select_top_n_moves(position_after_first_move, evaluate, n, assumed_opp_aggression, fluctuation)['top']
+            select_top_n_moves(position_after_first_move, evaluate, n, assumed_opp_aggression, fluctuation)['top']
         for first_reply_tup in top_first_replies:
             first_reply = first_reply_tup[0]
             position_after_first_reply = first_reply_tup[1]
@@ -146,7 +146,8 @@ def make_4_ply_move_tree(initial_mpe_list: List[Tuple[LegalMove, Position, float
                     f'{first_move_node.get_name()}-{second_move.generate_uci()}',
                     second_move_tup[2])
                 top_second_replies = \
-                select_top_n_moves(position_after_second_move, evaluate, n, assumed_opp_aggression, fluctuation)['top']
+                    select_top_n_moves(position_after_second_move, evaluate, n, assumed_opp_aggression, fluctuation)[
+                        'top']
                 for second_reply_tup in top_second_replies:
                     second_reply = second_reply_tup[0]
                     second_reply_node = second_move_node.add_child(
@@ -187,6 +188,7 @@ def make_move_tree(initial_mpe_list: List[Tuple[LegalMove, Position, float]],
 def aggregator(leaf_vals: Iterable) -> float:
     def e(val):
         return val if (type(val) == float or type(val) == int) else val['S']
+
     return max([e(leaf_val) for leaf_val in leaf_vals])
 
 
@@ -276,7 +278,7 @@ def select_n_random_mpe(breadth: int, evaluate: Callable[[Position], Dict[str, f
 
 def converge(mpe_list, evaluation_func, breadth: int = 3, aggression: int = 1, fluctuation: float = 0,
              assumed_opp_aggression: int = 0, tree_ply_depth: int = 4, aggregator: Callable[[Iterable], float] = max) -> \
-Tuple[str, float]:
+        Tuple[str, float]:
     tree = make_move_tree(initial_mpe_list=mpe_list, evaluate=evaluation_func, breadth=breadth, aggression=aggression,
                           fluctuation=fluctuation, assumed_opp_aggression=assumed_opp_aggression,
                           ply_depth=tree_ply_depth)
@@ -295,3 +297,46 @@ Tuple[str, float]:
             best_score = move_score
             best_move = move.get_name()
     return best_move, best_score
+
+
+def choose_best_move_recursive(position: Position, evaluation_func: Callable[[Position], Dict[str, float]],
+                               breadth: int = 3, aggression: int = 1, fluctuation: float = 0,
+                               assumed_opp_aggression: int = 1, ply_depth: int = 4) -> Tuple[str, float]:
+    """
+
+    :param position:
+    :param evaluation_func:
+    :param breadth:
+    :param aggression:
+    :param fluctuation:
+    :param assumed_opp_aggression:
+    :param ply_depth:
+    :return:
+    """
+    all_mpe = select_top_n_moves(position=position, evaluate=evaluation_func, n=breadth, pick_n_threatening=aggression,
+                                 fluctuation=fluctuation)
+    if ply_depth == 1:
+        return all_mpe['all'][0][0].generate_uci(), all_mpe['all'][0][2]
+
+    else:
+        candidate_mpes = all_mpe['top']
+        candidate_moves_uci = [mpe[0].generate_uci() for mpe in candidate_mpes]
+        uci_position_dict: Dict[str, Position] = {}
+        for mpe in candidate_mpes:
+            uci_position_dict[mpe[0].generate_uci()] = mpe[1]
+        uci_score_dict: Dict[str, float] = {}
+        for uci in candidate_moves_uci:
+            uci_score_dict[uci] = -1 * \
+                                  choose_best_move_recursive(position=uci_position_dict[uci],
+                                                             evaluation_func=evaluation_func,
+                                                             breadth=breadth, aggression=assumed_opp_aggression,
+                                                             fluctuation=fluctuation, assumed_opp_aggression=aggression,
+                                                             ply_depth=ply_depth - 1)[1]
+        best_move = candidate_moves_uci[0]
+        best_score = uci_score_dict[best_move]
+        for uci in uci_score_dict:
+            score = uci_score_dict[uci]
+            if score > best_score:
+                best_score = score
+                best_move = uci
+        return best_move, best_score
