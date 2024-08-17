@@ -257,7 +257,7 @@ class Game:
 
     def play_computer_move(self, bot: Bot, return_move_for_gui: bool = False) -> Union[str, Tuple[str, LegalMove]]:
         legal_moves = self.current_position.get_all_legal_moves_for_side_to_move()
-        best_move_uci = bot.choose_move(self.current_position)
+        best_move_uci = bot.choose_move_recursive(self.current_position)
         origin_square, destination_square = best_move_uci[:2], best_move_uci[2:4]
         if len(best_move_uci) == 5:
             promotion_piece = best_move_uci[-1].upper()
