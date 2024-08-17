@@ -1,6 +1,6 @@
 from typing import Callable, Dict
 from classes.position import Position
-from simple_bot.move_search import choose_best_move
+from simple_bot.move_search import choose_best_move, choose_best_move_recursive
 
 
 class Bot:
@@ -20,3 +20,8 @@ class Bot:
                                 aggression=self.aggression, fluctuation=self.fluctuation,
                                 assumed_opp_aggression=self.assumed_opp_aggression, ply_depth=self.ply_depth)
 
+    def choose_move_recursive(self, position: Position) -> str:
+        return choose_best_move_recursive(position=position, evaluation_func=self.evaluation_func, breadth=self.breadth,
+                                          aggression=self.aggression, fluctuation=self.fluctuation,
+                                          assumed_opp_aggression=self.assumed_opp_aggression,
+                                          ply_depth=self.ply_depth)[0]
