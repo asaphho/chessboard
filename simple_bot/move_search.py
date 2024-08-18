@@ -315,9 +315,13 @@ def choose_best_move_recursive(position: Position, evaluation_func: Callable[[Po
     """
     all_mpe = select_top_n_moves(position=position, evaluate=evaluation_func, n=breadth, pick_n_threatening=aggression,
                                  fluctuation=fluctuation)
+    if len(all_mpe['all']) == 0:
+        if position.is_under_check(position.to_move()):
+            return '0000', -9999
+        else:
+            return '0000', 0
     if ply_depth == 1:
         return all_mpe['all'][0][0].generate_uci(), all_mpe['all'][0][2]
-
     else:
         candidate_mpes = all_mpe['top']
         candidate_moves_uci = [mpe[0].generate_uci() for mpe in candidate_mpes]
