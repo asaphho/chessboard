@@ -320,6 +320,10 @@ def choose_best_move_recursive(position: Position, evaluation_func: Callable[[Po
             return '0000', -9999
         else:
             return '0000', 0
+
+    if len(all_mpe['all']) == 1:
+        return all_mpe['all'][0][0].generate_uci(), all_mpe['all'][0][2]
+
     if ply_depth == 1:
         return all_mpe['all'][0][0].generate_uci(), all_mpe['all'][0][2]
     else:
