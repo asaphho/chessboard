@@ -85,6 +85,7 @@ FORCED_KING_MOVE_THREAT_SCORE = 0.5
 FORCED_FREE_PIECE_BLOCK_THREAT_SCORE = 3
 MATERIAL_THREAT_SCORE_FACTOR = 0.5
 MATERIAL_THREAT_SIMULTANEOUS_WITH_CHECK = 4
+ENDGAME_THREAT_MULTIPLIER = 2
 
 
 def square_around_enemy_king(square: str, opposing_pieces_position: ColorPosition):
@@ -223,6 +224,11 @@ def quick_evaluate(position: Position) -> Dict[str, float]:
     side_evaluating_for = opposite_color(side_to_move)
     score = 0
     threat_score = 0
+    opposing_material = 0
+    for piece in position.get_pieces_by_color(side_to_move).list_unique_piece_types():
+        if piece != 'K':
+            opposing_material += len(position.get_pieces_by_color(side_to_move).get_piece_type_squares(piece)) * MATERIAL_DICT[piece]
+    endgame_multiplier = 1 if opposing_material >= 10 else ENDGAME_THREAT_MULTIPLIER
     threat_contributing_pieces = {}
     square_piece_dict = position.white_pieces.get_square_piece_symbol_dict() | position.black_pieces.get_square_piece_symbol_dict(lowercase=True)
     own_squares_occupied = position.get_pieces_by_color(side_evaluating_for).get_occupied_squares()
@@ -297,6 +303,8 @@ def quick_evaluate(position: Position) -> Dict[str, float]:
         piece = square_piece_dict[sq]
         own_piece = piece.isupper() if side_evaluating_for == 'w' else piece.islower()
         score += MATERIAL_DICT[piece.upper()] if own_piece else -MATERIAL_DICT[piece.upper()]
+        if not own_piece and piece.upper() != 'K':
+            opposing_material += MATERIAL_DICT[piece.upper()]
         color = 'w' if piece.isupper() else 'b'
         if piece.upper() == 'R':
             n_pawns_in_front = count_pawns_in_front_on_file(sq, color, square_piece_dict)
@@ -337,16 +345,16 @@ def quick_evaluate(position: Position) -> Dict[str, float]:
                     score += ranks_advanced * PASSED_PAWN_ADVANCEMENT_BONUS_PER_RANK if own_piece else -ranks_advanced * PASSED_PAWN_ADVANCEMENT_BONUS_PER_RANK
                     if own_piece:
                         own_passed_pawns[f'P{sq}'] = PASSED_PAWN_SCORE + ranks_advanced * PASSED_PAWN_ADVANCEMENT_BONUS_PER_RANK
-                        threat_contributing_pieces[f'P{sq}'] = [ranks_advanced * PASSED_PAWN_ADVANCEMENT_THREAT_SCORE_PER_RANK]
+                        threat_contributing_pieces[f'P{sq}'] = [ranks_advanced * PASSED_PAWN_ADVANCEMENT_THREAT_SCORE_PER_RANK * endgame_multiplier]
             if own_piece:
                 seventh_rank, promotion_rank = (7, 8) if piece == 'P' else (2, 1)
                 if int(sq[1]) == seventh_rank:
                     promotion_square = f'{sq[0]}{promotion_rank}'
                     if promotion_square not in opposing_squares_occupied and promotion_square not in opposing_square_covering_piece_dict:
-                        threat_contributing_pieces[f'P{sq}'] = [PROMOTION_THREAT_SCORE]
+                        threat_contributing_pieces[f'P{sq}'] = [PROMOTION_THREAT_SCORE * endgame_multiplier]
                     elif promotion_square not in opposing_squares_occupied and promotion_square in opposing_square_covering_piece_dict:
                         if promotion_square in own_square_covering_piece_dict or detect_battery_or_x_ray(promotion_square, sq, square_piece_dict, side_evaluating_for, True):
-                            threat_contributing_pieces[f'P{sq}'] = [PROMOTION_THREAT_SCORE]
+                            threat_contributing_pieces[f'P{sq}'] = [PROMOTION_THREAT_SCORE * endgame_multiplier]
 
     own_pawn_unique_controlled_squares = []
     already_pawn_controlled_squares_around_king = []
@@ -570,13 +578,13 @@ def quick_evaluate(position: Position) -> Dict[str, float]:
 
     for square in opposing_piece_covered_square_dict[f'K{opposing_king_square}']:
         if square in own_square_covering_piece_dict:
-            threat_score += UNIQUE_SQUARE_AROUND_ENEMY_KING_THREAT_SCORE
+            threat_score += UNIQUE_SQUARE_AROUND_ENEMY_KING_THREAT_SCORE * endgame_multiplier
             score += UNIQUE_SQUARE_AROUND_ENEMY_KING_SCORE
             if any([pns.startswith('Q') for pns in own_square_covering_piece_dict[square]]):
                 queen_pns = [pns for pns in own_square_covering_piece_dict[square] if pns[0] == 'Q'][0]
                 battery = detect_battery_or_x_ray(square, queen_pns, square_piece_dict, color='w' if side_evaluating_for == 'w' else 'b')
                 if len(own_square_covering_piece_dict[square]) > 1 or len(battery) > 1:
-                    threat_score += SUPPORTED_QUEEN_AROUND_ENEMY_KING_THREAT_SCORE
+                    threat_score += SUPPORTED_QUEEN_AROUND_ENEMY_KING_THREAT_SCORE * endgame_multiplier
                     score += SUPPORTED_QUEEN_AROUND_ENEMY_KING_SCORE
 
     for square in own_piece_covered_square_dict[f'K{own_king_square}']:
