@@ -1,3 +1,4 @@
+import json
 from typing import Union, Tuple
 
 from classes.bot import Bot
@@ -17,9 +18,10 @@ class Game:
         self.moves_record = {}
         self.starting_position = self.current_position.copy()
 
-    def process_move(self, legal_move: LegalMove, return_move_for_gui: bool = False) -> Union[str, Tuple[str, LegalMove]]:
+    def process_move(self, legal_move: LegalMove, return_move_for_gui: bool = False, opening_book_path: str = None) -> Union[str, Tuple[str, LegalMove]]:
         side_that_moved = legal_move.color
         move_number = self.current_position.get_move_number()
+        fen_before_move = self.current_position.generate_fen().rsplit(' ', maxsplit=2)[0]
         move_notation = self.current_position.process_legal_move(legal_move)
         current_fen = self.current_position.generate_fen()
         current_fen_for_record = current_fen.rsplit(' ', maxsplit=2)[0]
@@ -33,6 +35,18 @@ class Game:
             self.moves_record[move_number] = [f'{move_number}. ...', move_notation]
         else:
             self.moves_record[move_number].append(move_notation)
+
+        if opening_book_path:
+            uci = legal_move.generate_uci()
+            with open(opening_book_path, 'r') as readfile:
+                curr_opening_book = json.load(readfile)
+            if fen_before_move not in curr_opening_book:
+                curr_opening_book[fen_before_move] = [uci]
+            elif uci not in curr_opening_book[fen_before_move]:
+                curr_opening_book[fen_before_move].append(uci)
+            with open(opening_book_path, 'w') as writefile:
+                writefile.write(json.dumps(curr_opening_book, indent=3))
+
         return (move_notation, legal_move) if return_move_for_gui else move_notation
 
     def drawn_by_repetition(self) -> bool:
@@ -99,7 +113,7 @@ class Game:
             return 'Drawn by reduction.'
         return 'N'
 
-    def process_input_notation(self, notation_str: str, return_move_for_gui: bool = False) -> Union[str, Tuple[str, LegalMove]]:
+    def process_input_notation(self, notation_str: str, return_move_for_gui: bool = False, opening_book_path: str = None) -> Union[str, Tuple[str, LegalMove]]:
         side_to_move = self.current_position.to_move()
         castling = check_for_castling(notation_str)
         if castling == 'N':
@@ -124,7 +138,7 @@ class Game:
                     # print(f'Ambiguity detected. More than one {piece_moved} can move to {destination_square}.')
                     raise ValueError(f'Ambiguity detected. More than one {piece_moved} can move to {destination_square}.')
                 elif disambiguating_string == '' and len(possible_legal_moves) == 1:
-                    return self.process_move(possible_legal_moves[0], return_move_for_gui)
+                    return self.process_move(possible_legal_moves[0], return_move_for_gui, opening_book_path)
                 elif len(disambiguating_string) == 1 and disambiguating_string.isalpha():
                     possible_legal_moves = [move for move in possible_legal_moves if move.origin_square[0] == disambiguating_string]
                     if len(possible_legal_moves) > 1:
@@ -134,7 +148,7 @@ class Game:
                         # print(f'No {piece_moved} on {disambiguating_string}-file able to move to {destination_square}.')
                         raise ValueError(f'No {piece_moved} on {disambiguating_string}-file able to move to {destination_square}.')
                     else:
-                        return self.process_move(possible_legal_moves[0], return_move_for_gui)
+                        return self.process_move(possible_legal_moves[0], return_move_for_gui, opening_book_path)
                 elif len(disambiguating_string) == 1 and disambiguating_string.isnumeric():
                     possible_legal_moves = [move for move in possible_legal_moves if move.origin_square[1] == disambiguating_string]
                     if len(possible_legal_moves) > 1:
@@ -144,14 +158,14 @@ class Game:
                         # print(f'No {piece_moved} able to move to {destination_square} from rank {disambiguating_string}.')
                         raise ValueError(f'No {piece_moved} able to move to {destination_square} from rank {disambiguating_string}.')
                     else:
-                        return self.process_move(possible_legal_moves[0], return_move_for_gui)
+                        return self.process_move(possible_legal_moves[0], return_move_for_gui, opening_book_path)
                 elif len(disambiguating_string) == 2:
                     possible_legal_moves = [move for move in possible_legal_moves if move.origin_square == disambiguating_string]
                     if len(possible_legal_moves) == 0:
                         # print(f'No {piece_moved} on {disambiguating_string} to move to {destination_square}.')
                         raise ValueError(f'No {piece_moved} on {disambiguating_string} to move to {destination_square}.')
                     else:
-                        return self.process_move(possible_legal_moves[0], return_move_for_gui)
+                        return self.process_move(possible_legal_moves[0], return_move_for_gui, opening_book_path)
                 else:
                     raise ValueError(f'Something went wrong: Unhandled disambiguation string {disambiguating_string}.')
             else:
@@ -165,26 +179,26 @@ class Game:
                     if capture_origin_file == '':
                         for move in possible_legal_moves:
                             if move.promotion_piece == promotion_piece and not move.is_capture():
-                                return self.process_move(move, return_move_for_gui)
+                                return self.process_move(move, return_move_for_gui, opening_book_path)
                         raise ValueError('Something went wrong. Pawn reached last rank but no pawn promotion LegalMove objects found to match promotion piece.')
                     else:
                         for move in possible_legal_moves:
                             if move.origin_square[0] == capture_origin_file and move.promotion_piece == promotion_piece and move.is_capture():
-                                return self.process_move(move, return_move_for_gui)
+                                return self.process_move(move, return_move_for_gui, opening_book_path)
                         raise ValueError('Something went wrong. Pawn reached last rank but no pawn promotion LegalMove objects found to match promotion piece.')
                 else:
                     capture_origin_file = pawn_capture_origin_file(notation_str, destination_square)
                     if capture_origin_file == '':
                         for move in possible_legal_moves:
                             if not move.is_capture():
-                                return self.process_move(move, return_move_for_gui)
+                                return self.process_move(move, return_move_for_gui, opening_book_path)
                         # code can reach here in the case of a pawn attempting to move forward onto a square occupied by an enemy piece when another pawn is able to capture to that square.
                         # print(f'Illegal move.')
                         raise ValueError('Illegal move.')
                     else:
                         for move in possible_legal_moves:
                             if move.origin_square[0] == capture_origin_file and move.is_capture():
-                                return self.process_move(move, return_move_for_gui)
+                                return self.process_move(move, return_move_for_gui, opening_book_path)
                         # print('Illegal move.')
                         raise ValueError('Illegal move.')
         else:
@@ -194,7 +208,7 @@ class Game:
                                        origin_square=f'e{back_rank}',
                                        destination_square=f'g{back_rank}' if castling == 'k' else f'c{back_rank}',
                                        castling=castling)
-                return self.process_move(legal_move, return_move_for_gui)
+                return self.process_move(legal_move, return_move_for_gui, opening_book_path)
             else:
                 # print('Castling not legal here.')
                 raise ValueError(f'Castling {castling}-side not legal here.')
