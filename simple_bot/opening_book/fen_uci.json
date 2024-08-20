@@ -12,7 +12,8 @@
       "e7e6"
    ],
    "rnbqkbnr/ppp2ppp/4p3/3p4/2PP4/8/PP2PPPP/RNBQKBNR w KQkq -": [
-      "b1c3"
+      "b1c3",
+      "g1f3"
    ],
    "rnbqkbnr/ppp2ppp/4p3/3p4/2PP4/2N5/PP2PPPP/R1BQKBNR b KQkq -": [
       "f8b4",
@@ -1100,5 +1101,74 @@
    ],
    "r1bqk2r/pp1nbppp/2p2n2/3p2B1/3P4/2NBP3/PPQ2PPP/R3K1NR b KQkq -": [
       "e8g8"
+   ],
+   "r1bq1rk1/pp1nbppp/2p2n2/3p2B1/3P4/2NBP3/PPQ2PPP/R3K1NR w KQ -": [
+      "g1f3",
+      "g1e2"
+   ],
+   "r1bq1rk1/pp1nbppp/2p2n2/3p2B1/3P4/2NBPN2/PPQ2PPP/R3K2R b KQ -": [
+      "f8e8"
+   ],
+   "r1bqr1k1/pp1nbppp/2p2n2/3p2B1/3P4/2NBPN2/PPQ2PPP/R3K2R w KQ -": [
+      "e1g1",
+      "e1c1"
+   ],
+   "r1bq1rk1/pp1nbppp/2p2n2/3p2B1/3P4/2NBP3/PPQ1NPPP/R3K2R b KQ -": [
+      "f8e8"
+   ],
+   "r1bqr1k1/pp1nbppp/2p2n2/3p2B1/3P4/2NBP3/PPQ1NPPP/R3K2R w KQ -": [
+      "e1c1",
+      "e1g1"
+   ],
+   "rnbqkbnr/ppp2ppp/4p3/3p4/2PP4/5N2/PP2PPPP/RNBQKB1R b KQkq -": [
+      "g8f6"
+   ],
+   "rnbqkb1r/ppp2ppp/4pn2/3p4/2PP4/5N2/PP2PPPP/RNBQKB1R w KQkq -": [
+      "g2g3"
+   ],
+   "rnbqkb1r/ppp2ppp/4pn2/3p4/2PP4/5NP1/PP2PP1P/RNBQKB1R b KQkq -": [
+      "d5c4"
+   ],
+   "rnbqkb1r/ppp2ppp/4pn2/8/2pP4/5NP1/PP2PP1P/RNBQKB1R w KQkq -": [
+      "d1a4",
+      "f1g2"
+   ],
+   "rnbqkb1r/ppp2ppp/4pn2/8/Q1pP4/5NP1/PP2PP1P/RNB1KB1R b KQkq -": [
+      "b8d7"
+   ],
+   "r1bqkb1r/pppn1ppp/4pn2/8/Q1pP4/5NP1/PP2PP1P/RNB1KB1R w KQkq -": [
+      "a4c4"
+   ],
+   "r1bqkb1r/pppn1ppp/4pn2/8/2QP4/5NP1/PP2PP1P/RNB1KB1R b KQkq -": [
+      "a7a6"
+   ],
+   "r1bqkb1r/1ppn1ppp/p3pn2/8/2QP4/5NP1/PP2PPBP/RNB1K2R b KQkq -": [
+      "b7b5"
+   ],
+   "rnbqkb1r/ppp2ppp/4pn2/8/2pP4/5NP1/PP2PPBP/RNBQK2R b KQkq -": [
+      "b7b5",
+      "a7a6",
+      "b8c6",
+      "c7c5",
+      "c8d7"
+   ],
+   "rnbqkb1r/pp3ppp/4pn2/2p5/2pP4/5NP1/PP2PPBP/RNBQK2R w KQkq c6": [
+      "e1g1"
+   ],
+   "rnbqkb1r/pp3ppp/4pn2/2p5/2pP4/5NP1/PP2PPBP/RNBQ1RK1 b kq -": [
+      "b8c6"
+   ],
+   "r1bqkb1r/pp3ppp/2n1pn2/2p5/2pP4/5NP1/PP2PPBP/RNBQ1RK1 w kq -": [
+      "d1a4",
+      "f3e5"
+   ],
+   "r1bqkb1r/pp3ppp/2n1pn2/8/Q1pp4/5NP1/PP2PPBP/RNB2RK1 w kq -": [
+      "f3d4"
+   ],
+   "r1b1kb1r/pp3ppp/2n1pn2/8/Q1pq4/6P1/PP2PPBP/RNB2RK1 w kq -": [
+      "g2c6"
+   ],
+   "rn1qkb1r/pppb1ppp/4pn2/8/2pP4/5NP1/PP2PPBP/RNBQK2R w KQkq -": [
+      "f3e5"
    ]
 }
