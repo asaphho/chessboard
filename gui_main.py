@@ -264,9 +264,12 @@ def display_moves(game: Game) -> None:
 
 
 def main(game):
-    bot = Bot(quick_evaluate, 3, 2, 0.1)
     bot_color = 'w'
     playing_against_bot = True
+    if playing_against_bot:
+        bot = Bot(quick_evaluate, 3, 2, 0.1)
+    else:
+        bot = None
     if playing_against_bot and bot_color == 'w':
         res = game.play_computer_move(bot)
         game.current_position.flip_position()
@@ -325,7 +328,7 @@ def main(game):
                         break
             else:
                 update_layout(game, window, res, game_end_text=game_end_check)
-                exit_signal = enter_game_end_loop(game, game_end_check, window)
+                exit_signal = enter_game_end_loop(game, game_end_check, window, bot=bot, bot_color=bot_color)
                 if exit_signal:
                     break
         elif event in ALL_SQUARE_KEYS:
@@ -427,7 +430,7 @@ def main(game):
                             break
                         else:
                             update_layout(game, window, res, game_end_text=game_end_check)
-                            exit_signal = enter_game_end_loop(game, game_end_check, window)
+                            exit_signal = enter_game_end_loop(game, game_end_check, window, bot=bot, bot_color=bot_color)
                             break
             if exit_signal:
                 break
@@ -463,6 +466,7 @@ def enter_game_end_loop(game: Game, game_end_check: str, window: PySimpleGUI.PyS
                 game.restart_game()
                 if bot and bot_color == 'w':
                     res = game.play_computer_move(bot)
+                    game.current_position.flip_position()
                     update_layout(game, window, res)
                 else:
                     update_layout(game, window, 'Game restarted.')
