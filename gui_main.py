@@ -474,7 +474,7 @@ def enter_game_end_loop(game: Game, game_end_check: str, window: PySimpleGUI.PyS
         elif event == 'Take back last move':
             text = game.take_back_last_move(silent=True)
             update_layout(game, window, text)
-            if game_ended_by_bot:
+            if bot and game_ended_by_bot:
                 text = game.take_back_last_move(silent=True)
                 update_layout(game, window, text)
             break
