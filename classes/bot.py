@@ -16,7 +16,12 @@ class Bot:
         self.fluctuation = fluctuation
         self.assumed_opp_aggression = assumed_opp_aggresion
         self.ply_depth = ply_depth
-        self.opening_book_path = opening_book_path
+        try:
+            with open(opening_book_path, 'r') as readfile:
+                opening_book = json.load(readfile)
+        except Exception:
+            opening_book = None
+        self.opening_book = opening_book
 
     def choose_move(self, position: Position) -> str:
         return choose_best_move(position=position, evaluate=self.evaluation_func, breadth=self.breadth,
@@ -30,15 +35,13 @@ class Bot:
                                           ply_depth=self.ply_depth)[0]
 
     def look_in_opening_book(self, position: Position) -> str:
-        if not self.opening_book_path:
+        if not self.opening_book:
             return '0000'
         current_fen = position.generate_fen().rsplit(' ', maxsplit=2)[0]
-        with open(self.opening_book_path, 'r') as readfile:
-            opening_book = json.load(readfile)
-        if current_fen not in opening_book:
+        if current_fen not in self.opening_book:
             return '0000'
         else:
-            return choice(opening_book[current_fen])
+            return choice(self.opening_book[current_fen])
 
     def make_move(self, position: Position) -> str:
         opening_book_move = self.look_in_opening_book(position)
