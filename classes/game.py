@@ -272,7 +272,11 @@ class Game:
     def play_computer_move(self, bot: Bot, return_move_for_gui: bool = False) -> Union[str, Tuple[str, LegalMove]]:
         legal_moves = self.current_position.get_all_legal_moves_for_side_to_move()
         best_move_uci = bot.make_move(self.current_position)
-        origin_square, destination_square = best_move_uci[:2], best_move_uci[2:4]
+        try:
+            origin_square, destination_square = best_move_uci[:2], best_move_uci[2:4]
+        except Exception:
+            current_fen = self.current_position.generate_fen().rsplit(' ', maxsplit=2)[0]
+            raise ValueError(f'Bad UCI: {best_move_uci}. This might be due to the opening book JSON file being manually written to. Go to the opening book JSON file, find the key "{current_fen}", and remove {best_move_uci} from its values.')
         if len(best_move_uci) == 5:
             promotion_piece = best_move_uci[-1].upper()
         else:
@@ -286,7 +290,8 @@ class Game:
                 if move.origin_square == origin_square and move.destination_square == destination_square:
                     return self.process_move(move, return_move_for_gui)
 
-
+        current_fen = self.current_position.generate_fen().rsplit(' ', maxsplit=2)[0]
+        raise ValueError(f'Supplied UCI {best_move_uci} did not match any of the legal moves in this position. This might be due to the opening book JSON file being manually written to. Go to the opening book JSON file, find the key "{current_fen}", and remove {best_move_uci} from its values.')
 
 
 

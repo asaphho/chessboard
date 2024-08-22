@@ -19,7 +19,8 @@ class Bot:
         try:
             with open(opening_book_path, 'r') as readfile:
                 opening_book = json.load(readfile)
-        except Exception:
+        except Exception as e:
+            print(f'Error getting opening book: {str(e)}. Bot will play without opening book.')
             opening_book = None
         self.opening_book = opening_book
 
