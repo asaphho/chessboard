@@ -41,7 +41,10 @@ class Bot:
         if current_fen not in self.opening_book:
             return '0000'
         else:
-            return choice(self.opening_book[current_fen])
+            try:
+                return choice(self.opening_book[current_fen])
+            except Exception:
+                return '0000'
 
     def make_move(self, position: Position) -> str:
         opening_book_move = self.look_in_opening_book(position)
