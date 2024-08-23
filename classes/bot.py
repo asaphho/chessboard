@@ -1,5 +1,5 @@
 import json
-from typing import Callable, Dict
+from typing import Callable, Dict, Any
 from classes.position import Position
 from simple_bot.move_search import choose_best_move, choose_best_move_recursive
 from random import choice
@@ -22,6 +22,26 @@ class Bot:
         except Exception as e:
             print(f'Error getting opening book: {str(e)}. Bot will play without opening book.')
             opening_book = None
+        if opening_book:
+            for fen in list(opening_book.keys()):
+                if type(fen) != str:
+                    opening_book.pop(fen)
+            for fen in list(opening_book.keys()):
+                if type(opening_book[fen]) != list:
+                    opening_book.pop(fen)
+            for fen in list(opening_book.keys()):
+                uci_list = opening_book[fen]
+                indices_to_remove = []
+                for i in range(len(uci_list)):
+                    if type(uci_list[i]) != str:
+                        indices_to_remove.append(i)
+                if indices_to_remove:
+                    indices_to_remove.sort(reverse=True)
+                    for i in indices_to_remove:
+                        opening_book[fen].pop(i)
+            for fen in list(opening_book.keys()):
+                if len(opening_book[fen]) == 0:
+                    opening_book.pop(fen)
         self.opening_book = opening_book
 
     def choose_move(self, position: Position) -> str:
@@ -45,6 +65,7 @@ class Bot:
             try:
                 return choice(self.opening_book[current_fen])
             except Exception:
+                self.opening_book.pop(current_fen)
                 return '0000'
 
     def make_move(self, position: Position) -> str:
@@ -53,3 +74,15 @@ class Bot:
             return opening_book_move
         else:
             return self.choose_move_recursive(position)
+
+    def remove_bad_uci(self, fen: str, bad_uci: str):
+        uci_list = self.opening_book[fen]
+        for i in range(len(uci_list)):
+            if uci_list[i] == bad_uci:
+                self.opening_book[fen].pop(i)
+                if len(self.opening_book[fen]) == 0:
+                    self.opening_book.pop(fen)
+                break
+
+
+

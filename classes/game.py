@@ -276,7 +276,8 @@ class Game:
             origin_square, destination_square = best_move_uci[:2], best_move_uci[2:4]
         except Exception:
             current_fen = self.current_position.generate_fen().rsplit(' ', maxsplit=2)[0]
-            raise ValueError(f'Bad UCI: {best_move_uci}. This might be due to the opening book JSON file being manually written to. Go to the opening book JSON file, find the key "{current_fen}", and remove {best_move_uci} from its values.')
+            bot.remove_bad_uci(current_fen, best_move_uci)
+            return self.play_computer_move(bot=bot, return_move_for_gui=return_move_for_gui)
         if len(best_move_uci) == 5:
             promotion_piece = best_move_uci[-1].upper()
         else:
@@ -291,8 +292,8 @@ class Game:
                     return self.process_move(move, return_move_for_gui)
 
         current_fen = self.current_position.generate_fen().rsplit(' ', maxsplit=2)[0]
-        raise ValueError(f'Supplied UCI {best_move_uci} did not match any of the legal moves in this position. This might be due to the opening book JSON file being manually written to. Go to the opening book JSON file, find the key "{current_fen}", and remove {best_move_uci} from its values.')
-
+        bot.remove_bad_uci(current_fen, best_move_uci)
+        return self.play_computer_move(bot=bot, return_move_for_gui=return_move_for_gui)
 
 
 
