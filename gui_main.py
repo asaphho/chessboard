@@ -267,7 +267,7 @@ def main(game):
     bot_color = 'w'
     playing_against_bot = True
     if playing_against_bot:
-        bot = Bot(quick_evaluate, 3, 2, 0.2)
+        bot = Bot(quick_evaluate, 3, 1, 0.15)
     else:
         bot = None
     if playing_against_bot and bot_color == 'w':
