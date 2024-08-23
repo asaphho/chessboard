@@ -5,12 +5,11 @@ import PySimpleGUI.PySimpleGUI
 import sys
 from classes.position import Position
 from utils.board_functions import square_color_int, ALL_SQUARES
-from utils.parse_notation import piece_to_symbol
 from simple_bot.bot1.evaluation import quick_evaluate
 from classes.bot import Bot
 from version import software_version
 from classes.game import Game
-from typing import List, Dict
+from typing import List, Dict, Union
 
 UNHANDLED_ERROR_MESSAGE = 'Something went wrong. :( Immediately after closing this popup, please submit an issue on https://github.com/asaphho/chessboard with the moves of the game up to this point, and describe what you attempted to do.'
 
@@ -28,6 +27,41 @@ ALL_SQUARE_KEYS = []
 for i in '01234567':
     for j in '01234567':
         ALL_SQUARE_KEYS.append(i+j)
+
+
+
+
+def main_menu() -> Dict[str, Union[bool, str, None]]:
+    main_menu_layout = [[sg.Button('Human VS Human')],
+                        [sg.Button('Play against bot')],
+                        [sg.Button('Quit to desktop')]]
+
+    bot_menu_layout = [[sg.Text('Play as:'), sg.Radio('White', group_id=1, default=True, key='w'),
+                        sg.Radio('Black', group_id=1, key='b')],
+                       [sg.Checkbox('Let bot use opening book', default=True, key='op_book')],
+                       [sg.Button('OK'), sg.Button('Cancel')]]
+    main_menu_window = sg.Window(TITLE, layout=main_menu_layout)
+    while True:
+        event, values = main_menu_window.read()
+        if event == sg.WIN_CLOSED or event == 'Quit to desktop':
+            main_menu_window.close()
+            return {'exit': True, 'bot': False, 'bot_color': 'b', 'opening_book': None}
+        elif event == 'Play against bot':
+            main_menu_window.close()
+            bot_window = sg.Window(TITLE, bot_menu_layout)
+            while True:
+                b_event, b_values = bot_window.read()
+                if b_event == sg.WIN_CLOSED or b_event == 'Cancel':
+                    bot_window.close()
+                    return main_menu()
+                elif b_event == 'OK':
+                    bot_color = 'w' if b_values['w'] is False else 'b'
+                    opening_book_path = get_opening_book_path() if b_values['op_book'] is True else None
+                    bot_window.close()
+                    return {'exit': False, 'bot': True, 'bot_color': bot_color, 'opening_book': opening_book_path}
+        elif event == 'Human VS Human':
+            main_menu_window.close()
+            return {'exit': False, 'bot': False, 'bot_color': 'b', 'opening_book': None}
 
 
 def generate_position_layout(position: Position) -> List[List]:
@@ -272,10 +306,14 @@ def display_moves(game: Game) -> None:
 
 
 def main(game):
-    bot_color = 'w'
-    playing_against_bot = True
+    main_menu_results = main_menu()
+    if main_menu_results['exit'] is True:
+        sys.exit()
+
+    bot_color = main_menu_results['bot_color']
+    playing_against_bot = main_menu_results['bot']
     if playing_against_bot:
-        bot = Bot(quick_evaluate, 3, 1, 0.15)
+        bot = Bot(quick_evaluate, 3, 1, 0.15, opening_book_path=main_menu_results['opening_book'])
     else:
         bot = None
     if playing_against_bot and bot_color == 'w':
