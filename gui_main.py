@@ -93,6 +93,14 @@ def get_path_to_image(filename: str) -> str:
     return filepath
 
 
+def get_opening_book_path() -> str:
+    try:
+        filepath = path.join(sys._MEIPASS, 'opening_book', 'fen_uci.json')
+    except Exception:
+        filepath = path.join('.', 'opening_book', 'fen_uci.json')
+    return filepath
+
+
 def get_image_path_from_square(position: Position, square: str, highlight: bool = False) -> str:
     square_color = get_square_color(square)
     square_occupant = position.look_at_square(square)
