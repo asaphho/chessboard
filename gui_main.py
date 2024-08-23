@@ -97,7 +97,7 @@ def get_opening_book_path() -> str:
     try:
         filepath = path.join(sys._MEIPASS, 'opening_book', 'fen_uci.json')
     except Exception:
-        filepath = path.join('.', 'opening_book', 'fen_uci.json')
+        filepath = path.join('.', 'simple_bot', 'opening_book', 'fen_uci.json')
     return filepath
 
 
