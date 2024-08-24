@@ -29,10 +29,9 @@ for i in '01234567':
         ALL_SQUARE_KEYS.append(i+j)
 
 
-
-
 def main_menu() -> Dict[str, Union[bool, str, None]]:
-    main_menu_layout = [[sg.Button('Human VS Human')],
+    main_menu_layout = [[sg.Text('Select an option to continue.')],
+                        [sg.Button('Human VS Human')],
                         [sg.Button('Play against bot')],
                         [sg.Button('Quit to desktop')]]
 
