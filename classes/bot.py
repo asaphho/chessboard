@@ -16,11 +16,14 @@ class Bot:
         self.fluctuation = fluctuation
         self.assumed_opp_aggression = assumed_opp_aggresion
         self.ply_depth = ply_depth
-        try:
-            with open(opening_book_path, 'r') as readfile:
-                opening_book = json.load(readfile)
-        except Exception as e:
-            print(f'Error getting opening book: {str(e)}. Bot will play without opening book.')
+        if opening_book_path:
+            try:
+                with open(opening_book_path, 'r') as readfile:
+                    opening_book = json.load(readfile)
+            except Exception as e:
+                print(f'Error getting opening book: {str(e)}. Bot will play without opening book.')
+                opening_book = None
+        else:
             opening_book = None
         if opening_book:
             for fen in list(opening_book.keys()):
