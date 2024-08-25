@@ -312,7 +312,7 @@ def main(game):
     bot_color = main_menu_results['bot_color']
     playing_against_bot = main_menu_results['bot']
     if playing_against_bot:
-        bot = Bot(quick_evaluate, 3, 1, 0.15, opening_book_path=main_menu_results['opening_book'])
+        bot = Bot(quick_evaluate, breadth=3, aggression=1, fluctuation=0.15, assumed_opp_aggresion=1, opening_book_path=main_menu_results['opening_book'])
     else:
         bot = None
     if playing_against_bot and bot_color == 'w':
