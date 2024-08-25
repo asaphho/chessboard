@@ -216,6 +216,11 @@ class Game:
     def show_moves(self, return_string_for_window: bool = False) -> Union[str, None]:
         ret_str = '' if return_string_for_window else None
         move_numbers = list(self.moves_record.keys())
+        if not move_numbers:
+            if return_string_for_window:
+                return ''
+            else:
+                print('')
         first_move = min(move_numbers)
         last_move = max(move_numbers)
         for move in range(first_move, last_move + 1):
