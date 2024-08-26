@@ -1,8 +1,10 @@
 # Chessboard
 
-A Python chess program I made myself as a coding exercise. Starts a new game of chess when run. You can move by clicking on a piece and then the destination square (on the GUI), or give the move in standard
-algebraic notation. Does not allow illegal moves. Can be run 
-on a CLI or on a GUI. Enforces the following game-ending conditions:
+A Python chess program I made myself as a coding exercise. Can be run 
+on a CLI (command-line interface) or on a GUI (graphical user interface). Starts a new game of chess when run. On the GUI, 
+the option is given to either play human vs human locally, or play against a simple bot. The bot is not implemented on the CLI. 
+On the GUI, you can move by clicking on a piece and then the destination square, or give the move in standard
+algebraic notation. Does not allow illegal moves.  Enforces the following game-ending conditions:
 
 - Checkmate: The side to move has no legal moves and is under check. The other side wins.
 - Stalemate: The side to move has no legal moves and is not under check. Game ends in a draw.
@@ -49,13 +51,13 @@ cd /.../chessboard
 
 For Windows, run the following command:
 ```bash
-pyinstaller --onefile --windowed --add-data ".\images:images" --icon .\images\icon.ico gui_main.py
+pyinstaller --onefile --windowed --add-data ".\images:images" --add-data ".\simple_bot\opening_book:opening_book" --icon .\images\icon.ico gui_main.py
 ```
 If the compilation is successful, the file gui_main.exe should appear in the dist folder in the project folder.
 
 For macOS, the command is
 ```bash
-pyinstaller --onefile --windowed --add-data "./images:images" --icon ./images/icon.icns gui_main.py
+pyinstaller --onefile --windowed --add-data "./images:images" --add-data "./simple_bot/opening_book:opening_book" --icon ./images/icon.icns gui_main.py
 ```
 
 If the compilation is successful, the executable gui_main.app should appear in the dist folder in the project folder.
@@ -66,6 +68,7 @@ As mentioned, chessboard can be run on a CLI or on a GUI. To run it on the CLI, 
 using Python 3.9 and above, without the need for any installation of the project dependencies.
 
 ```bash
+cd /.../chessboard
 python main.py
 ```
 
@@ -73,7 +76,7 @@ If you wish to run gui_main.py, you need to install the dependencies and possess
 
 ## Executable Release
 
-This project is also available as a standalone executable. You can download the latest release from the [Releases page](https://github.com/asaphho/chessboard/releases).
+The GUI is also available as a standalone executable. You can download the latest release from the [Releases page](https://github.com/asaphho/chessboard/releases).
 You will not need to install pyinstaller, PySimpleGUI, or get a PySimpleGUI license to use the executable.
 
 To use the executable:
