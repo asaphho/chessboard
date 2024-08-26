@@ -221,6 +221,7 @@ class Game:
                 return ''
             else:
                 print('')
+                return
         first_move = min(move_numbers)
         last_move = max(move_numbers)
         for move in range(first_move, last_move + 1):
