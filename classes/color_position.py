@@ -114,12 +114,12 @@ class ColorPosition:
             occupied_squares.extend(self.all_piece_squares[piece])
         return occupied_squares
 
-    def get_square_piece_symbol_dict(self) -> Dict[str, str]:
+    def get_square_piece_symbol_dict(self, lowercase: bool = False) -> Dict[str, str]:
         square_piece_dict = {}
         for piece_type in self.all_piece_squares:
             squares = self.all_piece_squares[piece_type]
             for square in squares:
-                square_piece_dict[square] = piece_type
+                square_piece_dict[square] = piece_type if not lowercase else piece_type.lower()
         return square_piece_dict
 
 

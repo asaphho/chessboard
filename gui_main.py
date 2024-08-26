@@ -3,12 +3,13 @@ from classes.move import LegalMove
 import PySimpleGUI as sg
 import PySimpleGUI.PySimpleGUI
 import sys
-from classes.position import Position, ALL_SQUARES
-from utils.board_functions import square_color_int
-from utils.parse_notation import piece_to_symbol
+from classes.position import Position
+from utils.board_functions import square_color_int, ALL_SQUARES
+from simple_bot.bot1.evaluation import quick_evaluate
+from classes.bot import Bot
 from version import software_version
 from classes.game import Game
-from typing import List, Dict
+from typing import List, Dict, Union
 
 UNHANDLED_ERROR_MESSAGE = 'Something went wrong. :( Immediately after closing this popup, please submit an issue on https://github.com/asaphho/chessboard with the moves of the game up to this point, and describe what you attempted to do.'
 
@@ -26,6 +27,40 @@ ALL_SQUARE_KEYS = []
 for i in '01234567':
     for j in '01234567':
         ALL_SQUARE_KEYS.append(i+j)
+
+
+def main_menu() -> Dict[str, Union[bool, str, None]]:
+    main_menu_layout = [[sg.Text('Select an option to continue.')],
+                        [sg.Button('Human VS Human')],
+                        [sg.Button('Play against bot')],
+                        [sg.Button('Quit to desktop')]]
+
+    bot_menu_layout = [[sg.Text('Play as:'), sg.Radio('White', group_id=1, default=True, key='w'),
+                        sg.Radio('Black', group_id=1, key='b')],
+                       [sg.Checkbox('Let bot use opening book', default=True, key='op_book')],
+                       [sg.Button('OK'), sg.Button('Cancel')]]
+    main_menu_window = sg.Window(TITLE, layout=main_menu_layout)
+    while True:
+        event, values = main_menu_window.read()
+        if event == sg.WIN_CLOSED or event == 'Quit to desktop':
+            main_menu_window.close()
+            return {'exit': True, 'bot': False, 'bot_color': 'b', 'opening_book': None}
+        elif event == 'Play against bot':
+            main_menu_window.close()
+            bot_window = sg.Window(TITLE, bot_menu_layout)
+            while True:
+                b_event, b_values = bot_window.read()
+                if b_event == sg.WIN_CLOSED or b_event == 'Cancel':
+                    bot_window.close()
+                    return main_menu()
+                elif b_event == 'OK':
+                    bot_color = 'w' if b_values['w'] is False else 'b'
+                    opening_book_path = get_opening_book_path() if b_values['op_book'] is True else None
+                    bot_window.close()
+                    return {'exit': False, 'bot': True, 'bot_color': bot_color, 'opening_book': opening_book_path}
+        elif event == 'Human VS Human':
+            main_menu_window.close()
+            return {'exit': False, 'bot': False, 'bot_color': 'b', 'opening_book': None}
 
 
 def generate_position_layout(position: Position) -> List[List]:
@@ -88,6 +123,14 @@ def get_path_to_image(filename: str) -> str:
         filepath = path.join(sys._MEIPASS, 'images', filename)
     except Exception:
         filepath = path.join('.', 'images', filename)
+    return filepath
+
+
+def get_opening_book_path() -> str:
+    try:
+        filepath = path.join(sys._MEIPASS, 'opening_book', 'fen_uci.json')
+    except Exception:
+        filepath = path.join('.', 'simple_bot', 'opening_book', 'fen_uci.json')
     return filepath
 
 
@@ -241,6 +284,20 @@ def create_input_move_prompt(game):
     return prompt
 
 
+def play_computer_move(bot, game, window):
+    window['-TEXT-'].update('Bot is thinking.')
+    bot_color = game.current_position.to_move()
+    res, move = game.play_computer_move(bot, True)
+    game_end_check = game.check_game_end_conditions()
+    if game_end_check == 'N':
+        update_window_layout_after_move_game_continues(game, move, res, window)
+        return False
+    else:
+        update_layout(game, window, res, game_end_text=game_end_check)
+        exit_signal = enter_game_end_loop(game, game_end_check, window, bot=bot, bot_color=bot_color, game_ended_by_bot=True)
+        return exit_signal
+
+
 def display_moves(game: Game) -> None:
     moves = game.show_moves(return_string_for_window=True)
     new_window_layout = [[sg.Text(moves)]]
@@ -248,7 +305,22 @@ def display_moves(game: Game) -> None:
 
 
 def main(game):
-    layout = generate_layout(game)
+    main_menu_results = main_menu()
+    if main_menu_results['exit'] is True:
+        sys.exit()
+
+    bot_color = main_menu_results['bot_color']
+    playing_against_bot = main_menu_results['bot']
+    if playing_against_bot:
+        bot = Bot(quick_evaluate, breadth=3, aggression=1, fluctuation=0.15, assumed_opp_aggresion=1, opening_book_path=main_menu_results['opening_book'])
+    else:
+        bot = None
+    if playing_against_bot and bot_color == 'w':
+        res = game.play_computer_move(bot)
+        game.current_position.flip_position()
+        layout = generate_layout(game, res)
+    else:
+        layout = generate_layout(game)
     window = sg.Window(TITLE, layout, element_padding=(0, 0))
     while True:
         event, values = window.read()
@@ -266,10 +338,23 @@ def main(game):
         elif event == 'Restart game':
             if sg.popup_yes_no('Are you sure you want to restart?') == 'Yes':
                 game.restart_game()
-                update_layout(game, window, 'Game restarted.')
+                if playing_against_bot and bot_color == 'w':
+                    res = game.play_computer_move(bot)
+                    game.current_position.flip_position()
+                    update_layout(game, window, res)
+                else:
+                    update_layout(game, window, 'Game restarted.')
         elif event == 'Take back last move':
-            text = game.take_back_last_move(silent=True)
-            update_layout(game, window, text)
+            if not playing_against_bot:
+                text = game.take_back_last_move(silent=True)
+                update_layout(game, window, text)
+            elif playing_against_bot and bot_color == 'w' and game.current_position.move_number == 1:
+                window['-TEXT-'].update('Nothing to take back.')
+            else:
+                game.take_back_last_move(silent=True)
+                text = game.take_back_last_move(silent=True)
+                update_layout(game, window, text)
+
         elif event == 'Enter move':
             input_notation = values['-INPUT-'].strip()
             if input_notation == '':
@@ -282,9 +367,13 @@ def main(game):
             game_end_check = game.check_game_end_conditions()
             if game_end_check == 'N':
                 update_window_layout_after_move_game_continues(game, move, res, window)
+                if playing_against_bot:
+                    exit_signal = play_computer_move(bot, game, window)
+                    if exit_signal:
+                        break
             else:
                 update_layout(game, window, res, game_end_text=game_end_check)
-                exit_signal = enter_game_end_loop(game, game_end_check, window)
+                exit_signal = enter_game_end_loop(game, game_end_check, window, bot=bot, bot_color=bot_color)
                 if exit_signal:
                     break
         elif event in ALL_SQUARE_KEYS:
@@ -315,11 +404,24 @@ def main(game):
                 elif event == 'Restart game':
                     if sg.popup_yes_no('Are you sure you want to restart?') == 'Yes':
                         game.restart_game()
-                        update_layout(game, window, 'Game restarted.')
-                        break
+                        if playing_against_bot and bot_color == 'w':
+                            res = game.play_computer_move(bot)
+                            game.current_position.flip_position()
+                            update_layout(game, window, res)
+                            break
+                        else:
+                            update_layout(game, window, 'Game restarted.')
+                            break
                 elif event == 'Take back last move':
-                    text = game.take_back_last_move(silent=True)
-                    update_layout(game, window, text)
+                    if not playing_against_bot:
+                        text = game.take_back_last_move(silent=True)
+                        update_layout(game, window, text)
+                    elif playing_against_bot and bot_color == 'w' and game.current_position.move_number == 1:
+                        window['-TEXT-'].update('Nothing to take back.')
+                    else:
+                        game.take_back_last_move(silent=True)
+                        text = game.take_back_last_move(silent=True)
+                        update_layout(game, window, text)
                     break
                 elif event == 'Enter move':
                     window['-TEXT-'].update('Moving by notation is disabled when a piece has been selected.')
@@ -366,10 +468,14 @@ def main(game):
                         game_end_check = game.check_game_end_conditions()
                         if game_end_check == 'N':
                             update_window_layout_after_move_game_continues(game, move, res, window)
+                            if playing_against_bot:
+                                exit_signal = play_computer_move(bot, game, window)
+                                if exit_signal:
+                                    break
                             break
                         else:
                             update_layout(game, window, res, game_end_text=game_end_check)
-                            exit_signal = enter_game_end_loop(game, game_end_check, window)
+                            exit_signal = enter_game_end_loop(game, game_end_check, window, bot=bot, bot_color=bot_color)
                             break
             if exit_signal:
                 break
@@ -384,7 +490,8 @@ def update_window_layout_after_move_game_continues(game, move, res, window):
     window['-TOMOVE-'].update(side_to_move_text(game.current_position))
 
 
-def enter_game_end_loop(game: Game, game_end_check: str, window: PySimpleGUI.PySimpleGUI.Window) -> bool:
+def enter_game_end_loop(game: Game, game_end_check: str, window: PySimpleGUI.PySimpleGUI.Window, bot: Bot = None,
+                        game_ended_by_bot: bool = False, bot_color: str = 'b') -> bool:
     exit_signal = False
     while True:
         event, values = window.read()
@@ -402,11 +509,19 @@ def enter_game_end_loop(game: Game, game_end_check: str, window: PySimpleGUI.PyS
         elif event == 'Restart game':
             if sg.popup_yes_no('Are you sure you want to restart?') == 'Yes':
                 game.restart_game()
-                update_layout(game, window, 'Game restarted.')
+                if bot and bot_color == 'w':
+                    res = game.play_computer_move(bot)
+                    game.current_position.flip_position()
+                    update_layout(game, window, res)
+                else:
+                    update_layout(game, window, 'Game restarted.')
                 break
         elif event == 'Take back last move':
             text = game.take_back_last_move(silent=True)
             update_layout(game, window, text)
+            if bot and game_ended_by_bot:
+                text = game.take_back_last_move(silent=True)
+                update_layout(game, window, text)
             break
     return exit_signal
 

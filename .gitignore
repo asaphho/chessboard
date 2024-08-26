@@ -9,3 +9,4 @@ dist
 version/__pycache__
 .DS_Store
 simple_bot/__pycache__
+test/test_bot_play_self.py

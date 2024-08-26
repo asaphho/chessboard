@@ -5,6 +5,13 @@ NUM_TO_LETTER = {}
 for letter in LETTER_TO_NUM:
     NUM_TO_LETTER[LETTER_TO_NUM[letter]] = letter
 
+ALL_SQUARES = []
+files = 'abcdefgh'
+ranks = '12345678'
+for f in files:
+    for r in ranks:
+        ALL_SQUARES.append(f'{f}{r}')
+
 
 def square_color_int(square: str) -> int:
     """
@@ -35,13 +42,13 @@ def check_squares_in_line(square1: str, square2: str) -> str:
         raise ValueError
     file_diff, rank_diff = get_rank_and_file_diffs(square1, square2)
     if file_diff > 0 and rank_diff == 0:
-        return 'rank'
+        return 'r'
     elif file_diff == 0 and rank_diff > 0:
-        return 'file'
+        return 'f'
     elif file_diff == rank_diff:
-        return 'diagonal'
+        return 'd'
     else:
-        return 'Not in line'
+        return 'N'
 
 
 def get_rank_and_file_diffs(square1: str, square2: str) -> Tuple[int, int]:
@@ -209,3 +216,49 @@ def scan_kn_scope(piece: str, from_square: str) -> List[str]:
         return scan_knight_scope(from_square)
     else:
         raise ValueError(f'Invalid piece (\'{piece}\') for this function')
+
+
+def extend_line(sq1: str, sq2: str) -> List[str]:
+    """
+    Assumes sq1 and sq2 are in line. Extends the line in the direction going from sq1 to sq2.
+    e.g. sq1='e1', sq2='e4', returns ['e5', 'e6', 'e7', 'e8']
+    :param sq1:
+    :param sq2:
+    :return:
+    """
+    coordinates1 = square_to_coordinate(sq1)
+    coordinates2 = square_to_coordinate(sq2)
+    file1 = int(coordinates1[0])
+    file2 = int(coordinates2[0])
+    file_direction = 0 if file1 == file2 else int((file2-file1)/abs(file2-file1))
+    rank1 = int(coordinates1[1])
+    rank2 = int(coordinates2[1])
+    rank_direction = 0 if rank1 == rank2 else int((rank2-rank1)/abs(rank2-rank1))
+    extended_squares = []
+    for i in range(1, 7):
+        file = file2 + (i * file_direction)
+        rank = rank2 + (i * rank_direction)
+        if 1 <= file <= 8 and 1 <= rank <= 8:
+            extended_squares.append(coordinate_to_square(f'{file}{rank}'))
+        else:
+            break
+    return extended_squares
+
+
+PIECE_MOVE_TYPE_DICT = {'Q': ('f', 'r', 'd'), 'R': ('f', 'r'), 'B': ('d',), 'K': ('K',), 'N': ('N',)}
+SQUARE_SCOPES_MAP = {}
+for sq in ALL_SQUARES:
+    SQUARE_SCOPES_MAP[sq] = scan_qbr_scope('Q', sq) | {'K': scan_kn_scope('K', sq)} | {'N': scan_kn_scope('N', sq)}
+
+INT_SQUARES_MAP = {}
+for origin_sq in SQUARE_SCOPES_MAP:
+    scopes = SQUARE_SCOPES_MAP[origin_sq]
+    for move_type in scopes:
+        if move_type in ('f', 'r', 'd'):
+            squares_in_line = scopes[move_type]
+            for dest_sq in squares_in_line:
+                INT_SQUARES_MAP[f'{origin_sq}{dest_sq}'] = {'line': move_type, 'int': get_intervening_squares(origin_sq, dest_sq, move_type)}
+
+LINE_EXTEND_MAP = {}
+for square_pair in INT_SQUARES_MAP:
+    LINE_EXTEND_MAP[square_pair] = extend_line(square_pair[:2], square_pair[2:])
