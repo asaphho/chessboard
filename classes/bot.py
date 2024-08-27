@@ -8,13 +8,13 @@ from random import choice
 class Bot:
 
     def __init__(self, evaluation_func: Callable[[Position], Dict[str, float]], breadth: int = 3,
-                 aggression: int = 1, fluctuation: float = 0, assumed_opp_aggresion: int = 1,
+                 aggression: int = 1, fluctuation: float = 0, assumed_opp_aggression: int = 1,
                  ply_depth: int = 4, opening_book_path: str = None):
         self.evaluation_func = evaluation_func
         self.breadth = breadth
         self.aggression = aggression
         self.fluctuation = fluctuation
-        self.assumed_opp_aggression = assumed_opp_aggresion
+        self.assumed_opp_aggression = assumed_opp_aggression
         self.ply_depth = ply_depth
         if opening_book_path:
             try:
