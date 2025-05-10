@@ -7,7 +7,6 @@ from classes.move import LegalMove
 from utils.parse_notation import check_for_castling, find_piece_moved_and_destination_square,\
     check_for_disambiguating_string, piece_to_symbol, check_for_promotion_piece, pawn_capture_origin_file
 from copy import deepcopy
-from simple_bot.move_search import choose_best_move
 
 
 class Game:

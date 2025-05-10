@@ -1,21 +1,22 @@
 import json
-from typing import Callable, Dict, Any
+from typing import Callable, Dict
 from classes.position import Position
-from simple_bot.move_search import choose_best_move, choose_best_move_recursive
+from simple_bot.move_search import choose_best_move_recursive
 from random import choice
 
 
 class Bot:
 
-    def __init__(self, evaluation_func: Callable[[Position], Dict[str, float]], breadth: int = 3,
+    def __init__(self, evaluation_func: Callable[[Position, Dict[int, float]], Dict[str, float]], breadth: int = 3,
                  aggression: int = 1, fluctuation: float = 0, assumed_opp_aggression: int = 1,
-                 ply_depth: int = 4, opening_book_path: str = None):
+                 ply_depth: int = 4, opening_book_path: str = None, bot_params: Dict[int, float] = None):
         self.evaluation_func = evaluation_func
         self.breadth = breadth
         self.aggression = aggression
         self.fluctuation = fluctuation
         self.assumed_opp_aggression = assumed_opp_aggression
         self.ply_depth = ply_depth
+        self.params = bot_params
         if opening_book_path:
             try:
                 with open(opening_book_path, 'r') as readfile:
@@ -47,16 +48,11 @@ class Bot:
                     opening_book.pop(fen)
         self.opening_book = opening_book
 
-    def choose_move(self, position: Position) -> str:
-        return choose_best_move(position=position, evaluate=self.evaluation_func, breadth=self.breadth,
-                                aggression=self.aggression, fluctuation=self.fluctuation,
-                                assumed_opp_aggression=self.assumed_opp_aggression, ply_depth=self.ply_depth)
-
     def choose_move_recursive(self, position: Position) -> str:
         return choose_best_move_recursive(position=position, evaluation_func=self.evaluation_func, breadth=self.breadth,
                                           aggression=self.aggression, fluctuation=self.fluctuation,
                                           assumed_opp_aggression=self.assumed_opp_aggression,
-                                          ply_depth=self.ply_depth)[0]
+                                          ply_depth=self.ply_depth, params=self.params)[0]
 
     def look_in_opening_book(self, position: Position) -> str:
         if not self.opening_book:
