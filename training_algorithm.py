@@ -2,7 +2,7 @@ import multiprocessing as mp
 from bot_training import BOT_TRAINING_DIR
 from os import path
 import json
-from swiss_tournament import generate_pairings, update_round_results, rank_all_players
+from bot_training.swiss_tournament import generate_pairings, update_round_results, rank_all_players
 from bot_training.bot_matchup import compare_configs
 from bot_training.utils import breed_offspring_from_pool
 
@@ -13,7 +13,7 @@ SELECTED_FOR_BREEDING = 10
 ELITES = 2
 MUTATION_PROB = 0.1
 MUTATION_STR = 0.05
-STARTING_POOL_PATH = path.join(BOT_TRAINING_DIR, 'bot_training/starting_pool.json')
+STARTING_POOL_PATH = path.join(BOT_TRAINING_DIR, 'starting_pool.json')
 
 
 if __name__ == '__main__':
