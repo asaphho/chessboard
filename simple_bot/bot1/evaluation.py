@@ -148,7 +148,7 @@ def count_pawns_in_front_on_file(square: str, color: str, square_piece_dict: Dic
     return len([sq for sq in square_piece_dict if sq in squares_in_front and square_piece_dict[sq].upper() == 'P'])
 
 
-def quick_evaluate(position: Position, bot_params: Dict = None) -> Dict[str, float]:
+def quick_evaluate(position: Position, bot_params: Dict[int, float] = None) -> Dict[str, float]:
     params = bot_params if bot_params is not None else {}
     # SCORES FOR SQUARES CONTROLLED BY PAWNS
     central_file_4_th_rank = params.get(0, 0.15)
