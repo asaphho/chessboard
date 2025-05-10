@@ -16,80 +16,8 @@ for f in 'abcdefgh':
 # CHECKMATE SCORE
 CHECKMATE_SCORE = 999999
 
-# SCORES FOR SQUARES CONTROLLED BY PAWNS
-CENTRAL_FILE_4TH_RANK = 0.15
-CENTRAL_FILE_5TH_RANK = 0.18
-CENTRAL_FILE_6TH_RANK = 0.22
-BISHOP_FILE_4TH_RANK = 0.13
-BISHOP_FILE_5TH_RANK = 0.15
-BISHOP_FILE_6TH_RANK = 0.17
-SEVENTH_RANK = 0.2
-EIGHTH_RANK = 0.23
-KNIGHT_FILE_5TH_RANK = 0.13
-KNIGHT_FILE_6TH_RANK = 0.16
-ALL_OTHERS = 0.1
 
-SEVENTH_RANK_SCORES = {}
-for f in 'abcdefgh':
-    SEVENTH_RANK_SCORES[f] = SEVENTH_RANK
-EIGHTH_RANK_SCORES = {}
-for f in 'abcdefgh':
-    EIGHTH_RANK_SCORES[f] = EIGHTH_RANK
-SIXTH_RANK_SCORES = {'a': ALL_OTHERS, 'b': KNIGHT_FILE_6TH_RANK, 'c': BISHOP_FILE_6TH_RANK, 'd': CENTRAL_FILE_6TH_RANK,
-                     'e': CENTRAL_FILE_6TH_RANK, 'f': BISHOP_FILE_6TH_RANK, 'g': KNIGHT_FILE_6TH_RANK, 'h': ALL_OTHERS}
-FIFTH_RANK_SCORES = {'a': ALL_OTHERS, 'b': KNIGHT_FILE_5TH_RANK, 'c': BISHOP_FILE_5TH_RANK, 'd': CENTRAL_FILE_5TH_RANK,
-                     'e': CENTRAL_FILE_5TH_RANK, 'f': BISHOP_FILE_5TH_RANK, 'g': KNIGHT_FILE_5TH_RANK, 'h': ALL_OTHERS}
-FOURTH_RANK_SCORES = {'a': ALL_OTHERS, 'b': ALL_OTHERS, 'c': BISHOP_FILE_4TH_RANK, 'd': CENTRAL_FILE_4TH_RANK,
-                      'e': CENTRAL_FILE_4TH_RANK, 'f': BISHOP_FILE_4TH_RANK, 'g': ALL_OTHERS, 'h': ALL_OTHERS}
-RANK_SCORES = {'4': FOURTH_RANK_SCORES, '5': FIFTH_RANK_SCORES, '6': SIXTH_RANK_SCORES, '7': SEVENTH_RANK_SCORES, '8': EIGHTH_RANK_SCORES}
-WHITE_PAWN_CONTROL_SCORES = {}
-BLACK_PAWN_CONTROL_SCORES = {}
-for square in ALL_SQUARES:
-    file = square[0]
-    rank = square[1]
-    if rank in RANK_SCORES:
-        WHITE_PAWN_CONTROL_SCORES[square] = RANK_SCORES[rank][file]
-    else:
-        WHITE_PAWN_CONTROL_SCORES[square] = ALL_OTHERS
-
-for square in WHITE_PAWN_CONTROL_SCORES:
-    rank = int(square[1])
-    black_rank = 9 - rank
-    mirrored_square = square[0] + str(black_rank)
-    BLACK_PAWN_CONTROL_SCORES[mirrored_square] = WHITE_PAWN_CONTROL_SCORES[square]
-
-ACTIVITY_BASE_SCORE = 0.1  # BASE SCORE AWARDED FOR EACH SQUARE COVERED BY EACH PIECE (Q, R, B, N)
-CENTRAL_SQUARE_BONUS = 0.04  # ADDITIONAL SCORE AWARDED FOR EACH SQUARE IN e4, d4, e5, or d5 COVERED BY EACH PIECE (Q, R, B, N)
-SIXTH_RANK_PIECE_CONTROL_BONUS = 0.04  # ADDITIONAL SCORE AWARDED FOR EACH SQUARE ON THE SIXTH RANK COVERED BY EACH PIECE (Q, R, B, N)
-SQUARE_AROUND_ENEMY_KING = 0.03 # ADDITIONAL SCORE AWARDED FOR EACH SQUARE AROUND THE ENEMY KING COVERED BY EACH PIECE (Q, R, B, N) OR P
-DEVELOPMENT_SCORE_PENALTY = -0.4  # APPLIES FOR EACH MINOR PIECE ON ITS HOME SQUARE.
-SEVENTH_RANK_BONUS = 0.05  # APPLIES FOR EACH SQUARE A ROOK COVERS THAT IS ON THE SEVENTH RANK.
-CENTRALIZED_KNIGHT_BONUS = 0.08  # FOR KNIGHT ON e4, d4, e5, or d5
-PASSED_PAWN_SCORE = 0.5
-PASSED_PAWN_ADVANCEMENT_BONUS_PER_RANK = 0.1
-PASSED_PAWN_ADVANCEMENT_THREAT_SCORE_PER_RANK = 0.5
-ROOK_SEMI_OPEN_FILE_SCORE = 0.08
-ROOK_OPEN_FILE_SCORE = 0.12
-BISHOP_PAIR_SCORE = 0.5
-PRESSURED_PIECE_SCORE = 0.08
-PRESSURED_PIECE_THREAT_SCORE = 0.4
-PINNED_PIECE_THREAT_SCORE = 0.5
-PINNED_THREATENED_MATERIAL_MULTIPLIER = 1.5
-UNIQUE_SQUARE_AROUND_ENEMY_KING_SCORE = 0.08  # ADDITIONAL SCORE FOR EACH UNIQUE SQUARE AROUND THE ENEMY KING CONTROLLED BY ANY PIECE
-UNIQUE_SQUARE_AROUND_ENEMY_KING_THREAT_SCORE = 0.4  # THREAT SCORE FOR EACH UNIQUE SQUARE AROUND THE ENEMY KING CONTROLLED BY ANY PIECE
-SUPPORTED_QUEEN_AROUND_ENEMY_KING_SCORE = 0.08  # ADDITIONAL SCORE FOR EACH UNIQUE SQUARE AROUND THE ENEMY KING CONTROLLED BY A QUEEN AND AT LEAST ONE ADDITIONAL PIECE
-SUPPORTED_QUEEN_AROUND_ENEMY_KING_THREAT_SCORE = 0.5  # ADDITIONAL THREAT SCORE FOR EACH UNIQUE SQUARE AROUND THE ENEMY KING CONTROLLED BY A QUEEN AND AT LEAST ONE ADDITIONAL PIECE
-PROMOTION_THREAT_SCORE = 5
-BASE_CHECK_THREAT_SCORE = 1
-FORCED_KING_MOVE_THREAT_SCORE = 0.5
-FORCED_FREE_PIECE_BLOCK_THREAT_SCORE = 3
-MATERIAL_THREAT_SCORE_FACTOR = 0.5
-MATERIAL_THREAT_SIMULTANEOUS_WITH_CHECK = 4
-OVERWHELMING_MATERIAL_THREAT_MULTIPLIER = 2
-ENDGAME_BACKWARD_KING_PENALTY = -0.4
-
-
-def square_around_enemy_king(square: str, opposing_pieces_position: ColorPosition):
+def square_is_around_enemy_king(square: str, opposing_pieces_position: ColorPosition):
     enemy_king_position = opposing_pieces_position.get_king_square()
     squares_around_king = scan_kn_scope('K', enemy_king_position)
     return square in squares_around_king + [enemy_king_position]
@@ -220,7 +148,84 @@ def count_pawns_in_front_on_file(square: str, color: str, square_piece_dict: Dic
     return len([sq for sq in square_piece_dict if sq in squares_in_front and square_piece_dict[sq].upper() == 'P'])
 
 
-def quick_evaluate(position: Position) -> Dict[str, float]:
+def quick_evaluate(position: Position, bot_params: Dict = None) -> Dict[str, float]:
+    params = bot_params if bot_params is not None else {}
+    # SCORES FOR SQUARES CONTROLLED BY PAWNS
+    central_file_4_th_rank = params.get(0, 0.15)
+    central_file_5_th_rank = params.get(1, 0.18)
+    central_file_6_th_rank = params.get(2, 0.22)
+    bishop_file_4_th_rank = params.get(3, 0.13)
+    bishop_file_5_th_rank = params.get(4, 0.15)
+    bishop_file_6_th_rank = params.get(5, 0.17)
+    seventh_rank = params.get(6, 0.2)
+    eighth_rank = params.get(7, 0.23)
+    knight_file_5_th_rank = params.get(8, 0.13)
+    knight_file_6_th_rank = params.get(9, 0.16)
+    all_others = params.get(10, 0.1)
+
+    seventh_rank_scores = {}
+    for f in 'abcdefgh':
+        seventh_rank_scores[f] = seventh_rank
+    eighth_rank_scores = {}
+    for f in 'abcdefgh':
+        eighth_rank_scores[f] = eighth_rank
+    sixth_rank_scores = {'a': all_others, 'b': knight_file_6_th_rank, 'c': bishop_file_6_th_rank,
+                         'd': central_file_6_th_rank,
+                         'e': central_file_6_th_rank, 'f': bishop_file_6_th_rank, 'g': knight_file_6_th_rank,
+                         'h': all_others}
+    fifth_rank_scores = {'a': all_others, 'b': knight_file_5_th_rank, 'c': bishop_file_5_th_rank,
+                         'd': central_file_5_th_rank,
+                         'e': central_file_5_th_rank, 'f': bishop_file_5_th_rank, 'g': knight_file_5_th_rank,
+                         'h': all_others}
+    fourth_rank_scores = {'a': all_others, 'b': all_others, 'c': bishop_file_4_th_rank, 'd': central_file_4_th_rank,
+                          'e': central_file_4_th_rank, 'f': bishop_file_4_th_rank, 'g': all_others, 'h': all_others}
+    rank_scores = {'4': fourth_rank_scores, '5': fifth_rank_scores, '6': sixth_rank_scores, '7': seventh_rank_scores,
+                   '8': eighth_rank_scores}
+    white_pawn_control_scores = {}
+    black_pawn_control_scores = {}
+    for square in ALL_SQUARES:
+        file = square[0]
+        rank = square[1]
+        if rank in rank_scores:
+            white_pawn_control_scores[square] = rank_scores[rank][file]
+        else:
+            white_pawn_control_scores[square] = all_others
+
+    for square in white_pawn_control_scores:
+        rank = int(square[1])
+        black_rank = 9 - rank
+        mirrored_square = square[0] + str(black_rank)
+        black_pawn_control_scores[mirrored_square] = white_pawn_control_scores[square]
+
+    activity_base_score = params.get(11, 0.1)  # BASE SCORE AWARDED FOR EACH SQUARE COVERED BY EACH PIECE (Q, R, B, N)
+    central_square_bonus = params.get(12, 0.04)  # ADDITIONAL SCORE AWARDED FOR EACH SQUARE IN e4, d4, e5, or d5 COVERED BY EACH PIECE (Q, R, B, N)
+    sixth_rank_piece_control_bonus = params.get(13, 0.04)  # ADDITIONAL SCORE AWARDED FOR EACH SQUARE ON THE SIXTH RANK COVERED BY EACH PIECE (Q, R, B, N)
+    square_around_enemy_king = params.get(14, 0.03)  # ADDITIONAL SCORE AWARDED FOR EACH SQUARE AROUND THE ENEMY KING COVERED BY EACH PIECE (Q, R, B, N) OR P
+    development_score_penalty = -1 * params.get(15, 0.4)  # APPLIES FOR EACH MINOR PIECE ON ITS HOME SQUARE.
+    seventh_rank_bonus = params.get(16, 0.05)  # APPLIES FOR EACH SQUARE A ROOK COVERS THAT IS ON THE SEVENTH RANK.
+    centralized_knight_bonus = params.get(17, 0.08)  # FOR KNIGHT ON e4, d4, e5, or d5
+    passed_pawn_score = params.get(18, 0.5)
+    passed_pawn_advancement_bonus_per_rank = params.get(19, 0.1)
+    passed_pawn_advancement_threat_score_per_rank = params.get(20, 0.5)
+    rook_semi_open_file_score = params.get(21, 0.08)
+    rook_open_file_score = params.get(22, 0.12)
+    bishop_pair_score = params.get(23, 0.5)
+    pressured_piece_score = params.get(24, 0.08)
+    pressured_piece_threat_score = params.get(25, 0.4)
+    pinned_piece_threat_score = params.get(26, 0.5)
+    pinned_threatened_material_multiplier = 1 + params.get(27, 0.5)
+    unique_square_around_enemy_king_score = params.get(28, 0.08)  # ADDITIONAL SCORE FOR EACH UNIQUE SQUARE AROUND THE ENEMY KING CONTROLLED BY ANY PIECE
+    unique_square_around_enemy_king_threat_score = params.get(29, 0.4)  # THREAT SCORE FOR EACH UNIQUE SQUARE AROUND THE ENEMY KING CONTROLLED BY ANY PIECE
+    supported_queen_around_enemy_king_score = params.get(30, 0.08)  # ADDITIONAL SCORE FOR EACH UNIQUE SQUARE AROUND THE ENEMY KING CONTROLLED BY A QUEEN AND AT LEAST ONE ADDITIONAL PIECE
+    supported_queen_around_enemy_king_threat_score = params.get(31, 0.5)  # ADDITIONAL THREAT SCORE FOR EACH UNIQUE SQUARE AROUND THE ENEMY KING CONTROLLED BY A QUEEN AND AT LEAST ONE ADDITIONAL PIECE
+    promotion_threat_score = 10 * params.get(32, 0.5)
+    base_check_threat_score = 2 * params.get(33, 0.5)
+    forced_king_move_threat_score = params.get(34, 0.5)
+    forced_free_piece_block_threat_score = 6 * params.get(35, 0.5)
+    material_threat_score_factor = params.get(36, 0.5)
+    material_threat_simultaneous_with_check = 8 * params.get(37, 0.5)
+    overwhelming_material_threat_multiplier = 1 + 2 * params.get(38, 0.5)
+    endgame_backward_king_penalty = -1 * params.get(39, 0.4)
     side_to_move = position.to_move()
     side_evaluating_for = opposite_color(side_to_move)
     score = 0
@@ -235,7 +240,7 @@ def quick_evaluate(position: Position) -> Dict[str, float]:
             own_material += len(position.get_pieces_by_color(side_evaluating_for).get_piece_type_squares(piece)) * MATERIAL_DICT[piece]
     material_difference = own_material - opposing_material
     score += material_difference
-    overwhelming_material_multiplier = OVERWHELMING_MATERIAL_THREAT_MULTIPLIER if opposing_material < 10 and material_difference >= 5 else 1
+    overwhelming_material_multiplier = overwhelming_material_threat_multiplier if opposing_material < 10 and material_difference >= 5 else 1
     is_endgame = own_material < 13 and opposing_material < 13
     threat_contributing_pieces = {}
     square_piece_dict = position.white_pieces.get_square_piece_symbol_dict() | position.black_pieces.get_square_piece_symbol_dict(lowercase=True)
@@ -249,7 +254,7 @@ def quick_evaluate(position: Position) -> Dict[str, float]:
     opposing_king_square = position.get_pieces_by_color(side_to_move).get_king_square()
     check_given = opposing_king_square in own_square_covering_piece_dict
     if check_given:
-        threat_score += BASE_CHECK_THREAT_SCORE
+        threat_score += base_check_threat_score
         potential_escape_squares = [esc_sq for esc_sq in opposing_piece_covered_square_dict[f'K{opposing_king_square}'] if esc_sq not in opposing_squares_occupied and esc_sq not in own_square_covering_piece_dict]
         no_legal_king_move = not any([position.virtual_move_is_legal(VirtualMove(side_to_move, 'K', opposing_king_square, attempt)) for attempt in potential_escape_squares])
         checking_pieces = own_square_covering_piece_dict[opposing_king_square]  # ['Re1', 'Nf6'] (delivering double check on a king on e8)
@@ -257,7 +262,7 @@ def quick_evaluate(position: Position) -> Dict[str, float]:
         if no_legal_king_move and double_check:
             return {'eval': CHECKMATE_SCORE, 'threat': CHECKMATE_SCORE}
         elif double_check:
-            threat_score += FORCED_KING_MOVE_THREAT_SCORE
+            threat_score += forced_king_move_threat_score
         else:
             checking_piece_square = checking_pieces[0][1:]
             if checking_piece_square not in opposing_square_covering_piece_dict:
@@ -288,7 +293,7 @@ def quick_evaluate(position: Position) -> Dict[str, float]:
             if no_legal_king_move and (not can_capture) and (not can_block):
                 return {'eval': CHECKMATE_SCORE, 'threat': CHECKMATE_SCORE}
             if not (can_block or can_capture):
-                threat_score += FORCED_KING_MOVE_THREAT_SCORE
+                threat_score += forced_king_move_threat_score
             if can_block and no_legal_king_move and not can_capture:
                 blocking_convergence = {}
                 for pns_dict in legal_blocking_pns:
@@ -297,7 +302,7 @@ def quick_evaluate(position: Position) -> Dict[str, float]:
                     else:
                         blocking_convergence[pns_dict['int']].append(pns_dict['m'])
                 if max([len(blocks) for blocks in list(blocking_convergence.values())]) == 1:
-                    threat_score += FORCED_FREE_PIECE_BLOCK_THREAT_SCORE
+                    threat_score += forced_free_piece_block_threat_score
             if no_legal_king_move and not can_block and can_capture:
                 if len(legal_capturing_pns) == 1 and checking_piece_square in own_square_covering_piece_dict:
                     checking_piece_worth = MATERIAL_DICT[checking_pieces[0][0]]
@@ -314,23 +319,23 @@ def quick_evaluate(position: Position) -> Dict[str, float]:
         if piece.upper() == 'R':
             n_pawns_in_front = count_pawns_in_front_on_file(sq, color, square_piece_dict)
             if n_pawns_in_front == 1:
-                score += ROOK_SEMI_OPEN_FILE_SCORE if own_piece else -ROOK_SEMI_OPEN_FILE_SCORE
+                score += rook_semi_open_file_score if own_piece else -rook_semi_open_file_score
             elif n_pawns_in_front == 0:
-                score += ROOK_OPEN_FILE_SCORE if own_piece else -ROOK_OPEN_FILE_SCORE
+                score += rook_open_file_score if own_piece else -rook_open_file_score
         elif piece.upper() in ('B', 'N'):
             back_rank = '1' if color == 'w' else '8'
             if sq[1] == back_rank:
-                score += DEVELOPMENT_SCORE_PENALTY if own_piece else -DEVELOPMENT_SCORE_PENALTY
+                score += development_score_penalty if own_piece else -development_score_penalty
             if piece.upper() == 'N':
                 if sq in ('e4', 'e5', 'd4', 'd5'):
-                    score += CENTRALIZED_KNIGHT_BONUS if own_piece else -CENTRALIZED_KNIGHT_BONUS
+                    score += centralized_knight_bonus if own_piece else -centralized_knight_bonus
             if piece.upper() == 'B':
                 opposing_color = 'w' if piece.islower() else 'b'
                 own_color = opposite_color(opposing_color)
                 n_bishops = len(position.get_pieces_by_color(own_color).get_piece_type_squares('B'))
                 n_opposing_bishops = len(position.get_pieces_by_color(opposing_color).get_piece_type_squares('B'))
                 if n_bishops == 2 and n_opposing_bishops == 1:
-                    score += BISHOP_PAIR_SCORE/2 if own_piece else -BISHOP_PAIR_SCORE/2
+                    score += bishop_pair_score/2 if own_piece else -bishop_pair_score/2
         elif piece.upper() == 'P':
             n_pawns_in_front = count_pawns_in_front_on_file(sq, color, square_piece_dict)
             if n_pawns_in_front == 0:
@@ -344,30 +349,30 @@ def quick_evaluate(position: Position) -> Dict[str, float]:
                             sq_in_front_attacked = True
                             break
                 if not sq_in_front_attacked:
-                    score += PASSED_PAWN_SCORE if own_piece else -PASSED_PAWN_SCORE
+                    score += passed_pawn_score if own_piece else -passed_pawn_score
                     rank = int(sq[1])
                     ranks_advanced = rank - 2 if color == 'w' else (9 - rank) - 2
-                    score += ranks_advanced * PASSED_PAWN_ADVANCEMENT_BONUS_PER_RANK if own_piece else -ranks_advanced * PASSED_PAWN_ADVANCEMENT_BONUS_PER_RANK
+                    score += ranks_advanced * passed_pawn_advancement_bonus_per_rank if own_piece else -ranks_advanced * passed_pawn_advancement_bonus_per_rank
                     if own_piece:
-                        own_passed_pawns[f'P{sq}'] = PASSED_PAWN_SCORE + ranks_advanced * PASSED_PAWN_ADVANCEMENT_BONUS_PER_RANK
-                        threat_contributing_pieces[f'P{sq}'] = [ranks_advanced * PASSED_PAWN_ADVANCEMENT_THREAT_SCORE_PER_RANK * overwhelming_material_multiplier]
+                        own_passed_pawns[f'P{sq}'] = passed_pawn_score + ranks_advanced * passed_pawn_advancement_bonus_per_rank
+                        threat_contributing_pieces[f'P{sq}'] = [ranks_advanced * passed_pawn_advancement_threat_score_per_rank * overwhelming_material_multiplier]
             if own_piece:
                 seventh_rank, promotion_rank = (7, 8) if piece == 'P' else (2, 1)
                 if int(sq[1]) == seventh_rank:
                     promotion_square = f'{sq[0]}{promotion_rank}'
                     if promotion_square not in opposing_squares_occupied and promotion_square not in opposing_square_covering_piece_dict:
-                        threat_contributing_pieces[f'P{sq}'] = [PROMOTION_THREAT_SCORE * overwhelming_material_multiplier]
+                        threat_contributing_pieces[f'P{sq}'] = [promotion_threat_score * overwhelming_material_multiplier]
                     elif promotion_square not in opposing_squares_occupied and promotion_square in opposing_square_covering_piece_dict:
                         if promotion_square in own_square_covering_piece_dict or detect_battery_or_x_ray(promotion_square, sq, square_piece_dict, side_evaluating_for, True):
-                            threat_contributing_pieces[f'P{sq}'] = [PROMOTION_THREAT_SCORE * overwhelming_material_multiplier]
+                            threat_contributing_pieces[f'P{sq}'] = [promotion_threat_score * overwhelming_material_multiplier]
         elif piece.upper() == 'K' and is_endgame:
             back_rank = '1' if color == 'w' else '8'
             second_rank = '2' if color == 'w' else '7'
             third_rank = '3' if color == 'w' else '6'
             if sq[1] in (back_rank, second_rank):
-                score += ENDGAME_BACKWARD_KING_PENALTY if own_piece else -ENDGAME_BACKWARD_KING_PENALTY
+                score += endgame_backward_king_penalty if own_piece else -endgame_backward_king_penalty
             elif sq[1] == third_rank:
-                score += ENDGAME_BACKWARD_KING_PENALTY / 2 if own_piece else -ENDGAME_BACKWARD_KING_PENALTY / 2
+                score += endgame_backward_king_penalty / 2 if own_piece else -endgame_backward_king_penalty / 2
 
     own_pawn_unique_controlled_squares = []
     already_pawn_controlled_squares_around_king = []
@@ -376,20 +381,20 @@ def quick_evaluate(position: Position) -> Dict[str, float]:
         squares_covered = own_piece_covered_square_dict[pns]
         if piece in ('Q', 'R', 'B', 'N'):
             for covered_square in squares_covered:
-                score += ACTIVITY_BASE_SCORE
+                score += activity_base_score
                 if covered_square in ('e4', 'e5', 'd4', 'd5'):
-                    score += CENTRAL_SQUARE_BONUS
+                    score += central_square_bonus
                 if covered_square in opposing_piece_covered_square_dict[f'K{opposing_king_square}'] + [opposing_king_square]:
-                    score += SQUARE_AROUND_ENEMY_KING
+                    score += square_around_enemy_king
                 if piece == 'R':
                     seventh_rank = '7' if side_evaluating_for == 'w' else '2'
                     if covered_square[1] == seventh_rank:
-                        score += SEVENTH_RANK_BONUS
+                        score += seventh_rank_bonus
                 sixth_rank = '6' if side_evaluating_for == 'w' else '3'
                 if covered_square[1] == sixth_rank:
-                    score += SIXTH_RANK_PIECE_CONTROL_BONUS
+                    score += sixth_rank_piece_control_bonus
         elif piece == 'P':
-            pawn_control_score_map = WHITE_PAWN_CONTROL_SCORES if side_evaluating_for == 'w' else BLACK_PAWN_CONTROL_SCORES
+            pawn_control_score_map = white_pawn_control_scores if side_evaluating_for == 'w' else black_pawn_control_scores
             for covered_square in squares_covered:
                 if covered_square not in own_pawn_unique_controlled_squares:
                     score += pawn_control_score_map[covered_square]
@@ -398,7 +403,7 @@ def quick_evaluate(position: Position) -> Dict[str, float]:
                     score += pawn_control_score_map[covered_square] / 2
                 if covered_square in opposing_piece_covered_square_dict[f'K{opposing_king_square}'] + [opposing_king_square]:
                     if covered_square not in already_pawn_controlled_squares_around_king:
-                        score += SQUARE_AROUND_ENEMY_KING
+                        score += square_around_enemy_king
                         already_pawn_controlled_squares_around_king.append(covered_square)
 
     opposing_pawn_unique_controlled_squares = []
@@ -408,20 +413,20 @@ def quick_evaluate(position: Position) -> Dict[str, float]:
         squares_covered = opposing_piece_covered_square_dict[pns]
         if piece in ('Q', 'R', 'B', 'N'):
             for covered_square in squares_covered:
-                score -= ACTIVITY_BASE_SCORE
+                score -= activity_base_score
                 if covered_square in ('e4', 'e5', 'd4', 'd5'):
-                    score -= CENTRAL_SQUARE_BONUS
+                    score -= central_square_bonus
                 if covered_square in own_piece_covered_square_dict[f'K{own_king_square}'] + [own_king_square]:
-                    score -= SQUARE_AROUND_ENEMY_KING
+                    score -= square_around_enemy_king
                 if piece == 'R':
                     seventh_rank = '7' if side_to_move == 'w' else '2'
                     if covered_square[1] == seventh_rank:
-                        score -= SEVENTH_RANK_BONUS
+                        score -= seventh_rank_bonus
                 sixth_rank = '6' if side_to_move == 'w' else '3'
                 if covered_square[1] == sixth_rank:
-                    score -= SIXTH_RANK_PIECE_CONTROL_BONUS
+                    score -= sixth_rank_piece_control_bonus
         elif piece == 'P':
-            pawn_control_score_map = WHITE_PAWN_CONTROL_SCORES if side_to_move == 'w' else BLACK_PAWN_CONTROL_SCORES
+            pawn_control_score_map = white_pawn_control_scores if side_to_move == 'w' else black_pawn_control_scores
             for covered_square in squares_covered:
                 if covered_square not in opposing_pawn_unique_controlled_squares:
                     score -= pawn_control_score_map[covered_square]
@@ -430,7 +435,7 @@ def quick_evaluate(position: Position) -> Dict[str, float]:
                     score -= pawn_control_score_map[covered_square] / 2
                 if covered_square in own_piece_covered_square_dict[f'K{own_king_square}'] + [own_king_square]:
                     if covered_square not in already_pawn_controlled_squares_around_king:
-                        score -= SQUARE_AROUND_ENEMY_KING
+                        score -= square_around_enemy_king
                         already_pawn_controlled_squares_around_king.append(covered_square)
 
     hanging_material_list = []
@@ -439,7 +444,7 @@ def quick_evaluate(position: Position) -> Dict[str, float]:
             continue
         if attacked_square in own_squares_occupied or (attacked_square == position.get_en_passant_square() and any([pns[0] == 'P' for pns in opposing_square_covering_piece_dict[attacked_square]])):
             if (attacked_square not in own_pawn_unique_controlled_squares) and attacked_square != position.get_en_passant_square():
-                score -= PRESSURED_PIECE_SCORE
+                score -= pressured_piece_score
             piece_at_square = square_piece_dict[attacked_square].upper() if attacked_square != position.get_en_passant_square() else 'P'
             if piece_at_square == 'K':
                 continue
@@ -553,33 +558,33 @@ def quick_evaluate(position: Position) -> Dict[str, float]:
             if attacked_square == opposing_king_square:
                 continue
             if attacked_square not in opposing_pawn_unique_controlled_squares:
-                threat_score += PRESSURED_PIECE_THREAT_SCORE
-                score += PRESSURED_PIECE_THREAT_SCORE
+                threat_score += pressured_piece_threat_score
+                score += pressured_piece_threat_score
             capturing_pns = own_square_covering_piece_dict[attacked_square]
             lightest_capturing_pns = min(capturing_pns, key=lambda x: MATERIAL_DICT[x[0]])
             piece_at_square = square_piece_dict[attacked_square].upper()
             pinning_pns = is_pinned(opposing_king_square, side_to_move, f'{piece_at_square}{attacked_square}', '', square_piece_dict, ignore_target_sq=True)
             if pinning_pns:
                 if pinning_pns in threat_contributing_pieces:
-                    threat_contributing_pieces[pinning_pns].append(PINNED_PIECE_THREAT_SCORE)
+                    threat_contributing_pieces[pinning_pns].append(pinned_piece_threat_score)
                 else:
-                    threat_contributing_pieces[pinning_pns] = [PINNED_PIECE_THREAT_SCORE]
+                    threat_contributing_pieces[pinning_pns] = [pinned_piece_threat_score]
             if attacked_square not in opposing_square_covering_piece_dict:
                 if lightest_capturing_pns not in threat_contributing_pieces:
-                    threat_contributing_pieces[lightest_capturing_pns] = [MATERIAL_DICT[piece_at_square] * MATERIAL_THREAT_SCORE_FACTOR]
+                    threat_contributing_pieces[lightest_capturing_pns] = [MATERIAL_DICT[piece_at_square] * material_threat_score_factor]
                 else:
-                    threat_contributing_pieces[lightest_capturing_pns].append(MATERIAL_DICT[piece_at_square] * MATERIAL_THREAT_SCORE_FACTOR)
+                    threat_contributing_pieces[lightest_capturing_pns].append(MATERIAL_DICT[piece_at_square] * material_threat_score_factor)
             else:
                 capturing_piece_worth = MATERIAL_DICT[lightest_capturing_pns[0]]
                 threatened_material = MATERIAL_DICT[piece_at_square] - capturing_piece_worth
                 if threatened_material > 0:
-                    m = PINNED_THREATENED_MATERIAL_MULTIPLIER if pinning_pns else 1
+                    m = pinned_threatened_material_multiplier if pinning_pns else 1
                     if lightest_capturing_pns not in threat_contributing_pieces:
-                        threat_contributing_pieces[lightest_capturing_pns] = [threatened_material * MATERIAL_THREAT_SCORE_FACTOR * m]
+                        threat_contributing_pieces[lightest_capturing_pns] = [threatened_material * material_threat_score_factor * m]
                     else:
-                        threat_contributing_pieces[lightest_capturing_pns].append(threatened_material * MATERIAL_THREAT_SCORE_FACTOR * m)
+                        threat_contributing_pieces[lightest_capturing_pns].append(threatened_material * material_threat_score_factor * m)
                     if check_given and not all([pns == lightest_capturing_pns for pns in checking_pieces]):
-                        threat_score += MATERIAL_THREAT_SIMULTANEOUS_WITH_CHECK
+                        threat_score += material_threat_simultaneous_with_check
 
     for hanging_pns, m in hanging_material_list:
         if hanging_pns in threat_contributing_pieces:
@@ -591,22 +596,22 @@ def quick_evaluate(position: Position) -> Dict[str, float]:
 
     for square in opposing_piece_covered_square_dict[f'K{opposing_king_square}']:
         if square in own_square_covering_piece_dict:
-            threat_score += UNIQUE_SQUARE_AROUND_ENEMY_KING_THREAT_SCORE * overwhelming_material_multiplier
-            score += UNIQUE_SQUARE_AROUND_ENEMY_KING_SCORE
+            threat_score += unique_square_around_enemy_king_threat_score * overwhelming_material_multiplier
+            score += unique_square_around_enemy_king_score
             if any([pns.startswith('Q') for pns in own_square_covering_piece_dict[square]]):
                 queen_pns = [pns for pns in own_square_covering_piece_dict[square] if pns[0] == 'Q'][0]
                 battery = detect_battery_or_x_ray(square, queen_pns, square_piece_dict, color='w' if side_evaluating_for == 'w' else 'b')
                 if len(own_square_covering_piece_dict[square]) > 1 or len(battery) > 1:
-                    threat_score += SUPPORTED_QUEEN_AROUND_ENEMY_KING_THREAT_SCORE * overwhelming_material_multiplier
-                    score += SUPPORTED_QUEEN_AROUND_ENEMY_KING_SCORE
+                    threat_score += supported_queen_around_enemy_king_threat_score * overwhelming_material_multiplier
+                    score += supported_queen_around_enemy_king_score
 
     for square in own_piece_covered_square_dict[f'K{own_king_square}']:
         if square in opposing_square_covering_piece_dict:
-            score -= UNIQUE_SQUARE_AROUND_ENEMY_KING_SCORE
+            score -= unique_square_around_enemy_king_score
             if any([pns.startswith('Q') for pns in opposing_square_covering_piece_dict[square]]):
                 queen_pns = [pns for pns in opposing_square_covering_piece_dict[square] if pns[0] == 'Q'][0]
                 battery = detect_battery_or_x_ray(square, queen_pns, square_piece_dict, color='w' if side_to_move == 'w' else 'b')
                 if len(opposing_square_covering_piece_dict[square]) > 1 or len(battery) > 1:
-                    score -= SUPPORTED_QUEEN_AROUND_ENEMY_KING_SCORE
+                    score -= supported_queen_around_enemy_king_score
 
     return {'eval': score, 'threat': threat_score}
