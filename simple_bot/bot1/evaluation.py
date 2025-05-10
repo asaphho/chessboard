@@ -1,10 +1,10 @@
-from typing import List, Iterable, Dict, Union
+from typing import List, Dict, Union
 
 from classes.color_position import ColorPosition
-from utils.board_functions import scan_qbr_scope, scan_kn_scope, get_intervening_squares, INT_SQUARES_MAP, LINE_EXTEND_MAP, PIECE_MOVE_TYPE_DICT
+from utils.board_functions import scan_kn_scope, INT_SQUARES_MAP, LINE_EXTEND_MAP, PIECE_MOVE_TYPE_DICT
 from classes.move import LegalMove, VirtualMove
 from classes.position import Position, opposite_color
-from simple_bot.utils import branch_from_position, check_if_move_ends_game
+from simple_bot.utils import branch_from_position
 
 SYMBOL_TO_PIECE = {'P': 'pawn', 'K': 'king', 'Q': 'queen', 'R': 'rook', 'B': 'bishop', 'N': 'knight'}
 MATERIAL_DICT = {'K': 10, 'P': 1, 'N': 3, 'B': 3, 'R': 5, 'Q': 9}
