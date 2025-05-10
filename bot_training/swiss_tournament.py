@@ -1,0 +1,158 @@
+import random
+from typing import Dict, List, Tuple, Callable
+
+
+def get_current_score(player_results: List[Tuple[int, float]]) -> float:
+    return sum([res[1] for res in player_results])
+
+
+def group_by_tie_breaker_score(tied_players: List[int],
+                               all_players_results: Dict[int, List[Tuple[int, float]]],
+                               tie_breaker: Callable[[int, Dict[int, List[Tuple[int, float]]]], float]) \
+        -> List[Tuple[float, List[int]]]:
+    grouped_players: List[Tuple[float, List[int]]] = []
+    for player in tied_players:
+        tie_break_score = tie_breaker(player, all_players_results)
+        found_matched_tie_breaker_score = False
+        for i in range(len(grouped_players)):
+            if grouped_players[i][0] == tie_break_score:
+                grouped_players[i][1].append(player)
+                found_matched_tie_breaker_score = True
+                break
+        if not found_matched_tie_breaker_score:
+            grouped_players.append((tie_break_score, [player]))
+    grouped_players.sort(key=lambda x: x[0], reverse=True)
+    return grouped_players
+
+
+def group_by_current_scores(all_players_results: Dict[int, List[Tuple[int, float]]]) -> Dict[float, List[int]]:
+    grouped_players = {}
+    for player in all_players_results:
+        final_score = get_current_score(all_players_results[player])
+        if final_score in grouped_players:
+            grouped_players[final_score].append(player)
+        else:
+            grouped_players[final_score] = [player]
+    return grouped_players
+
+
+def tie_break_group(tied_players: List[int],
+                    all_players_results: Dict[int, List[Tuple[int, float]]],
+                    tie_breakers: List[Callable[[int, Dict[int, List[Tuple[int, float]]]], float]]) -> List[int]:
+    if len(tied_players) == 1 or len(tie_breakers) == 0:
+        return tied_players
+    ranked_players = []
+    grouped_by_tie_breakers = group_by_tie_breaker_score(tied_players=tied_players,
+                                                         all_players_results=all_players_results,
+                                                         tie_breaker=tie_breakers[0])
+    for tied_group in grouped_by_tie_breakers:
+        player_group = tied_group[1]
+        ranked_players.extend(tie_break_group(tied_players=player_group,
+                                              all_players_results=all_players_results,
+                                              tie_breakers=tie_breakers[1:]))
+    return ranked_players
+
+
+def generate_pairings(all_players_results: Dict[int, List[Tuple[int, float]]]) -> List[Tuple[int, int]]:
+    grouped_by_current_scores = group_by_current_scores(all_players_results)
+    pairings = []
+    already_paired: List[int] = []
+    current_scores_in_order = list(grouped_by_current_scores.keys())
+    current_scores_in_order.sort(reverse=True)
+    for i in range(len(current_scores_in_order)):
+        if len(already_paired) == len((all_players_results.keys())):
+            break
+        current_score = current_scores_in_order[i]
+        players_to_pair: List[int] = [player for player in grouped_by_current_scores[current_score]
+                                      if player not in already_paired].copy()
+        while len(players_to_pair) > 0:
+            player_to_pair = random.choice(players_to_pair)
+            already_faced: List[int] = [res[0] for res in all_players_results[player_to_pair]]
+            eligible_opponents = [player for player in players_to_pair
+                                  if (player != player_to_pair) and (player not in already_faced)]
+            j = i
+            while len(eligible_opponents) == 0 and j < len(current_scores_in_order) - 1:
+                next_current_score: float = current_scores_in_order[j+1]
+                eligible_opponents.extend([player for player in grouped_by_current_scores[next_current_score]
+                                           if (player not in already_faced) and (player not in already_paired)])
+                j += 1
+            if len(eligible_opponents) == 0:
+                unpaired_players = [player for player in list(all_players_results.keys())
+                                    if player not in already_paired]
+                remaining_opponents = [player for player in unpaired_players if player not in already_faced]
+                if len(remaining_opponents) == 0:
+                    return generate_pairings(all_players_results)
+                else:
+                    opponent = random.choice(remaining_opponents)
+                    already_paired.extend([player_to_pair, opponent])
+                    pairings.append((player_to_pair, opponent))
+                    for k in range(len(players_to_pair)):
+                        if players_to_pair[k] == player_to_pair:
+                            players_to_pair.pop(k)
+                            break
+                    for k in range(len(players_to_pair)):
+                        if players_to_pair[k] == opponent:
+                            players_to_pair.pop(k)
+                            break
+            else:
+                opponent = random.choice(eligible_opponents)
+                already_paired.extend([player_to_pair, opponent])
+                pairings.append((player_to_pair, opponent))
+                for k in range(len(players_to_pair)):
+                    if players_to_pair[k] == player_to_pair:
+                        players_to_pair.pop(k)
+                        break
+                for k in range(len(players_to_pair)):
+                    if players_to_pair[k] == opponent:
+                        players_to_pair.pop(k)
+                        break
+    return pairings
+
+
+def solkoff(player: int, all_players_results: Dict[int, List[Tuple[int, float]]]) -> float:
+    solkoff_score = 0
+    opponents_faced: List[int] = [res[0] for res in all_players_results[player]]
+    for opponent in opponents_faced:
+        solkoff_score += get_current_score(all_players_results[opponent])
+    return solkoff_score
+
+
+def solkoff_minus_1(player: int, all_players_results: Dict[int, List[Tuple[int, float]]]) -> float:
+    opponents_faced = [res[0] for res in all_players_results[player]]
+    opponent_scores = [get_current_score(all_players_results[opponent]) for opponent in opponents_faced]
+    min_opponent_score = min(opponent_scores)
+    return solkoff(player, all_players_results) - min_opponent_score
+
+
+def sonneborn_berger(player: int, all_players_results: Dict[int, List[Tuple[int, float]]]) -> float:
+    sb_score = 0
+    results = all_players_results[player]
+    for result in results:
+        match_result = result[1]
+        if match_result > 0:
+            sb_score += match_result * get_current_score(all_players_results[result[0]])
+    return sb_score
+
+
+def update_round_results(all_players_results: Dict[int, List[Tuple[int, float]]],
+                         round_results: List[Tuple[int, int, str]]) -> None:
+    for result in round_results:
+        if result[2] == '0.5-0.5':
+            all_players_results[result[0]].append((result[1], 0.5))
+            all_players_results[result[1]].append((result[0], 0.5))
+        elif result[2] == '1-0':
+            all_players_results[result[0]].append((result[1], 1))
+            all_players_results[result[1]].append((result[0], 0))
+        elif result[2] == '0-1':
+            all_players_results[result[0]].append((result[1], 0))
+            all_players_results[result[1]].append((result[0], 1))
+
+
+def rank_all_players(all_players_results: Dict[int, List[Tuple[int, float]]]) -> List[int]:
+
+    def first_tie_breaker(player: int, all_results: Dict[int, List[Tuple[int, float]]]) -> float:
+        return get_current_score(all_results[player])
+
+    tie_breakers_in_order = [first_tie_breaker, solkoff, solkoff_minus_1, sonneborn_berger]
+
+    return tie_break_group(list(all_players_results.keys()), all_players_results, tie_breakers_in_order)
