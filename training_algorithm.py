@@ -4,7 +4,7 @@ from os import path
 import json
 from bot_training.swiss_tournament import generate_pairings, update_round_results, rank_all_players
 from bot_training.bot_matchup import compare_configs
-from bot_training.utils import breed_offspring_from_pool
+from bot_training.utils import breed_offspring_from_pool, numerify_json_keys
 
 N_PROCESSES = 6
 TOURNAMENT_SIZE = 32
@@ -15,10 +15,11 @@ MUTATION_PROB = 0.1
 MUTATION_STR = 0.05
 STARTING_POOL_PATH = path.join(BOT_TRAINING_DIR, 'starting_pool.json')
 
-
 if __name__ == '__main__':
     with open(STARTING_POOL_PATH, 'r') as f:
         starting_pool = json.load(f)
+
+    starting_pool = [numerify_json_keys(config) for config in starting_pool]
 
     player_results = {}
     for i in range(TOURNAMENT_SIZE):

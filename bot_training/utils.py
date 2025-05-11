@@ -37,3 +37,10 @@ def breed_offspring_from_pool(parents: List[Dict[int, float]], n_offspring: int,
         offspring = mutate(breed(parent1, parent2), mutation_prob=mutation_prob, mutation_strength=mutation_strength)
         offsprings.append(offspring)
     return offsprings
+
+
+def numerify_json_keys(json_obj: Dict[str, float]) -> Dict[int, float]:
+    new_dict = {}
+    for i in json_obj:
+        new_dict[int(i)] = json_obj[i]
+    return new_dict
