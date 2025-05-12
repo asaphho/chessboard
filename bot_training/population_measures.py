@@ -45,7 +45,7 @@ def pairwise_distance(config1: Dict[int, float], config2: Dict[int, float]) -> f
     return sum_diff_squares ** 0.5
 
 
-def mean_pairwise_distance() -> None:
+def mean_pairwise_distance() -> float:
     pairings = []
     for i in range(population_size - 1):
         for j in range(i + 1, population_size):
@@ -56,12 +56,25 @@ def mean_pairwise_distance() -> None:
         config1 = population[pairing[0]]
         config2 = population[pairing[1]]
         mean_pw_dist += pairwise_distance(config1, config2) / len(pairings)
-    print(f'Mean pairwise distance: {mean_pw_dist}')
+    return mean_pw_dist
 
 
-def parameter_overlap_fraction(config1: Dict[int, float], config2: Dict[int, float]) -> float:
+def parameter_overlap_fraction(config1: Dict[int, float], config2: Dict[int, float], tolerance: float = 1e-6) -> float:
     overlap_count = 0
     for i in config1:
-        if config1[i] == config2[i]:
+        if abs(config1[i] - config2[i]) <= tolerance:
             overlap_count += 1
     return overlap_count / n_parameters
+
+
+def mean_pairwise_overlap_fraction(tolerance: float = 1e-6) -> float:
+    pairings = []
+    for i in range(population_size - 1):
+        for j in range(i + 1, population_size):
+            pairings.append((i, j))
+    mean_pw_ov_frac = 0
+    for pairing in pairings:
+        config1 = population[pairing[0]]
+        config2 = population[pairing[1]]
+        mean_pw_ov_frac += parameter_overlap_fraction(config1, config2, tolerance) / len(pairings)
+    return mean_pw_ov_frac
