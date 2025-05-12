@@ -37,18 +37,19 @@ def standard_dev() -> None:
     print(f'Average standard deviation: {average_standard_dev}')
 
 
+def pairwise_distance(config1: Dict[int, float], config2: Dict[int, float]) -> float:
+    sum_diff_squares = 0
+    for i in config1:
+        diff = config1[i] - config2[i]
+        sum_diff_squares += diff ** 2
+    return sum_diff_squares ** 0.5
+
+
 def mean_pairwise_distance() -> None:
     pairings = []
     for i in range(population_size - 1):
         for j in range(i + 1, population_size):
             pairings.append((i, j))
-
-    def pairwise_distance(config1: Dict[int, float], config2: Dict[int, float]) -> float:
-        sum_diff_squares = 0
-        for i in config1:
-            diff = config1[i] - config2[i]
-            sum_diff_squares += diff ** 2
-        return sum_diff_squares ** 0.5
 
     mean_pw_dist = 0
     for pairing in pairings:
@@ -56,3 +57,11 @@ def mean_pairwise_distance() -> None:
         config2 = population[pairing[1]]
         mean_pw_dist += pairwise_distance(config1, config2) / len(pairings)
     print(f'Mean pairwise distance: {mean_pw_dist}')
+
+
+def parameter_overlap_fraction(config1: Dict[int, float], config2: Dict[int, float]) -> float:
+    overlap_count = 0
+    for i in config1:
+        if config1[i] == config2[i]:
+            overlap_count += 1
+    return overlap_count / n_parameters
