@@ -6,8 +6,9 @@ from datetime import datetime
 from bot_training.swiss_tournament import generate_pairings, update_round_results, rank_all_players
 from bot_training.bot_matchup import compare_configs
 from bot_training.utils import breed_offspring_from_pool, numerify_json_keys
+import sys
 
-N_PROCESSES = 6
+N_PROCESSES = int(sys.argv[1])
 TOURNAMENT_SIZE = 32
 TOURNAMENT_ROUNDS = 4
 SELECTED_FOR_BREEDING = 10
