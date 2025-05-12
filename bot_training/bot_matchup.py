@@ -34,7 +34,7 @@ def run_match(training_bot: Bot, opposing_bot: Bot, n_rounds: int = 12) -> str:
             training_bot_score += 0.5
             opposing_bot_score += 0.5
         white_bot, black_bot = black_bot, white_bot
-        print('A game has been completed.')
+        print(f'A game has been completed. ({i+1}/{n_rounds})')
     if training_bot_score > opposing_bot_score:
         result = '1-0'
     elif opposing_bot_score > training_bot_score:
