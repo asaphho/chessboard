@@ -2,6 +2,7 @@ import multiprocessing as mp
 from bot_training import BOT_TRAINING_DIR
 from os import path
 import json
+from datetime import datetime
 from bot_training.swiss_tournament import generate_pairings, update_round_results, rank_all_players
 from bot_training.bot_matchup import compare_configs
 from bot_training.utils import breed_offspring_from_pool, numerify_json_keys
@@ -26,6 +27,7 @@ if __name__ == '__main__':
         player_results[i] = []
 
     for round_number in range(TOURNAMENT_ROUNDS):
+        print(f'Round {round_number + 1} started: {datetime.strftime(datetime.now(), "%Y-%m-%d %H:%M:%S")}')
         pairings = generate_pairings(player_results)
         print(f'Pairings for round {round_number + 1}: \n{json.dumps(pairings, indent=4)}')
         config_pairings = [(starting_pool[pairings[i][0]], starting_pool[pairings[i][1]]) for i in range(len(pairings))]

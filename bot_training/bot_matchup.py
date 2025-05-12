@@ -2,6 +2,7 @@ from classes.bot import Bot
 from classes.game import Game
 from typing import Dict
 from simple_bot.bot1.evaluation import quick_evaluate
+from datetime import datetime
 
 
 def run_match(training_bot: Bot, opposing_bot: Bot, n_rounds: int = 12, print_moves: bool = False) -> str:
@@ -57,7 +58,7 @@ def run_match(training_bot: Bot, opposing_bot: Bot, n_rounds: int = 12, print_mo
         result = '0-1'
     else:
         result = '0.5-0.5'
-    print('A match has been completed.')
+    print(f'A match has been completed: {datetime.strftime(datetime.now(), "%Y-%m-%d %H:%M:%S")}')
     return result
 
 
