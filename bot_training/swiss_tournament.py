@@ -54,6 +54,8 @@ def tie_break_group(tied_players: List[int],
 
 
 def generate_pairings(all_players_results: Dict[int, List[Tuple[int, float]]]) -> List[Tuple[int, int]]:
+    if len(all_players_results.keys()) % 2 == 1:
+        raise NotImplementedError('Pairings for odd number of players not supported yet.')
     grouped_by_current_scores = group_by_current_scores(all_players_results)
     pairings = []
     already_paired: List[int] = []
@@ -77,24 +79,29 @@ def generate_pairings(all_players_results: Dict[int, List[Tuple[int, float]]]) -
                                            if (player not in already_faced) and (player not in already_paired)])
                 j += 1
             if len(eligible_opponents) == 0:
-                unpaired_players = [player for player in list(all_players_results.keys())
-                                    if player not in already_paired]
-                remaining_opponents = [player for player in unpaired_players if player not in already_faced]
-                if len(remaining_opponents) == 0:
-                    return generate_pairings(all_players_results)
-                else:
-                    opponent = random.choice(remaining_opponents)
-                    already_paired.extend([player_to_pair, opponent])
-                    pairings.append((player_to_pair, opponent))
-                    for k in range(len(players_to_pair)):
-                        if players_to_pair[k] == player_to_pair:
-                            players_to_pair.pop(k)
-                            break
-                    for k in range(len(players_to_pair)):
-                        if players_to_pair[k] == opponent:
-                            players_to_pair.pop(k)
-                            break
+                # unpaired_players = [player for player in list(all_players_results.keys())
+                #                     if player not in already_paired]
+                # remaining_opponents = [player for player in unpaired_players if player not in already_faced]
+                # if len(remaining_opponents) == 0:
+                #     return generate_pairings(all_players_results)
+                # else:
+                #     opponent = random.choice(remaining_opponents)
+                #     already_paired.extend([player_to_pair, opponent])
+                #     pairings.append((player_to_pair, opponent))
+                #     for k in range(len(players_to_pair)):
+                #         if players_to_pair[k] == player_to_pair:
+                #             players_to_pair.pop(k)
+                #             break
+                #     for k in range(len(players_to_pair)):
+                #         if players_to_pair[k] == opponent:
+                #             players_to_pair.pop(k)
+                #             break
+                print('Failed to generate pairings. Restarting pairing procedure.')
+                return generate_pairings(all_players_results)
             else:
+                downfloat = j - i
+                if downfloat > 0:
+                    print(f'Player {player_to_pair} downfloated by {downfloat} score group(s).')
                 opponent = random.choice(eligible_opponents)
                 already_paired.extend([player_to_pair, opponent])
                 pairings.append((player_to_pair, opponent))
@@ -156,3 +163,14 @@ def rank_all_players(all_players_results: Dict[int, List[Tuple[int, float]]]) ->
     tie_breakers_in_order = [first_tie_breaker, solkoff, solkoff_minus_1, sonneborn_berger]
 
     return tie_break_group(list(all_players_results.keys()), all_players_results, tie_breakers_in_order)
+
+
+def generate_random_results(pairings: List[Tuple[int, int]]) -> List[Tuple[int, int, str]]:
+    return [(pairing[0], pairing[1], random.choice(['1-0', '0-1', '0.5-0.5'])) for pairing in pairings]
+
+
+def generate_starting_results(n_players: int) -> Dict[int, List]:
+    starting_results = {}
+    for i in range(n_players):
+        starting_results[i] = []
+    return starting_results
