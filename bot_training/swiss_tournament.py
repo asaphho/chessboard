@@ -100,9 +100,10 @@ def generate_pairings(all_players_results: Dict[int, List[Tuple[int, float]]]) -
                 return generate_pairings(all_players_results)
             else:
                 downfloat = j - i
-                if downfloat > 0:
-                    print(f'Player {player_to_pair} downfloated by {downfloat} score group(s).')
                 opponent = random.choice(eligible_opponents)
+                if downfloat > 0:
+                    print(f'Player {player_to_pair} downfloated by {downfloat} score group(s). Player {opponent} \
+                    upfloated to play Player {player_to_pair}.')
                 already_paired.extend([player_to_pair, opponent])
                 pairings.append((player_to_pair, opponent))
                 for k in range(len(players_to_pair)):
