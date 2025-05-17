@@ -40,6 +40,8 @@ def tie_break_group(tied_players: List[int],
                     all_players_results: Dict[int, List[Tuple[int, float]]],
                     tie_breakers: List[Callable[[int, Dict[int, List[Tuple[int, float]]]], float]]) -> List[int]:
     if len(tied_players) == 1 or len(tie_breakers) == 0:
+        if len(tie_breakers) == 0 and len(tied_players) > 1:
+            print(f'Players {tied_players} arbitrarily ranked due to running out of tie-breakers.')
         return tied_players
     ranked_players = []
     grouped_by_tie_breakers = group_by_tie_breaker_score(tied_players=tied_players,
@@ -53,7 +55,8 @@ def tie_break_group(tied_players: List[int],
     return ranked_players
 
 
-def generate_pairings(all_players_results: Dict[int, List[Tuple[int, float]]]) -> List[Tuple[int, int]]:
+def generate_pairings(all_players_results: Dict[int, List[Tuple[int, float]]],
+                      float_record: Dict[str, List[int]]) -> List[Tuple[int, int]]:
     if len(all_players_results.keys()) % 2 == 1:
         raise NotImplementedError('Pairings for odd number of players not supported yet.')
     grouped_by_current_scores = group_by_current_scores(all_players_results)
@@ -68,7 +71,7 @@ def generate_pairings(all_players_results: Dict[int, List[Tuple[int, float]]]) -
         players_to_pair: List[int] = [player for player in grouped_by_current_scores[current_score]
                                       if player not in already_paired].copy()
         while len(players_to_pair) > 0:
-            player_to_pair = random.choice(players_to_pair)
+            player_to_pair = choose_player_to_pair(players_to_pair, float_record)
             already_faced: List[int] = [res[0] for res in all_players_results[player_to_pair]]
             eligible_opponents = [player for player in players_to_pair
                                   if (player != player_to_pair) and (player not in already_faced)]
@@ -79,31 +82,16 @@ def generate_pairings(all_players_results: Dict[int, List[Tuple[int, float]]]) -
                                            if (player not in already_faced) and (player not in already_paired)])
                 j += 1
             if len(eligible_opponents) == 0:
-                # unpaired_players = [player for player in list(all_players_results.keys())
-                #                     if player not in already_paired]
-                # remaining_opponents = [player for player in unpaired_players if player not in already_faced]
-                # if len(remaining_opponents) == 0:
-                #     return generate_pairings(all_players_results)
-                # else:
-                #     opponent = random.choice(remaining_opponents)
-                #     already_paired.extend([player_to_pair, opponent])
-                #     pairings.append((player_to_pair, opponent))
-                #     for k in range(len(players_to_pair)):
-                #         if players_to_pair[k] == player_to_pair:
-                #             players_to_pair.pop(k)
-                #             break
-                #     for k in range(len(players_to_pair)):
-                #         if players_to_pair[k] == opponent:
-                #             players_to_pair.pop(k)
-                #             break
                 print('Failed to generate pairings. Restarting pairing procedure.')
-                return generate_pairings(all_players_results)
+                return generate_pairings(all_players_results, float_record)
             else:
                 downfloat = j - i
-                opponent = random.choice(eligible_opponents)
+                opponent = choose_opponent_to_pair(eligible_opponents, float_record, downfloat)
                 if downfloat > 0:
                     print(f'Player {player_to_pair} downfloated by {downfloat} score group(s). Player {opponent} \
                     upfloated to play Player {player_to_pair}.')
+                    float_record['downfloated'].append(player_to_pair)
+                    float_record['upfloated'].append(opponent)
                 already_paired.extend([player_to_pair, opponent])
                 pairings.append((player_to_pair, opponent))
                 for k in range(len(players_to_pair)):
@@ -175,3 +163,29 @@ def generate_starting_results(n_players: int) -> Dict[int, List]:
     for i in range(n_players):
         starting_results[i] = []
     return starting_results
+
+
+def find_previously_downfloated_players(players: List[int], float_record: Dict[str, List[int]]) -> List[int]:
+    return [player for player in players if player in float_record['downfloated']]
+
+
+def choose_player_to_pair(players: List[int], float_record: Dict[str, List[int]]) -> int:
+    previously_downfloated = find_previously_downfloated_players(players, float_record)
+    if len(previously_downfloated) == 0:
+        return random.choice(players)
+    else:
+        return random.choice(previously_downfloated)
+
+
+def find_not_previously_upfloated_players(players: List[int], float_record: Dict[str, List[int]]) -> List[int]:
+    return [player for player in players if player not in float_record['upfloated']]
+
+
+def choose_opponent_to_pair(opponents: List[int], float_record: Dict[str, List[int]], downfloat: int) -> int:
+    if downfloat == 0:
+        return random.choice(opponents)
+    not_previously_upfloated = find_not_previously_upfloated_players(opponents, float_record)
+    if len(not_previously_upfloated) == 0:
+        return random.choice(opponents)
+    else:
+        return random.choice(not_previously_upfloated)

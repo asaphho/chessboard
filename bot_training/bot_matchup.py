@@ -51,14 +51,14 @@ def run_match(training_bot: Bot, opposing_bot: Bot, n_rounds: int = 12, print_mo
             print(f'Bot1: {training_bot_score}')
             print(f'Bot2: {opposing_bot_score}')
         white_bot, black_bot = black_bot, white_bot
-        print(f'A game has been completed. ({i+1}/{n_rounds})')
+        print(f'A game has been completed in {game.current_position.get_move_number()} moves. ({i+1}/{n_rounds})', flush=True)
     if training_bot_score > opposing_bot_score:
         result = '1-0'
     elif opposing_bot_score > training_bot_score:
         result = '0-1'
     else:
         result = '0.5-0.5'
-    print(f'A match has been completed: {datetime.strftime(datetime.now(), "%Y-%m-%d %H:%M:%S")}')
+    print(f'A match has been completed: {datetime.strftime(datetime.now(), "%Y-%m-%d %H:%M:%S")}', flush=True)
     return result
 
 

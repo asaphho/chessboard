@@ -27,9 +27,11 @@ if __name__ == '__main__':
     for i in range(TOURNAMENT_SIZE):
         player_results[i] = []
 
+    float_record = {'downfloated': [], 'upfloated': []}
+
     for round_number in range(TOURNAMENT_ROUNDS):
         print(f'Round {round_number + 1} started: {datetime.strftime(datetime.now(), "%Y-%m-%d %H:%M:%S")}')
-        pairings = generate_pairings(player_results)
+        pairings = generate_pairings(player_results, float_record)
         print(f'Pairings for round {round_number + 1}: \n{json.dumps(pairings, indent=4)}')
         config_pairings = [(starting_pool[pairings[i][0]], starting_pool[pairings[i][1]]) for i in range(len(pairings))]
         with mp.Pool(processes=N_PROCESSES) as pool:
@@ -42,6 +44,7 @@ if __name__ == '__main__':
     final_rank = rank_all_players(player_results)
     print(f'Final ranking: \n{final_rank}')
     bots_for_breeding = final_rank[:SELECTED_FOR_BREEDING]
+    print(f'Selected for breeding: {bots_for_breeding}')
     elite_bots = bots_for_breeding[:ELITES]
     configs_for_breeding = [starting_pool[i] for i in bots_for_breeding]
     elite_configs = [starting_pool[i] for i in elite_bots]
