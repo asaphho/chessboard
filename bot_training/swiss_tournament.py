@@ -88,8 +88,7 @@ def generate_pairings(all_players_results: Dict[int, List[Tuple[int, float]]],
                 downfloat = j - i
                 opponent = choose_opponent_to_pair(eligible_opponents, float_record, downfloat)
                 if downfloat > 0:
-                    print(f'Player {player_to_pair} downfloated by {downfloat} score group(s). Player {opponent} \
-                    upfloated to play Player {player_to_pair}.')
+                    print(f'Player {player_to_pair} downfloated by {downfloat} score group(s). Player {opponent} upfloated to play Player {player_to_pair}.')
                     float_record['downfloated'].append(player_to_pair)
                     float_record['upfloated'].append(opponent)
                 already_paired.extend([player_to_pair, opponent])
@@ -130,6 +129,22 @@ def sonneborn_berger(player: int, all_players_results: Dict[int, List[Tuple[int,
     return sb_score
 
 
+def progressive_score(player: int, all_players_results: Dict[int, List[Tuple[int, float]]]) -> float:
+    player_results = all_players_results[player]
+    scores_after_each_round: List[float] = []
+    for i in range(len(player_results)):
+        score_after_round = 0
+        for j in range(i + 1):
+            score_after_round += player_results[j][1]
+        scores_after_each_round.append(score_after_round)
+    return sum(scores_after_each_round)
+
+
+def n_wins(player: int, all_players_results: Dict[int, List[Tuple[int, float]]]) -> int:
+    player_results = all_players_results[player]
+    return sum([res[1] for res in player_results if res[1] == 1])
+
+
 def update_round_results(all_players_results: Dict[int, List[Tuple[int, float]]],
                          round_results: List[Tuple[int, int, str]]) -> None:
     for result in round_results:
@@ -149,7 +164,7 @@ def rank_all_players(all_players_results: Dict[int, List[Tuple[int, float]]]) ->
     def first_tie_breaker(player: int, all_results: Dict[int, List[Tuple[int, float]]]) -> float:
         return get_current_score(all_results[player])
 
-    tie_breakers_in_order = [first_tie_breaker, solkoff, solkoff_minus_1, sonneborn_berger]
+    tie_breakers_in_order = [first_tie_breaker, solkoff, solkoff_minus_1, sonneborn_berger, progressive_score, n_wins]
 
     return tie_break_group(list(all_players_results.keys()), all_players_results, tie_breakers_in_order)
 
