@@ -9,10 +9,10 @@ from bot_training.utils import breed_offspring_from_pool, numerify_json_keys
 import sys
 
 N_PROCESSES = int(sys.argv[1])
-TOURNAMENT_SIZE = 32
-TOURNAMENT_ROUNDS = 4
-SELECTED_FOR_BREEDING = 10
-ELITES = 2
+TOURNAMENT_SIZE = 48
+TOURNAMENT_ROUNDS = 6
+SELECTED_FOR_BREEDING = 15
+ELITES = 3
 MUTATION_PROB = 0.1
 MUTATION_STR = 0.05
 STARTING_POOL_PATH = path.join(BOT_TRAINING_DIR, 'starting_pool.json')
