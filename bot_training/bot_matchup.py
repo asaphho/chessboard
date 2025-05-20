@@ -62,7 +62,7 @@ def run_match(training_bot: Bot, opposing_bot: Bot, n_rounds: int = 12, print_mo
     return result
 
 
-def compare_configs(config1: Dict[int, float], config2: Dict[int, float]) -> str:
+def compare_configs(config1: Dict[int, float], config2: Dict[int, float], n_rounds: int = 6) -> str:
     bot1 = Bot(evaluation_func=quick_evaluate, bot_params=config1, fluctuation=0.15)
     bot2 = Bot(evaluation_func=quick_evaluate, bot_params=config2, fluctuation=0.15)
-    return run_match(bot1, bot2, 6)
+    return run_match(bot1, bot2, n_rounds=n_rounds)

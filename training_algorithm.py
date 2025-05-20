@@ -15,7 +15,9 @@ SELECTED_FOR_BREEDING = 15
 ELITES = 3
 MUTATION_PROB = 0.1
 MUTATION_STR = 0.05
+GAMES_PER_MATCH = 6
 STARTING_POOL_PATH = path.join(BOT_TRAINING_DIR, 'starting_pool.json')
+
 
 if __name__ == '__main__':
     with open(STARTING_POOL_PATH, 'r') as f:
@@ -33,7 +35,7 @@ if __name__ == '__main__':
         print(f'Round {round_number + 1} started: {datetime.strftime(datetime.now(), "%Y-%m-%d %H:%M:%S")}')
         pairings = generate_pairings(player_results, float_record)
         print(f'Pairings for round {round_number + 1}: \n{json.dumps(pairings, indent=4)}')
-        config_pairings = [(starting_pool[pairings[i][0]], starting_pool[pairings[i][1]]) for i in range(len(pairings))]
+        config_pairings = [(starting_pool[pairings[i][0]], starting_pool[pairings[i][1]], GAMES_PER_MATCH) for i in range(len(pairings))]
         with mp.Pool(processes=N_PROCESSES) as pool:
             round_results = pool.starmap(compare_configs, config_pairings)
         pairings_results = [(pairings[i][0], pairings[i][1], round_results[i]) for i in range(len(round_results))]
