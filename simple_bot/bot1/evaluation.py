@@ -18,6 +18,16 @@ CHECKMATE_SCORE = 999999
 
 
 def square_is_around_enemy_king(square: str, opposing_pieces_position: ColorPosition):
+    """
+        Checks if a square is in the immediate vicinity of the enemy king.
+
+        Args:
+            square (str): The square to check (e.g., 'f6').
+            opposing_pieces_position (ColorPosition): Opponent's piece positions.
+
+        Returns:
+            bool: True if the square is adjacent to or the same as the enemy king's square.
+        """
     enemy_king_position = opposing_pieces_position.get_king_square()
     squares_around_king = scan_kn_scope('K', enemy_king_position)
     return square in squares_around_king + [enemy_king_position]
@@ -25,13 +35,16 @@ def square_is_around_enemy_king(square: str, opposing_pieces_position: ColorPosi
 
 def evaluate_exchange_on_square(position: Position, square: str, initiating_capture: LegalMove) -> int:
     """
-    Counts the amount of material that the side to move stands to gain from initiating a series of captures and
-    recaptures on the given square. Both sides "dogpile" onto the square, sending their least valuable pieces to capture
+    Simulates a material exchange on a square and estimates the net material gain or loss. Both sides "dogpile" onto the square, sending their least valuable pieces to capture
     first, until one side cannot recapture.
-    :param initiating_capture:
-    :param square:
-    :param position:
-    :return:
+
+    Args:
+        position (Position): The current position.
+        square (str): The contested square.
+        initiating_capture (LegalMove): The capture initiating the exchange.
+
+    Returns:
+        int: Net material gained (positive) or lost (negative) by the initiating side.
     """
 
     if not initiating_capture.is_en_passant_capture():
@@ -49,6 +62,16 @@ def evaluate_exchange_on_square(position: Position, square: str, initiating_capt
 
 
 def find_material_hanging_on_square(position: Position, capture: LegalMove) -> int:
+    """
+        Estimates the material that can be captured on a square, accounting for recapture possibilities.
+
+        Args:
+            position (Position): Current board state.
+            capture (LegalMove): Proposed capture move.
+
+        Returns:
+            int: Estimated material gain from the capture.
+        """
     square_captured_on = capture.destination_square
     if position.get_en_passant_square() != square_captured_on:
         first_capturable_piece = position.look_at_square(square_captured_on).upper()
@@ -69,6 +92,15 @@ def find_material_hanging_on_square(position: Position, capture: LegalMove) -> i
 
 
 def invert_piece_scope_dict(piece_scope_dict: Dict[str, List[str]]) -> Dict[str, List[str]]:
+    """
+        Inverts a dictionary mapping pieces to covered squares into one mapping squares to covering pieces.
+
+        Args:
+            piece_scope_dict (Dict[str, List[str]]): Piece-to-squares coverage map.
+
+        Returns:
+            Dict[str, List[str]]: Squares mapped to the pieces that control them.
+        """
     square_covering_piece_dict = {}
     for piece_n_square in piece_scope_dict:
         covered_squares = piece_scope_dict[piece_n_square]
@@ -82,6 +114,19 @@ def invert_piece_scope_dict(piece_scope_dict: Dict[str, List[str]]) -> Dict[str,
 
 def detect_battery_or_x_ray(target_sq: str, first_attacking_pns: str, square_piece_dict: Dict[str, str], color: str,
                             x_ray_defense: bool = False) -> List[str]:
+    """
+        Scans along a line beyond the first attacker to detect batteries or x-ray threats/defenses.
+
+        Args:
+            target_sq (str): The square under attack.
+            first_attacking_pns (str): Piece+square of the initial attacker (e.g., 'Rd4').
+            square_piece_dict (Dict[str, str]): Mapping of squares to piece symbols.
+            color (str): The color of the attacker.
+            x_ray_defense (bool): Whether this is a defensive x-ray (default: False).
+
+        Returns:
+            List[str]: List of piece-square strings contributing to the battery or x-ray.
+        """
     map_key = f'{target_sq}{first_attacking_pns[1:]}'
     pieces = [] if x_ray_defense else [first_attacking_pns]
     line_type = INT_SQUARES_MAP[map_key]['line']
@@ -100,16 +145,18 @@ def detect_battery_or_x_ray(target_sq: str, first_attacking_pns: str, square_pie
 
 def is_pinned(king_sq: str, king_color: str, pns: str, target_sq: str, square_piece_dict: Dict[str, str], ignore_target_sq: bool=False) -> Union[str, None]:
     """
-    Returns the pinning piece and square (e.g. 'Re1') if the piece indicated by pns (Piece and square it is standing on. e.g. 'Ne5') is unable to move to target_sq because of an absolute pin. False otherwise.
-    Note that this will return True only if it attempts to move out of the line of the pin. For example, a rook being pinned along the e-file will still be able to move along the e-file.
-    Use only when established that pns and king_sq are in line, and that the movement of pns to target_sq is according to its normal allowed movement type and is not blocked from moving there.
-    :param ignore_target_sq: If True, simply returns the pinning piece and square if a pin exists, without regard for the target_sq that the piece is trying to move to.
-    :param king_color:
-    :param king_sq:
-    :param pns:
-    :param target_sq:
-    :param square_piece_dict:
-    :return:
+    Checks if a piece is absolutely pinned to its king and cannot legally move to the target square.
+
+    Args:
+        king_sq (str): King's position.
+        king_color (str): 'w' or 'b'
+        pns (str): Piece+square string of the candidate piece (e.g., 'Nd4').
+        target_sq (str): Destination square of the move.
+        square_piece_dict (Dict[str, str]): Board layout.
+        ignore_target_sq (bool): If True, returns the pinning piece regardless of legality of the move.
+
+    Returns:
+        Union[str, None]: The pinning piece (e.g., 'Rd1' if a rook on d1 is pinning an enemy knight to its king) if pinned, otherwise None.
     """
     map_key = f'{king_sq}{pns[1:]}'
     try:
@@ -137,6 +184,17 @@ def is_pinned(king_sq: str, king_color: str, pns: str, target_sq: str, square_pi
 
 
 def count_pawns_in_front_on_file(square: str, color: str, square_piece_dict: Dict[str, str]) -> int:
+    """
+        Counts how many pawns are in front of the given square along the same file.
+
+        Args:
+            square (str): The square to check from (e.g., 'e2').
+            color (str): 'w' or 'b'
+            square_piece_dict (Dict[str, str]): Piece positions.
+
+        Returns:
+            int: Number of pawns in front on the file.
+        """
     file = square[0]
     back_rank = 1 if color == 'w' else 8
     if square == f'{file}{back_rank}':
@@ -149,6 +207,31 @@ def count_pawns_in_front_on_file(square: str, color: str, square_piece_dict: Dic
 
 
 def quick_evaluate(position: Position, bot_params: Dict[int, float] = None) -> Dict[str, float]:
+    """
+        Returns an evaluation of the given position from the point of view of the side *not* to move.
+
+        The evaluation considers:
+            - Material count and balance
+            - Piece activity (coverage, centralization, development)
+            - Pawn structure and passed pawns
+            - Control of key squares
+            - Threats (including hanging pieces, promotions, checks, pins, x-rays)
+            - King safety
+            - Positional bonuses and penalties
+
+        The returned dictionary includes:
+            - 'eval': Overall evaluation score (positive favors the side not to move)
+            - 'threat': An auxiliary score indicating attacking potential
+
+        Args:
+            position (Position): The current game state.
+            bot_params (Dict[int, float], optional): Parameter weights to influence evaluation.
+
+        Returns:
+            Dict[str, float]: Dictionary with keys:
+                - 'eval': float evaluation score
+                - 'threat': float threat score
+        """
     params = bot_params if bot_params is not None else {}
     # SCORES FOR SQUARES CONTROLLED BY PAWNS
     central_file_4_th_rank = params.get(0, 0.15)

@@ -64,6 +64,25 @@ def search_upstream(node: Node) -> Node:
 def select_top_n_moves(position: Position, evaluate: Callable[[Position, Dict[int, float]], Dict[str, float]], n: int,
                        pick_n_threatening: int, fluctuation: float = 0, params: Dict[int, float] = None) -> Dict[
     str, List[Tuple[LegalMove, Position, float]]]:
+    """
+        Evaluates all legal moves and selects the top N based on evaluation scores and threat potential.
+
+        Adds randomness (`fluctuation`) to scores for diversity. Also filters for aggressive or high-threat moves
+        using the `pick_n_threatening` parameter.
+
+        Args:
+            position (Position): Current game position.
+            evaluate (Callable): A function that returns an evaluation dictionary for a position.
+            n (int): Max number of top moves to return.
+            pick_n_threatening (int): Number of high-threat moves to prioritize.
+            fluctuation (float): Random fluctuation added to evals (for unpredictability).
+            params (Dict[int, float], optional): Extra parameters to pass to the evaluation function.
+
+        Returns:
+            Dict[str, List[Tuple[LegalMove, Position, float]]]: A dictionary with:
+                - 'top': Top `n` moves after filtering.
+                - 'all': All evaluated moves with noisy scores.
+        """
     to_move = position.to_move()
     initial_score = -evaluate(position, params)['eval']
     all_legal_moves = position.get_all_legal_moves_for_color(to_move)
@@ -116,16 +135,23 @@ def choose_best_move_recursive(position: Position, evaluation_func: Callable[[Po
                                breadth: int = 3, aggression: int = 1, fluctuation: float = 0,
                                assumed_opp_aggression: int = 1, ply_depth: int = 4, params: Dict[int, float] = None) -> Tuple[str, float]:
     """
+    Recursively searches the move tree to select the best move using a shallow minimax-like strategy.
 
-    :param params:
-    :param position:
-    :param evaluation_func:
-    :param breadth:
-    :param aggression:
-    :param fluctuation:
-    :param assumed_opp_aggression:
-    :param ply_depth:
-    :return:
+    Alternates between maximizing and minimizing depending on the side to move, with parameters for
+    search breadth, depth, aggressiveness, and noise.
+
+    Args:
+        position (Position): Current board state.
+        evaluation_func (Callable): Function to evaluate positions.
+        breadth (int): Number of top candidate moves to consider at each ply.
+        aggression (int): Number of top aggressive (threat-based) moves to include.
+        fluctuation (float): Random noise added to evaluation to simulate unpredictability.
+        assumed_opp_aggression (int): Aggression level to assume for the opponent.
+        ply_depth (int): Total depth to search (1 = static eval).
+        params (Dict[int, float], optional): Extra arguments for the evaluation function.
+
+    Returns:
+        Tuple[str, float]: UCI string of the chosen move, and its evaluated score.
     """
     all_mpe = select_top_n_moves(position=position, evaluate=evaluation_func, n=breadth, pick_n_threatening=aggression,
                                  fluctuation=fluctuation, params=params)

@@ -10,14 +10,48 @@ from copy import deepcopy
 
 
 class Game:
+    """
+        A class for managing the state and logic of a chess game.
+
+        This class acts as a game controller and supports:
+            - Applying and validating player and engine moves.
+            - Tracking move history and FEN repetition.
+            - Detecting game-ending conditions (checkmate, stalemate, repetition, 50-move rule, insufficient material).
+            - Handling algebraic input notation and move disambiguation.
+            - Undoing moves and restarting the game.
+            - Playing moves using a chess bot.
+
+        Attributes:
+            current_position (Position): The current position of the game.
+            fen_record_dict (dict): Dictionary tracking the occurrence count of FEN states for repetition detection.
+            moves_record (dict): Dictionary mapping move numbers to SAN strings of moves played.
+            starting_position (Position): The initial position when the game began.
+        """
 
     def __init__(self, starting_position: Position = None):
+        """
+            Initializes a new game from a given starting position or from the standard starting position.
+
+            Args:
+                starting_position (Position, optional): If provided, sets the game to start from this position.
+            """
         self.current_position = generate_starting_position() if starting_position is None else starting_position
         self.fen_record_dict = {self.current_position.generate_fen().rsplit(' ', maxsplit=2)[0]: 1}
         self.moves_record = {}
         self.starting_position = self.current_position.copy()
 
     def process_move(self, legal_move: LegalMove, return_move_for_gui: bool = False, opening_book_path: str = None) -> Union[str, Tuple[str, LegalMove]]:
+        """
+            Applies a legal move to the game, updates internal state, tracks repetition, and optionally records it to an opening book.
+
+            Args:
+                legal_move (LegalMove): The move to process.
+                return_move_for_gui (bool): If True, return the move object and SAN string for GUI use.
+                opening_book_path (str, optional): Path to the opening book file to update.
+
+            Returns:
+                str or (str, LegalMove): Notation of the move, or a tuple with the notation and LegalMove.
+            """
         side_that_moved = legal_move.color
         move_number = self.current_position.get_move_number()
         fen_before_move = self.current_position.generate_fen().rsplit(' ', maxsplit=2)[0]
@@ -49,12 +83,30 @@ class Game:
         return (move_notation, legal_move) if return_move_for_gui else move_notation
 
     def drawn_by_repetition(self) -> bool:
+        """
+            Determines whether the game is drawn due to threefold repetition.
+
+            Returns:
+                bool: True if the same position has occurred three times.
+            """
         return any([self.fen_record_dict[fen] >= 3 for fen in self.fen_record_dict])
 
     def drawn_by_50_move_rule(self) -> bool:
+        """
+            Determines whether the 50-move rule applies.
+
+            Returns:
+                bool: True if 50 full moves have passed with no pawn movement or captures.
+            """
         return self.current_position.get_half_move_clock() >= 100
 
     def drawn_by_reduction(self) -> bool:
+        """
+            Determines whether the game is drawn due to insufficient mating material.
+
+            Returns:
+                bool: True if neither side has sufficient material to checkmate.
+            """
         white_pieces = self.current_position.white_pieces
         black_pieces = self.current_position.black_pieces
         unique_white_pieces = white_pieces.list_unique_piece_types()
@@ -93,6 +145,12 @@ class Game:
             return True
 
     def check_game_end_conditions(self) -> str:
+        """
+            Checks for game-ending conditions: checkmate, stalemate, repetition, 50-move rule, or insufficient material.
+
+            Returns:
+                str: A message describing the outcome, or 'N' if the game should continue.
+            """
         side_to_move = self.current_position.to_move()
         legal_moves_available = self.current_position.get_all_legal_moves_for_side_to_move()
         if len(legal_moves_available) == 0:
@@ -113,6 +171,21 @@ class Game:
         return 'N'
 
     def process_input_notation(self, notation_str: str, return_move_for_gui: bool = False, opening_book_path: str = None) -> Union[str, Tuple[str, LegalMove]]:
+        """
+            Parses and validates a move given in standard algebraic notation, disambiguates if needed,
+            applies the move if legal.
+
+            Args:
+                notation_str (str): The move in algebraic notation (e.g. 'Nf3', 'exd5', 'O-O').
+                return_move_for_gui (bool): If True, returns the move along with notation.
+                opening_book_path (str, optional): Path to record move in opening book.
+
+            Returns:
+                str or (str, LegalMove): The move in notation format, or a tuple with notation and move object.
+
+            Raises:
+                ValueError: If the move is illegal or ambiguous.
+            """
         side_to_move = self.current_position.to_move()
         castling = check_for_castling(notation_str)
         if castling == 'N':
@@ -120,48 +193,36 @@ class Game:
             all_legal_moves = self.current_position.get_all_legal_moves_for_color(side_to_move)
             possible_legal_moves = [move for move in all_legal_moves if move.piece_moved == piece_moved]
             if len(possible_legal_moves) == 0:
-                # print(f'Illegal move.')
                 raise ValueError('Illegal move')
             possible_legal_moves = [move for move in possible_legal_moves if move.destination_square == destination_square]
             if len(possible_legal_moves) == 0:
-                # print(f'Illegal move.')
                 raise ValueError('Illegal move')
-            # if piece_moved == 'king':
-            #     if check_for_disambiguating_string(notation_str, destination_square, 'K') != 'None':
-            #         print('Disambiguation ignored for king move.')
-            #     return self.process_move(possible_legal_moves[0])
             elif piece_moved != 'P':
                 disambiguating_string = check_for_disambiguating_string(notation_str, destination_square,
                                                                         piece_to_symbol(piece_moved))
                 if disambiguating_string == '' and len(possible_legal_moves) > 1:
-                    # print(f'Ambiguity detected. More than one {piece_moved} can move to {destination_square}.')
                     raise ValueError(f'Ambiguity detected. More than one {piece_moved} can move to {destination_square}.')
                 elif disambiguating_string == '' and len(possible_legal_moves) == 1:
                     return self.process_move(possible_legal_moves[0], return_move_for_gui, opening_book_path)
                 elif len(disambiguating_string) == 1 and disambiguating_string.isalpha():
                     possible_legal_moves = [move for move in possible_legal_moves if move.origin_square[0] == disambiguating_string]
                     if len(possible_legal_moves) > 1:
-                        # print(f'Ambiguity detected. More than one {piece_moved} can reach {destination_square} from the {disambiguating_string}-file.')
                         raise ValueError(f'Ambiguity detected. More than one {piece_moved} can reach {destination_square} from the {disambiguating_string}-file.')
                     elif len(possible_legal_moves) == 0:
-                        # print(f'No {piece_moved} on {disambiguating_string}-file able to move to {destination_square}.')
                         raise ValueError(f'No {piece_moved} on {disambiguating_string}-file able to move to {destination_square}.')
                     else:
                         return self.process_move(possible_legal_moves[0], return_move_for_gui, opening_book_path)
                 elif len(disambiguating_string) == 1 and disambiguating_string.isnumeric():
                     possible_legal_moves = [move for move in possible_legal_moves if move.origin_square[1] == disambiguating_string]
                     if len(possible_legal_moves) > 1:
-                        # print(f'Ambiguity detected. More than one {piece_moved} on rank {disambiguating_string} can reach {destination_square}.')
                         raise ValueError(f'Ambiguity detected. More than one {piece_moved} on rank {disambiguating_string} can reach {destination_square}.')
                     elif len(possible_legal_moves) == 0:
-                        # print(f'No {piece_moved} able to move to {destination_square} from rank {disambiguating_string}.')
                         raise ValueError(f'No {piece_moved} able to move to {destination_square} from rank {disambiguating_string}.')
                     else:
                         return self.process_move(possible_legal_moves[0], return_move_for_gui, opening_book_path)
                 elif len(disambiguating_string) == 2:
                     possible_legal_moves = [move for move in possible_legal_moves if move.origin_square == disambiguating_string]
                     if len(possible_legal_moves) == 0:
-                        # print(f'No {piece_moved} on {disambiguating_string} to move to {destination_square}.')
                         raise ValueError(f'No {piece_moved} on {disambiguating_string} to move to {destination_square}.')
                     else:
                         return self.process_move(possible_legal_moves[0], return_move_for_gui, opening_book_path)
@@ -172,7 +233,6 @@ class Game:
                 if destination_square[1] == promotion_rank:
                     promotion_piece = check_for_promotion_piece(notation_str, destination_square)
                     if promotion_piece == 'None':
-                        # print(f'Promotion piece required as pawn has reached last rank. Add Q, R, B, or N right after the destination square.')
                         raise ValueError(f'Promotion piece required as pawn has reached last rank. Add Q, R, B, or N right after the destination square.')
                     capture_origin_file = pawn_capture_origin_file(notation_str, destination_square)
                     if capture_origin_file == '':
@@ -192,13 +252,11 @@ class Game:
                             if not move.is_capture():
                                 return self.process_move(move, return_move_for_gui, opening_book_path)
                         # code can reach here in the case of a pawn attempting to move forward onto a square occupied by an enemy piece when another pawn is able to capture to that square.
-                        # print(f'Illegal move.')
                         raise ValueError('Illegal move.')
                     else:
                         for move in possible_legal_moves:
                             if move.origin_square[0] == capture_origin_file and move.is_capture():
                                 return self.process_move(move, return_move_for_gui, opening_book_path)
-                        # print('Illegal move.')
                         raise ValueError('Illegal move.')
         else:
             if self.current_position.castling_legal_here(side_to_move, castling):
@@ -209,10 +267,18 @@ class Game:
                                        castling=castling)
                 return self.process_move(legal_move, return_move_for_gui, opening_book_path)
             else:
-                # print('Castling not legal here.')
                 raise ValueError(f'Castling {castling}-side not legal here.')
 
     def show_moves(self, return_string_for_window: bool = False) -> Union[str, None]:
+        """
+            Displays or returns the move history in a readable format.
+
+            Args:
+                return_string_for_window (bool): If True, returns the move list as a string.
+
+            Returns:
+                str or None: Move list string (if requested), or prints to console.
+            """
         ret_str = '' if return_string_for_window else None
         move_numbers = list(self.moves_record.keys())
         if not move_numbers:
@@ -237,11 +303,23 @@ class Game:
         return ret_str
 
     def restart_game(self) -> None:
+        """
+            Resets the game to the initial starting position.
+            """
         self.current_position = self.starting_position.copy()
         self.fen_record_dict = {self.current_position.generate_fen().rsplit(' ', maxsplit=2)[0]: 1}
         self.moves_record = {}
 
     def take_back_last_move(self, silent: bool = False) -> Union[None, str]:
+        """
+            Rewinds the game by one move, restoring the previous position.
+
+            Args:
+                silent (bool): If True, returns message instead of printing.
+
+            Returns:
+                str or None: Message describing the undone move, or None if printed directly.
+            """
         flipped = self.current_position.is_flipped()
         if self.moves_record == {}:
             if not silent:
@@ -275,6 +353,16 @@ class Game:
             return f'{last_move_played} taken back.'
 
     def play_computer_move(self, bot: Bot, return_move_for_gui: bool = False) -> Union[str, Tuple[str, LegalMove]]:
+        """
+            Plays the best move for the current side using the given bot.
+
+            Args:
+                bot (Bot): The bot instance used to generate a move.
+                return_move_for_gui (bool): If True, also return the LegalMove object.
+
+            Returns:
+                str or (str, LegalMove): The SAN string of the bot's move, or a tuple with notation and move object.
+            """
         legal_moves = self.current_position.get_all_legal_moves_for_side_to_move()
         best_move_uci = bot.make_move(self.current_position)
         try:
@@ -299,8 +387,3 @@ class Game:
         current_fen = self.current_position.generate_fen().rsplit(' ', maxsplit=2)[0]
         bot.remove_bad_uci(current_fen, best_move_uci)
         return self.play_computer_move(bot=bot, return_move_for_gui=return_move_for_gui)
-
-
-
-
-
