@@ -1,8 +1,7 @@
 from typing import List, Dict
 from classes.color_position import ColorPosition, generate_starting_position_for_color
 from classes.move import LegalMove, VirtualMove
-from utils.board_functions import get_intervening_squares, LETTER_TO_NUM, NUM_TO_LETTER, scan_qbr_scope, scan_kn_scope, \
-    check_squares_in_line, is_knight_move, PIECE_MOVE_TYPE_DICT, SQUARE_SCOPES_MAP, INT_SQUARES_MAP
+from utils.board_functions import LETTER_TO_NUM, NUM_TO_LETTER, PIECE_MOVE_TYPE_DICT, SQUARE_SCOPES_MAP, INT_SQUARES_MAP
 from utils.parse_notation import piece_to_symbol
 
 

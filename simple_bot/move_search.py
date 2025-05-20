@@ -1,8 +1,7 @@
-from typing import List, Callable, Tuple, Dict, Union, Iterable
+from typing import List, Callable, Tuple, Dict
 from random import uniform
-import random
 from classes.move import LegalMove
-from classes.position import Position, opposite_color
+from classes.position import Position
 from simple_bot.utils import branch_from_position
 
 
