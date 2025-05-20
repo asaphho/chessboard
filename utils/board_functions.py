@@ -15,9 +15,13 @@ for f in files:
 
 def square_color_int(square: str) -> int:
     """
+    Determines the color of a square on the chessboard.
 
-    :param square: str e.g. 'e5'
-    :return: int 0 for light square, 1 for dark square
+    Args:
+        square (str): The square in algebraic notation (e.g., 'e4').
+
+    Returns:
+        int: 0 for light square, 1 for dark square.
     """
     file = LETTER_TO_NUM[square[0]]
     rank = int(square[1])
@@ -25,6 +29,15 @@ def square_color_int(square: str) -> int:
 
 
 def square_to_coordinate(square: str) -> str:
+    """
+        Converts a square (e.g., 'e4') to a numeric coordinate string (e.g., '54').
+
+        Args:
+            square (str): Square in algebraic notation.
+
+        Returns:
+            str: String representation of the numeric file and rank.
+        """
     file = square[0]
     file_num = LETTER_TO_NUM[file]
     rank = square[1]
@@ -32,11 +45,33 @@ def square_to_coordinate(square: str) -> str:
 
 
 def coordinate_to_square(coordinate: str) -> str:
+    """
+        Converts a numeric coordinate string (e.g., '54') back to a square (e.g., 'e4').
+
+        Args:
+            coordinate (str): A 2-digit string representing file and rank numbers.
+
+        Returns:
+            str: Square in algebraic notation.
+        """
     file = NUM_TO_LETTER[int(coordinate[0])]
     return f'{file}{coordinate[1]}'
 
 
 def check_squares_in_line(square1: str, square2: str) -> str:
+    """
+        Determines the type of line (rank, file, or diagonal) connecting two squares.
+
+        Args:
+            square1 (str): Starting square.
+            square2 (str): Ending square.
+
+        Returns:
+            str: 'r' for same rank, 'f' for same file, 'd' for diagonal, 'N' if not aligned.
+
+        Raises:
+            ValueError: If the two squares are the same.
+        """
     if square1 == square2:
         print(f"Cannot move from {square1} to {square2} as they are the same square.")
         raise ValueError
@@ -52,6 +87,16 @@ def check_squares_in_line(square1: str, square2: str) -> str:
 
 
 def get_rank_and_file_diffs(square1: str, square2: str) -> Tuple[int, int]:
+    """
+        Returns the absolute differences in file and rank between two squares.
+
+        Args:
+            square1 (str): First square.
+            square2 (str): Second square.
+
+        Returns:
+            Tuple[int, int]: (file_diff, rank_diff)
+        """
     coordinate1 = square_to_coordinate(square1)
     coordinate2 = square_to_coordinate(square2)
     file_diff = get_rank_or_file_diff(coordinate1, coordinate2, 'file')
@@ -60,15 +105,50 @@ def get_rank_and_file_diffs(square1: str, square2: str) -> Tuple[int, int]:
 
 
 def get_rank_or_file_diff(coordinate1: str, coordinate2: str, dimension: str) -> int:
+    """
+        Computes the difference in rank or file between two numeric coordinates.
+
+        Args:
+            coordinate1 (str): First coordinate (e.g., '54').
+            coordinate2 (str): Second coordinate.
+            dimension (str): 'file' or 'rank'.
+
+        Returns:
+            int: Absolute difference in the specified dimension.
+        """
     return abs(int(coordinate1[0 if dimension == 'file' else 1]) - int(coordinate2[0 if dimension == 'file' else 1]))
 
 
 def is_knight_move(square1: str, square2: str) -> bool:
+    """
+        Checks if the move between two squares is a legal knight move.
+
+        Args:
+            square1 (str): Starting square.
+            square2 (str): Target square.
+
+        Returns:
+            bool: True if the move is a valid knight move, False otherwise.
+        """
     diff_tuple = get_rank_and_file_diffs(square1, square2)
     return (diff_tuple == (2, 1)) or (diff_tuple == (1, 2))
 
 
 def get_intervening_squares(square1: str, square2: str, line_type: str) -> List[str]:
+    """
+        Returns the list of squares strictly between two aligned squares.
+
+        Args:
+            square1 (str): Starting square.
+            square2 (str): Ending square.
+            line_type (str): 'r' for rank, 'f' for file, 'd' for diagonal.
+
+        Returns:
+            List[str]: List of intervening square strings.
+
+        Raises:
+            ValueError: If the line type is not recognized.
+        """
     def make_range(start, end):
         if end > start:
             return range(start + 1, end)
@@ -100,9 +180,13 @@ def get_intervening_squares(square1: str, square2: str, line_type: str) -> List[
 
 def scan_rook_scope(from_square: str) -> Dict[str, List[str]]:
     """
-    All the squares a rook can reach in one move from input from_square on an empty board.
-    :param from_square: e.g. 'e5'
-    :return: if input from_square='e5', returns {'f': ['e1', 'e2', 'e3', 'e4', 'e6', 'e7', 'e8'], 'r': ['a5', 'b5', 'c5', 'd5', 'f5', 'g5', 'h5']}
+    Returns all squares a rook can move to from a given square on an empty board.
+
+    Args:
+        from_square (str): The starting square.
+
+    Returns:
+        Dict[str, List[str]]: {'f': forward/backward moves, 'r': lateral moves}
     """
     rook_scope = {'f': [], 'r': []}
     origin_file, origin_rank = from_square[0], from_square[1]
@@ -115,9 +199,13 @@ def scan_rook_scope(from_square: str) -> Dict[str, List[str]]:
 
 def scan_bishop_scope(from_square: str) -> Dict[str, List[str]]:
     """
-    All the squares a bishop can reach in one move from input from_square on an empty board.
-    :param from_square: e.g. 'd3'
-    :return: if from_square='d3', returns squares in a dictionary of the following form: {'d': ['b1', 'c2', 'e4', 'f5', 'g6', 'h7', 'c4', 'b5', 'a6', 'e2', 'f1']}. The list order may not be the same.
+    Returns all squares a bishop can reach from a given square on an empty board.
+
+    Args:
+        from_square (str): The starting square.
+
+    Returns:
+        Dict[str, List[str]]: {'d': list of diagonally-linked squares}
     """
     bishop_scope = {'d': []}
     from_coordinate = square_to_coordinate(from_square)
@@ -145,18 +233,26 @@ def scan_bishop_scope(from_square: str) -> Dict[str, List[str]]:
 
 def scan_queen_scope(from_square: str) -> Dict[str, List[str]]:
     """
-    Returns all the squares a queen can move to in one move from input from_square on an empty board.
-    :param from_square: e.g. 'h5'
-    :return: {'f': ['h1', 'h2', ...], 'r': ['a5', 'b5', ...], 'd': ['d1', 'e2', ...]}
+    Returns all squares a queen can move to from a given square on an empty board.
+
+    Args:
+        from_square (str): The starting square.
+
+    Returns:
+        Dict[str, List[str]]: Combined rook and bishop move scopes.
     """
     return scan_rook_scope(from_square) | scan_bishop_scope(from_square)
 
 
 def scan_king_scope(from_square: str) -> List[str]:
     """
-    Returns the list of all the squares around from_square.
-    :param from_square: e.g. 'd6'
-    :return: if from_square='d6', returns ['c5', 'c6', 'c7', 'd5', 'd7', 'e5', 'e6', 'e7']
+    Returns all adjacent squares a king can move to from a given square.
+
+    Args:
+        from_square (str): The starting square.
+
+    Returns:
+        List[str]: Squares surrounding the given square (up to 8).
     """
     from_coordinate = square_to_coordinate(from_square)
     file_int = int(from_coordinate[0])
@@ -175,9 +271,13 @@ def scan_king_scope(from_square: str) -> List[str]:
 
 def scan_knight_scope(from_square: str) -> List[str]:
     """
-    Returns the squares that a knight can reach in one move from input from_square on an empty board.
-    :param from_square: e.g. 'f3'
-    :return: if from_square='f3', returns, not necessarily in this order, ['g1', 'h2', 'h4', 'g5', 'e5', 'd4', 'd2', 'e1']
+    Returns all squares a knight can reach from a given square.
+
+    Args:
+        from_square (str): The starting square.
+
+    Returns:
+        List[str]: List of squares reachable by the knight from the starting square.
     """
     from_coordinate = square_to_coordinate(from_square)
     file_int = int(from_coordinate[0])
@@ -199,6 +299,19 @@ def scan_knight_scope(from_square: str) -> List[str]:
 
 
 def scan_qbr_scope(piece: str, from_square: str) -> Dict[str, List[str]]:
+    """
+        Returns the movement scope of a queen, bishop, or rook from a square.
+
+        Args:
+            piece (str): 'Q', 'B', or 'R'.
+            from_square (str): The starting square.
+
+        Returns:
+            Dict[str, List[str]]: Movement map for the given piece.
+
+        Raises:
+            ValueError: If the piece is not one of 'Q', 'B', or 'R'.
+        """
     if piece == 'R':
         return scan_rook_scope(from_square)
     elif piece == 'B':
@@ -210,6 +323,19 @@ def scan_qbr_scope(piece: str, from_square: str) -> Dict[str, List[str]]:
 
 
 def scan_kn_scope(piece: str, from_square: str) -> List[str]:
+    """
+        Returns the movement scope of a king or knight from a square.
+
+        Args:
+            piece (str): 'K' or 'N'.
+            from_square (str): The starting square.
+
+        Returns:
+            List[str]: List of squares the piece can move to.
+
+        Raises:
+            ValueError: If the piece is not 'K' or 'N'.
+        """
     if piece == 'K':
         return scan_king_scope(from_square)
     elif piece == 'N':
@@ -220,11 +346,16 @@ def scan_kn_scope(piece: str, from_square: str) -> List[str]:
 
 def extend_line(sq1: str, sq2: str) -> List[str]:
     """
-    Assumes sq1 and sq2 are in line. Extends the line in the direction going from sq1 to sq2.
-    e.g. sq1='e1', sq2='e4', returns ['e5', 'e6', 'e7', 'e8']
-    :param sq1:
-    :param sq2:
-    :return:
+    Extends the line formed by two squares outward in the same direction.
+
+    Assumes the squares are aligned in a valid direction (rank, file, or diagonal).
+
+    Args:
+        sq1 (str): Starting square.
+        sq2 (str): Next square in direction.
+
+    Returns:
+        List[str]: List of squares extending beyond sq2 in the same direction.
     """
     coordinates1 = square_to_coordinate(sq1)
     coordinates2 = square_to_coordinate(sq2)
