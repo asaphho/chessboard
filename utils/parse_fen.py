@@ -9,16 +9,23 @@ FEN_UPPERCASE_SYMBOL_TO_PIECE['P'] = 'pawn'
 
 def parse_piece_positions_part(piece_positions_part: str) -> Dict[str, str]:
     """
-    Takes in the piece positions part of the FEN (the part with the slashes) and returns a dictionary with all occupied
-    squares and the pieces occupying them. Raises ValueError if the following conditions are not all met:
-        - There are exactly 8 ranks in the input. Ranks are separated by forward slashes.
-        - There are exactly 8 squares accounted for in each of the 8 ranks.
-        - Each side has exactly one king.
-        - No pawns are on either of the extreme ranks.
-        DOES NOT CHECK WHETHER BOTH KINGS ARE UNDER CHECK OR NOT. Does not check for other impossible positions,
-        e.g. One side having more than 8 pawns, white pawns on a2, a3, and b2, etc.
-    :param piece_positions_part: e.g. 'rnbqk2r/ppp1bppp/4pn2/3p2B1/2PP4/2N5/PP2PPPP/R2QKBNR'
-    :return: a dictionary of the following form {'a2': 'P', 'e1': 'K', 'e6': 'k', 'h1': 'R', 'f6': 'n'}. Uppercase indicates a white piece, lowercase a black piece.
+    Parses the piece placement portion of a FEN string and returns a mapping of squares to piece symbols.
+
+    Validates the following and ONLY the following:
+    - Exactly 8 ranks present, separated by slashes.
+    - Each rank has exactly 8 squares accounted for.
+    - Exactly one king for each side.
+    - No pawns are on the first or last rank.
+
+    Args:
+        piece_positions_part (str): The piece placement section of a FEN string
+            (e.g., 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR').
+
+    Returns:
+        Dict[str, str]: A mapping of square strings to piece symbols (e.g., {'e1': 'K', 'a7': 'p'}).
+
+    Raises:
+        ValueError: If the FEN piece layout is structurally or logically invalid.
     """
     if (black_king_count := piece_positions_part.count('k')) != 1:
         raise ValueError(f'Black has {black_king_count} kings.')
@@ -68,10 +75,14 @@ def parse_piece_positions_part(piece_positions_part: str) -> Dict[str, str]:
 
 def make_virtual_position(square_piece_dict: Dict[str, str], side_to_move: str) -> Position:
     """
-    Makes a Position object to evaluate whether it is valid.
-    :param square_piece_dict: the output of parse_piece_positions_part
-    :param side_to_move: 'white' or 'black'
-    :return:
+    Constructs a Position object using square-to-piece mappings and side to move.
+
+    Args:
+        square_piece_dict (Dict[str, str]): Output from `parse_piece_positions_part`.
+        side_to_move (str): Either 'w' or 'b', indicating which side is to move.
+
+    Returns:
+        Position: A Position object containing the board state (without full validation).
     """
     white_pieces = {}
     black_pieces = {}
@@ -95,9 +106,16 @@ def make_virtual_position(square_piece_dict: Dict[str, str], side_to_move: str) 
 
 def evaluate_virtual_position(virtual_position: Position) -> None:
     """
-    Raises an AssertionError if the side not to move is under check in this position.
-    :param virtual_position:
-    :return:
+    Checks that the side *not* to move is not under check in the given position.
+
+    Used to validate legality of FENs: a legal position cannot start with the
+    non-moving side in check.
+
+    Args:
+        virtual_position (Position): The position to evaluate.
+
+    Raises:
+        AssertionError: If the side not to move is in check.
     """
     side_not_to_move = opposite_color(virtual_position.to_move())
     assert not virtual_position.is_under_check(side_not_to_move)
@@ -105,9 +123,17 @@ def evaluate_virtual_position(virtual_position: Position) -> None:
 
 def scan_possible_castling_potential(virtual_position: Position) -> Dict[str, List[str]]:
     """
-    Checks if the kings and rooks are still on their home squares to determine if castling potential is still possible
-    :param virtual_position:
-    :return: a dictionary of the following form: {'w': ['k', 'q'], 'b': ['k']}. If one side cannot castle, the value will be an empty list. e.g. {'w': [], 'b': ['k']}
+    Identifies potential castling rights based solely on king and rook positions.
+
+    Does not verify check conditions or intervening pieces — only checks
+    whether the relevant pieces are still on their home squares.
+
+    Args:
+        virtual_position (Position): The position to evaluate.
+
+    Returns:
+        Dict[str, List[str]]: A dictionary like {'w': ['k', 'q'], 'b': ['k']}, where each value is
+        a list of castling sides that could be legal if no other rules are violated.
     """
     possible_castling_potential = {'w': [], 'b': []}
     for color in possible_castling_potential:
@@ -127,10 +153,16 @@ def scan_possible_castling_potential(virtual_position: Position) -> Dict[str, Li
 
 def list_possible_en_passant_squares(virtual_position: Position) -> List[str]:
     """
-    Looks for pawns on the side not to move that could possibly have used their two-square move immediately before this
-    position. Lists the en passant target squares for all such pawns.
-    :param virtual_position:
-    :return:
+    Lists all possible en passant target squares based on the last move having been a two-square pawn advance.
+
+    Only considers pawns on the fourth or fifth ranks (depending on side) and checks
+    that the intermediate squares are unoccupied.
+
+    Args:
+        virtual_position (Position): The position to evaluate.
+
+    Returns:
+        List[str]: A list of valid en passant target squares (e.g., ['e3']).
     """
     side_not_to_move = opposite_color(virtual_position.to_move())
     if 'P' not in virtual_position.get_pieces_by_color(side_not_to_move).list_unique_piece_types():
@@ -151,6 +183,23 @@ def list_possible_en_passant_squares(virtual_position: Position) -> List[str]:
 
 
 def parse_full_fen(full_fen: str) -> Position:
+    """
+        Parses a full FEN string into a validated `Position` object.
+
+        This function performs full validation of the FEN format:
+        - Parses piece layout, side to move, castling rights, en passant square, half-move clock, and move number.
+        - Validates king count, pawn legality, and basic structural correctness.
+        - Rejects illegal positions (e.g., side not to move is in check).
+
+        Args:
+            full_fen (str): A complete FEN string.
+
+        Returns:
+            Position: A fully constructed and validated game state.
+
+        Raises:
+            ValueError: If the FEN is malformed or represents an illegal position.
+        """
     fen_parts = [part.strip() for part in full_fen.split(' ') if part.strip() != '']
     try:
         piece_position_part = fen_parts[0]
