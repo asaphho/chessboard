@@ -4,6 +4,16 @@ from typing import Union
 
 
 def branch_from_position(position: Position, move: LegalMove) -> Position:
+    """
+        Creates a new Position object by applying a legal move to a copy of the given position.
+
+        Args:
+            position (Position): The current position.
+            move (LegalMove): The move to apply.
+
+        Returns:
+            Position: A new position reflecting the game state after the move.
+        """
     new_position = position.copy()
     new_position.process_legal_move(move)
     return new_position
@@ -11,11 +21,19 @@ def branch_from_position(position: Position, move: LegalMove) -> Position:
 
 def check_if_move_ends_game(current_position: Position, move: LegalMove) -> str:
     """
-    Only checks if move ends the game by checkmate or stalemate. Does not check if game will end by repetition or by
-    50-move draw or by reduction as a result of this move.
-    :param current_position:
-    :param move:
-    :return: 'checkmate' if move delivers checkmate, 'stalemate' if move delivers stalemate, 'None' if move does neither
+    Determines whether a legal move ends the game by checkmate or stalemate.
+
+    Does not consider repetition, 50-move rule, or insufficient material.
+
+    Args:
+        current_position (Position): The current game state.
+        move (LegalMove): The legal move to evaluate.
+
+    Returns:
+        str:
+            - 'checkmate' if the move delivers checkmate.
+            - 'stalemate' if the move results in stalemate.
+            - 'None' if the move does not end the game in either way.
     """
     new_position = branch_from_position(current_position, move)
     to_move = new_position.to_move()
@@ -29,9 +47,13 @@ def check_if_move_ends_game(current_position: Position, move: LegalMove) -> str:
 
 def look_for_mate_in_one(current_position: Position) -> Union[LegalMove, None]:
     """
-    Looks for a mate in one in the current position for the current side to move.
-    :param current_position:
-    :return: a LegalMove object that delivers checkmate when played in the current position, or None if no mate exists.
+    Searches for a move that results in checkmate in one ply from the current position.
+
+    Args:
+        current_position (Position): The current game state.
+
+    Returns:
+        LegalMove | None: A legal move that delivers checkmate, or None if no such move exists.
     """
     all_legal_moves = current_position.get_all_legal_moves_for_color(current_position.to_move())
     for move in all_legal_moves:
@@ -42,10 +64,14 @@ def look_for_mate_in_one(current_position: Position) -> Union[LegalMove, None]:
 
 def move_allows_mate_in_one(current_position: Position, move: LegalMove) -> bool:
     """
-    Checks if the LegalMove played in the current position will allow a mate in one as an immediate reply.
-    :param current_position:
-    :param move:
-    :return: True if it allows a mate in one. False if not.
+    Determines whether playing a given legal move allows the opponent to deliver a mate in one.
+
+    Args:
+        current_position (Position): The current game state.
+        move (LegalMove): The move to evaluate.
+
+    Returns:
+        bool: True if the move allows a mate-in-one by the opponent, False otherwise.
     """
     new_position = branch_from_position(current_position, move)
     mating_move = look_for_mate_in_one(new_position)
