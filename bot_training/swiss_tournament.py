@@ -169,8 +169,15 @@ def rank_all_players(all_players_results: Dict[int, List[Tuple[int, float]]]) ->
     return tie_break_group(list(all_players_results.keys()), all_players_results, tie_breakers_in_order)
 
 
-def generate_random_results(pairings: List[Tuple[int, int]]) -> List[Tuple[int, int, str]]:
-    return [(pairing[0], pairing[1], random.choice(['1-0', '0-1', '0.5-0.5'])) for pairing in pairings]
+def generate_random_results(pairings: List[Tuple[int, int]], draw_rate: float = 0.2) -> List[Tuple[int, int, str]]:
+    results = []
+    for pairing in pairings:
+        if random.random() < draw_rate:
+            results.append((pairing[0], pairing[1], '0.5-0.5'))
+        else:
+            result = random.choice(['0-1', '1-0'])
+            results.append((pairing[0], pairing[1], result))
+    return results
 
 
 def generate_starting_results(n_players: int) -> Dict[int, List]:
