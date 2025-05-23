@@ -5,56 +5,60 @@ from simple_bot.bot1.evaluation import quick_evaluate
 from datetime import datetime
 
 
-def run_match(training_bot: Bot, opposing_bot: Bot, n_rounds: int = 12, print_moves: bool = False) -> str:
-    training_bot_score = 0
-    opposing_bot_score = 0
-    white_bot = 't'
-    black_bot = 'o'
+def run_match(bot1: Bot, bot2: Bot, n_rounds: int = 12, print_moves: bool = False) -> str:
+    bot1_name = 'Bot1' if bot1.get_name() is None else bot1.get_name()
+    bot2_name = 'Bot2' if bot2.get_name() is None else bot2.get_name()
+    if bot1_name == bot2_name:
+        raise ValueError('Both bots need to have different names.')
+    bot1_score = 0
+    bot2_score = 0
+    white_bot = '1'
+    black_bot = '2'
     for i in range(n_rounds):
         game = Game()
         game_end_condition = game.check_game_end_conditions()
         if print_moves:
-            if white_bot == 't':
-                print('Bot1 - Bot2')
+            if white_bot == '1':
+                print(f'{bot1_name} - {bot2_name}')
             else:
-                print('Bot2 - Bot1')
+                print(f'{bot2_name} - {bot1_name}')
         while game_end_condition == 'N':
             side_to_move = game.current_position.to_move()
             if side_to_move.lower().startswith('w'):
                 bot_to_play = white_bot
             else:
                 bot_to_play = black_bot
-            move_notation = game.play_computer_move(training_bot if bot_to_play == 't' else opposing_bot)
+            move_notation = game.play_computer_move(bot1 if bot_to_play == '1' else bot2)
             if print_moves:
                 print(move_notation)
             game_end_condition = game.check_game_end_conditions()
         if game_end_condition.lower().startswith('white'):
             winning_bot = white_bot
             if print_moves:
-                print(f'White ({"Bot1" if white_bot == "t" else "Bot2"}) wins.')
+                print(f'White ({bot1_name if white_bot == "1" else bot2_name}) wins.')
         elif game_end_condition.lower().startswith('black'):
             winning_bot = black_bot
             if print_moves:
-                print(f'Black ({"Bot1" if black_bot == "t" else "Bot2"}) wins.')
+                print(f'Black ({bot1_name if black_bot == "1" else bot2_name}) wins.')
         else:
             winning_bot = 'n'
             if print_moves:
                 print('Game drawn.')
-        if winning_bot == 't':
-            training_bot_score += 1
-        elif winning_bot == 'o':
-            opposing_bot_score += 1
+        if winning_bot == '1':
+            bot1_score += 1
+        elif winning_bot == '2':
+            bot2_score += 1
         else:
-            training_bot_score += 0.5
-            opposing_bot_score += 0.5
+            bot1_score += 0.5
+            bot2_score += 0.5
         if print_moves:
-            print(f'Bot1: {training_bot_score}')
-            print(f'Bot2: {opposing_bot_score}')
+            print(f'{bot1_name}: {bot1_score}')
+            print(f'{bot2_name}: {bot2_score}')
         white_bot, black_bot = black_bot, white_bot
         print(f'A game has been completed in {max(game.moves_record.keys())} moves. ({i+1}/{n_rounds})', flush=True)
-    if training_bot_score > opposing_bot_score:
+    if bot1_score > bot2_score:
         result = '1-0'
-    elif opposing_bot_score > training_bot_score:
+    elif bot2_score > bot1_score:
         result = '0-1'
     else:
         result = '0.5-0.5'

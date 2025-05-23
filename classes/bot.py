@@ -1,5 +1,5 @@
 import json
-from typing import Callable, Dict
+from typing import Callable, Dict, Union
 from classes.position import Position
 from simple_bot.move_search import choose_best_move_recursive
 from random import choice
@@ -29,7 +29,8 @@ class Bot:
 
     def __init__(self, evaluation_func: Callable[[Position, Dict[int, float]], Dict[str, float]], breadth: int = 3,
                  aggression: int = 1, fluctuation: float = 0, assumed_opp_aggression: int = 1,
-                 ply_depth: int = 4, opening_book_path: str = None, bot_params: Dict[int, float] = None):
+                 ply_depth: int = 4, opening_book_path: str = None, bot_params: Dict[int, float] = None,
+                 name: str = None):
         """
             Initializes the bot with evaluation and search settings, and optionally loads an opening book.
 
@@ -42,6 +43,7 @@ class Bot:
                 ply_depth (int): Maximum search depth in half-moves.
                 opening_book_path (str, optional): File path to a JSON opening book. Default is None.
                 bot_params (Dict[int, float], optional): Dictionary of parameters passed into the evaluation function.
+                name (str, optional): The name of the bot
             """
         self.evaluation_func = evaluation_func
         self.breadth = breadth
@@ -50,6 +52,7 @@ class Bot:
         self.assumed_opp_aggression = assumed_opp_aggression
         self.ply_depth = ply_depth
         self.params = bot_params
+        self.name = name
         if opening_book_path:
             try:
                 with open(opening_book_path, 'r') as readfile:
@@ -142,5 +145,20 @@ class Bot:
                     self.opening_book.pop(fen)
                 break
 
+    def set_name(self, name: str) -> None:
+        """
+        Sets the name of the bot to the specified name.
 
+        Args:
+             name (str): The name of the bot
+        """
+        self.name = name
+
+    def get_name(self) -> Union[str, None]:
+        """
+        Gets the name of the bot.
+         Returns:
+             str: The name of the bot
+        """
+        return self.name
 
