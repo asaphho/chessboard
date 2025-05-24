@@ -219,3 +219,50 @@ def choose_opponent_to_pair(opponents: List[int], float_record: Dict[str, List[i
         return random.choice(opponents)
     else:
         return random.choice(not_previously_upfloated)
+
+
+def retrieve_results_after_round_n(all_players_results: Dict[int, List[Tuple[int, float]]], n: int) -> Dict[int, List[Tuple[int, float]]]:
+    results = {}
+    max_rounds = len(all_players_results[random.choice(list(all_players_results.keys()))])
+    if n < 1 or n > max_rounds:
+        raise ValueError("Invalid value of n.")
+    if n == max_rounds:
+        return all_players_results
+    for player in all_players_results:
+        results[player] = all_players_results[player][:n]
+    return results
+
+
+def retrieve_score_after_round_n(all_players_results: Dict[int, List[Tuple[int, float]]], player: int, n: int) -> float:
+    return sum([res[1] for res in all_players_results[player][:n]])
+
+
+def retrieve_pairings(all_players_results: Dict[int, List[Tuple[int, float]]], round_n: int) -> List[Tuple[int, int]]:
+    round_n_pairings: List[Tuple[int, int]] = []
+    already_paired: List[int] = []
+    for player in all_players_results:
+        if player in already_paired:
+            continue
+        opponent: int = all_players_results[player][round_n - 1][0]
+        round_n_pairings.append((player, opponent))
+        already_paired.extend([player, opponent])
+    return round_n_pairings
+
+
+def retrieve_float_record_delta_from_pairing_round_n(all_players_results: Dict[int, List[Tuple[int, float]]],
+                                                     round_n: int) -> Dict[str, List[int]]:
+    float_record_delta: Dict[str, List[int]] = {'downfloated': [], 'upfloated': []}
+    if round_n == 1:
+        return float_record_delta
+    round_n_pairings = retrieve_pairings(all_players_results, round_n)
+    for pairing in round_n_pairings:
+        player1, player2 = pairing
+        player1_score = retrieve_score_after_round_n(all_players_results, player1, round_n - 1)
+        player2_score = retrieve_score_after_round_n(all_players_results, player2, round_n - 1)
+        if player1_score > player2_score:
+            float_record_delta['downfloated'].append(player1)
+            float_record_delta['upfloated'].append(player2)
+        elif player2_score > player1_score:
+            float_record_delta['downfloated'].append(player2)
+            float_record_delta['upfloated'].append(player1)
+    return float_record_delta
