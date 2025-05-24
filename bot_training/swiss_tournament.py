@@ -266,3 +266,13 @@ def retrieve_float_record_delta_from_pairing_round_n(all_players_results: Dict[i
             float_record_delta['downfloated'].append(player2)
             float_record_delta['upfloated'].append(player1)
     return float_record_delta
+
+
+def retrieve_float_record_after_pairing_round_n(all_players_results: Dict[int, List[Tuple[int, float]]],
+                                                round_n: int) -> Dict[str, List[int]]:
+    float_record = {'downfloated': [], 'upfloated': []}
+    for i in range(1, round_n + 1):
+        float_record_delta = retrieve_float_record_delta_from_pairing_round_n(all_players_results, i)
+        float_record['downfloated'].extend(float_record_delta['downfloated'])
+        float_record['upfloated'].extend(float_record_delta['upfloated'])
+    return float_record
