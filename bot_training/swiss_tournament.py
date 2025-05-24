@@ -56,7 +56,9 @@ def tie_break_group(tied_players: List[int],
 
 
 def generate_pairings(all_players_results: Dict[int, List[Tuple[int, float]]],
-                      float_record: Dict[str, List[int]]) -> List[Tuple[int, int]]:
+                      float_record: Dict[str, List[int]],
+                      relax_float_protection: bool = False) -> List[Tuple[int, int]]:
+    float_record_delta: Dict[str, List[int]] = {'downfloated': [], 'upfloated': []}
     if len(all_players_results.keys()) % 2 == 1:
         raise NotImplementedError('Pairings for odd number of players not supported yet.')
     grouped_by_current_scores = group_by_current_scores(all_players_results)
@@ -71,7 +73,7 @@ def generate_pairings(all_players_results: Dict[int, List[Tuple[int, float]]],
         players_to_pair: List[int] = [player for player in grouped_by_current_scores[current_score]
                                       if player not in already_paired].copy()
         while len(players_to_pair) > 0:
-            player_to_pair = choose_player_to_pair(players_to_pair, float_record)
+            player_to_pair = choose_player_to_pair(players_to_pair, float_record, relax_float_protection)
             already_faced: List[int] = [res[0] for res in all_players_results[player_to_pair]]
             eligible_opponents = [player for player in players_to_pair
                                   if (player != player_to_pair) and (player not in already_faced)]
@@ -82,15 +84,15 @@ def generate_pairings(all_players_results: Dict[int, List[Tuple[int, float]]],
                                            if (player not in already_faced) and (player not in already_paired)])
                 j += 1
             if len(eligible_opponents) == 0:
-                print('Failed to generate pairings. Restarting pairing procedure.')
-                return generate_pairings(all_players_results, float_record)
+                print('Failed to generate pairings. Restarting pairing procedure with relaxed float protection.')
+                return generate_pairings(all_players_results, float_record, relax_float_protection=True)
             else:
                 downfloat = j - i
-                opponent = choose_opponent_to_pair(eligible_opponents, float_record, downfloat)
+                opponent = choose_opponent_to_pair(eligible_opponents, float_record, downfloat, relax_float_protection)
                 if downfloat > 0:
                     print(f'Player {player_to_pair} downfloated by {downfloat} score group(s). Player {opponent} upfloated to play Player {player_to_pair}.')
-                    float_record['downfloated'].append(player_to_pair)
-                    float_record['upfloated'].append(opponent)
+                    float_record_delta['downfloated'].append(player_to_pair)
+                    float_record_delta['upfloated'].append(opponent)
                 already_paired.extend([player_to_pair, opponent])
                 pairings.append((player_to_pair, opponent))
                 for k in range(len(players_to_pair)):
@@ -101,6 +103,8 @@ def generate_pairings(all_players_results: Dict[int, List[Tuple[int, float]]],
                     if players_to_pair[k] == opponent:
                         players_to_pair.pop(k)
                         break
+    float_record['downfloated'].extend(float_record_delta['downfloated'])
+    float_record['upfloated'].extend(float_record_delta['upfloated'])
     return pairings
 
 
@@ -191,7 +195,10 @@ def find_previously_downfloated_players(players: List[int], float_record: Dict[s
     return [player for player in players if player in float_record['downfloated']]
 
 
-def choose_player_to_pair(players: List[int], float_record: Dict[str, List[int]]) -> int:
+def choose_player_to_pair(players: List[int], float_record: Dict[str, List[int]],
+                          relax_float_protection: bool = False) -> int:
+    if relax_float_protection:
+        return random.choice(players)
     previously_downfloated = find_previously_downfloated_players(players, float_record)
     if len(previously_downfloated) == 0:
         return random.choice(players)
@@ -203,8 +210,9 @@ def find_not_previously_upfloated_players(players: List[int], float_record: Dict
     return [player for player in players if player not in float_record['upfloated']]
 
 
-def choose_opponent_to_pair(opponents: List[int], float_record: Dict[str, List[int]], downfloat: int) -> int:
-    if downfloat == 0:
+def choose_opponent_to_pair(opponents: List[int], float_record: Dict[str, List[int]], downfloat: int,
+                            relax_float_protection: bool = False) -> int:
+    if downfloat == 0 or relax_float_protection:
         return random.choice(opponents)
     not_previously_upfloated = find_not_previously_upfloated_players(opponents, float_record)
     if len(not_previously_upfloated) == 0:
