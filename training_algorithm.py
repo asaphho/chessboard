@@ -19,6 +19,23 @@ GAMES_PER_MATCH = 6
 STARTING_POOL_PATH = path.join(BOT_TRAINING_DIR, 'starting_pool.json')
 
 
+def rank_all_and_produce_next_gen(tournament_results: dict[int, list[tuple[int, float]]]):
+    print(f'Final tournament results: \n{json.dumps(tournament_results, indent=4)}')
+    final_rank = rank_all_players(tournament_results)
+    print(f'Final ranking: \n{final_rank}')
+    bots_for_breeding = final_rank[:SELECTED_FOR_BREEDING]
+    print(f'Selected for breeding: {bots_for_breeding}')
+    elite_bots = bots_for_breeding[:ELITES]
+    configs_for_breeding = [starting_pool[bot_i] for bot_i in bots_for_breeding]
+    elite_configs = [starting_pool[bot_j] for bot_j in elite_bots]
+    next_starting_pool = elite_configs + breed_offspring_from_pool(parents=configs_for_breeding,
+                                                                   n_offspring=TOURNAMENT_SIZE - ELITES,
+                                                                   mutation_prob=MUTATION_PROB,
+                                                                   mutation_strength=MUTATION_STR)
+    with open(STARTING_POOL_PATH, 'w') as w:
+        w.write(json.dumps(next_starting_pool, indent=4))
+
+
 if __name__ == '__main__':
     with open(STARTING_POOL_PATH, 'r') as f:
         starting_pool = json.load(f)
@@ -33,7 +50,13 @@ if __name__ == '__main__':
 
     for round_number in range(TOURNAMENT_ROUNDS):
         print(f'Round {round_number + 1} started: {datetime.strftime(datetime.now(), "%Y-%m-%d %H:%M:%S")}')
-        pairings = generate_pairings(player_results, float_record)
+        try:
+            pairings = generate_pairings(player_results, float_record)
+        except RecursionError:
+            if round_number < TOURNAMENT_ROUNDS - 1:
+                raise RuntimeError("Pairings could not proceed and number of rounds insufficient.")
+            print('Could not find satisfactory pairings. Ending tournament now.')
+            break
         print(f'Pairings for round {round_number + 1}: \n{json.dumps(pairings, indent=4)}')
         config_pairings = [(starting_pool[pairings[i][0]], starting_pool[pairings[i][1]], GAMES_PER_MATCH) for i in range(len(pairings))]
         with mp.Pool(processes=N_PROCESSES) as pool:
@@ -42,18 +65,5 @@ if __name__ == '__main__':
         print(f'Results of round {round_number + 1}: \n{json.dumps(pairings_results, indent=4)}')
         update_round_results(player_results, pairings_results)
 
-    print(f'Final tournament results: \n{json.dumps(player_results, indent=4)}')
-    final_rank = rank_all_players(player_results)
-    print(f'Final ranking: \n{final_rank}')
-    bots_for_breeding = final_rank[:SELECTED_FOR_BREEDING]
-    print(f'Selected for breeding: {bots_for_breeding}')
-    elite_bots = bots_for_breeding[:ELITES]
-    configs_for_breeding = [starting_pool[i] for i in bots_for_breeding]
-    elite_configs = [starting_pool[i] for i in elite_bots]
-    next_starting_pool = elite_configs + breed_offspring_from_pool(parents=configs_for_breeding,
-                                                                   n_offspring=TOURNAMENT_SIZE - ELITES,
-                                                                   mutation_prob=MUTATION_PROB,
-                                                                   mutation_strength=MUTATION_STR)
-    with open(STARTING_POOL_PATH, 'w') as w:
-        w.write(json.dumps(next_starting_pool, indent=4))
+    rank_all_and_produce_next_gen(player_results)
 
