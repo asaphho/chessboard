@@ -57,3 +57,12 @@ if __name__ == '__main__':
     with open(path.join(BOT_TRAINING_DIR, 'round_robin_pool.json'), 'w') as w:
         w.write(json.dumps(next_gen, indent=4))
 
+    with open(path.join(BOT_TRAINING_DIR, 'curr_gen.txt'), 'r') as r:
+        lines = r.readlines()
+        curr_gen = int(lines[0][0])
+
+    curr_gen += 1
+
+    with open(path.join(BOT_TRAINING_DIR, 'curr_gen.txt'), 'w') as w:
+        w.write(str(curr_gen))
+
