@@ -4,10 +4,35 @@ SYMBOL_TO_PIECE = {'K': 'king', 'Q': 'queen', 'R': 'rook', 'B': 'bishop', 'N': '
 
 
 def piece_to_symbol(piece: str) -> str:
+    """
+        Converts a piece name to its corresponding single-character symbol.
+
+        Args:
+            piece (str): The full name of the piece (e.g., 'queen', 'knight').
+
+        Returns:
+            str: The piece symbol ('Q', 'N', etc.). For 'knight', returns 'N'.
+        """
     return piece[0].upper() if piece != 'knight' else 'N'
 
 
 def find_piece_moved_and_destination_square(move_str: str) -> Tuple[str, str]:
+    """
+        Parses a move string to extract the piece symbol and the destination square.
+
+        Supports SAN-like notation. Assumes the move string ends in a valid square (e.g., 'e4', 'Qh5').
+
+        Args:
+            move_str (str): The move in standard notation.
+
+        Returns:
+            Tuple[str, str]: A tuple containing:
+                - The piece symbol ('P', 'N', 'B', 'R', 'Q', 'K')
+                - The destination square (e.g., 'e4')
+
+        Raises:
+            ValueError: If the string cannot be parsed or references an invalid square.
+        """
     rank = 0
     file = 'z'
     for i in range(len(move_str) - 1, -1, -1):
@@ -47,6 +72,15 @@ def find_piece_moved_and_destination_square(move_str: str) -> Tuple[str, str]:
 
 
 def check_for_castling(move_str: str) -> str:
+    """
+        Detects if the move string represents a castling move.
+
+        Args:
+            move_str (str): The move string to check.
+
+        Returns:
+            str: 'k' for kingside castling (O-O), 'q' for queenside castling (O-O-O), or 'N' if not castling.
+        """
     if move_str.replace(' ', '').upper().startswith('O-O-O'):
         return 'q'
     elif move_str.replace(' ', '').upper().startswith('O-O'):
@@ -56,6 +90,23 @@ def check_for_castling(move_str: str) -> str:
 
 
 def check_for_disambiguating_string(move_str: str, destination_square: str, piece_symbol: str) -> str:
+    """
+        Extracts the disambiguation string (if any) from a move string.
+
+        Used to determine which piece is being referenced when multiple pieces of the same type
+        could move to the same square.
+
+        Args:
+            move_str (str): The full move string.
+            destination_square (str): The destination square of the move.
+            piece_symbol (str): The symbol of the piece being moved.
+
+        Returns:
+            str: A disambiguation string ('e', '4', or 'e4') or an empty string if none.
+
+        Raises:
+            ValueError: If the disambiguation string format is unrecognized.
+        """
     piece_symbol_stripped = move_str.lstrip(piece_symbol)
     bef_destination_square = piece_symbol_stripped.rsplit(destination_square, maxsplit=1)[0]
     disambiguation_string = bef_destination_square.rstrip('x')
@@ -73,6 +124,19 @@ def check_for_disambiguating_string(move_str: str, destination_square: str, piec
 
 
 def check_for_promotion_piece(move_str: str, destination_square: str) -> str:
+    """
+        Determines the promotion piece (if any) specified in the move string.
+
+        Args:
+            move_str (str): The full move string.
+            destination_square (str): The destination square of the move.
+
+        Returns:
+            str: The promotion piece symbol ('Q', 'R', 'B', 'N'), or 'None' if not a promotion.
+
+        Raises:
+            ValueError: If the promotion symbol is invalid or missing.
+        """
     str_after_destination_square = move_str.rsplit(destination_square, maxsplit=1)[1].lstrip('=')
     if str_after_destination_square == '':
         return 'None'
@@ -84,6 +148,19 @@ def check_for_promotion_piece(move_str: str, destination_square: str) -> str:
 
 
 def pawn_capture_origin_file(move_str: str, destination_square: str) -> str:
+    """
+        Determines the file from which a pawn captures, based on a move string.
+
+        Args:
+            move_str (str): The full move string (e.g., 'exd5').
+            destination_square (str): The square being captured to.
+
+        Returns:
+            str: The file letter (e.g., 'e') indicating the origin of the capturing pawn.
+
+        Raises:
+            ValueError: If the origin file is invalid or does not make a legal capture.
+        """
     str_bef_destination_square = move_str.rsplit(destination_square, maxsplit=1)[0]
     if str_bef_destination_square == '':
         return ''
