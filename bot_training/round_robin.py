@@ -1,5 +1,5 @@
 import random
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Set
 
 from bot_training.swiss_tournament import get_current_score, sonneborn_berger, tie_break_group, \
     group_by_current_scores, n_wins
@@ -57,3 +57,27 @@ def rank_all_players(final_results: Dict[int, List[Tuple[int, float]]]) -> List[
     tie_breakers_in_order = [first_tie_breaker, get_performance_in_score_group, sonneborn_berger, n_wins]
 
     return tie_break_group(list(final_results.keys()), final_results, tie_breakers_in_order)
+
+
+def generate_pairings_all_rounds(players: List[int]) -> Dict[int, List[Tuple[int, int]]]:
+    n_players = len(players)
+    all_pairings = {}
+    all_needed_pairings: List[Set[int]] = []
+    for i in players:
+        for j in players:
+            if i == j:
+                continue
+            if {i, j} not in all_needed_pairings:
+                all_needed_pairings.append({i, j})
+
+    for i in range(1, n_players):
+        all_pairings[i] = []
+        outstanding_players = players.copy()
+        while outstanding_players:
+            random_pairing: Set[int] = random.choice(all_needed_pairings)
+            if all([p in outstanding_players for p in random_pairing]):
+                all_pairings[i].append(tuple(random_pairing))
+                for p in random_pairing:
+                    outstanding_players.remove(p)
+                all_needed_pairings.remove(random_pairing)
+    return all_pairings
