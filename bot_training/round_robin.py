@@ -15,16 +15,21 @@ def generate_pairings(current_results: Dict[int, List[Tuple[int, float]]]) -> Li
         if player_to_pair not in available_to_pair:
             continue
         already_faced: List[int] = [res[0] for res in current_results[player_to_pair]]
-        opponent = random.choice([opp for opp in available_to_pair if (opp != player_to_pair)
-                                  and (opp not in already_faced)])
+        try:
+            opponent = random.choice([opp for opp in available_to_pair if (opp != player_to_pair)
+                                        and (opp not in already_faced)])
+        except IndexError:
+            return generate_pairings(current_results)
         pairings.append((player_to_pair, opponent))
-        to_pop = []
-        for i in range(len(available_to_pair)):
-            if available_to_pair[i] == player_to_pair or available_to_pair[i] == opponent:
-                to_pop.append(i)
-        to_pop.sort(reverse=True)
-        for j in to_pop:
-            available_to_pair.pop(j)
+        available_to_pair.remove(opponent)
+        available_to_pair.remove(player_to_pair)
+        # to_pop = []
+        # for i in range(len(available_to_pair)):
+        #     if available_to_pair[i] == player_to_pair or available_to_pair[i] == opponent:
+        #         to_pop.append(i)
+        # to_pop.sort(reverse=True)
+        # for j in to_pop:
+        #     available_to_pair.pop(j)
     return pairings
 
 
