@@ -1,5 +1,6 @@
 import random
 from typing import Dict, List, Tuple, Set
+from copy import deepcopy
 
 from bot_training.swiss_tournament import get_current_score, sonneborn_berger, tie_break_group, \
     group_by_current_scores, n_wins
@@ -72,12 +73,10 @@ def generate_pairings_all_rounds(players: List[int]) -> Dict[int, List[Tuple[int
 
     for i in range(1, n_players):
         all_pairings[i] = []
-        outstanding_players = players.copy()
-        while outstanding_players:
-            random_pairing: Set[int] = random.choice(all_needed_pairings)
-            if all([p in outstanding_players for p in random_pairing]):
-                all_pairings[i].append(tuple(random_pairing))
-                for p in random_pairing:
-                    outstanding_players.remove(p)
-                all_needed_pairings.remove(random_pairing)
+        possible_this_round = deepcopy(all_needed_pairings)
+        while possible_this_round:
+            chosen_pairing = random.choice(possible_this_round)
+            possible_this_round = list(filter(lambda x: not x.intersection(chosen_pairing), possible_this_round))
+            all_pairings[i].append(tuple(chosen_pairing))
+            all_needed_pairings.remove(chosen_pairing)
     return all_pairings
