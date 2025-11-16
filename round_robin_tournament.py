@@ -59,7 +59,7 @@ if __name__ == '__main__':
 
     with open(path.join(BOT_TRAINING_DIR, 'curr_gen.txt'), 'r') as r:
         lines = r.readlines()
-        curr_gen = int(lines[0][0])
+        curr_gen = int(lines[0].strip())
 
     curr_gen += 1
 
