@@ -62,6 +62,8 @@ def rank_all_players(final_results: Dict[int, List[Tuple[int, float]]]) -> List[
 
 def generate_pairings_all_rounds(players: List[int]) -> Dict[int, List[Tuple[int, int]]]:
     n_players = len(players)
+    if n_players % 2:
+        raise NotImplementedError('Handling of odd number of players not supported.')
     all_pairings = {}
     all_needed_pairings: List[Set[int]] = []
     for i in players:
@@ -71,12 +73,24 @@ def generate_pairings_all_rounds(players: List[int]) -> Dict[int, List[Tuple[int
             if {i, j} not in all_needed_pairings:
                 all_needed_pairings.append({i, j})
 
-    for i in range(1, n_players):
+    i = 1
+    re_pair_round = False
+    while i < n_players:
         all_pairings[i] = []
-        possible_this_round = deepcopy(all_needed_pairings)
-        while possible_this_round:
-            chosen_pairing = random.choice(possible_this_round)
-            possible_this_round = list(filter(lambda x: not x.intersection(chosen_pairing), possible_this_round))
+        outstanding_players_to_pair = players.copy()
+        while outstanding_players_to_pair:
+            try:
+                chosen_pairing = random.choice([pairing for pairing in all_needed_pairings if pairing.intersection(outstanding_players_to_pair) == pairing])
+            except IndexError:
+                re_pair_round = True
+                break
             all_pairings[i].append(tuple(chosen_pairing))
-            all_needed_pairings.remove(chosen_pairing)
+            for p in chosen_pairing:
+                outstanding_players_to_pair.remove(p)
+        if not re_pair_round:
+            for pairing in all_pairings[i]:
+                all_needed_pairings.remove(set(pairing))
+            i += 1
+        else:
+            re_pair_round = False
     return all_pairings
