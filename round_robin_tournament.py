@@ -6,7 +6,7 @@ from datetime import datetime
 from bot_training.bot_matchup import compare_configs
 import multiprocessing as mp
 import sys
-from bot_training.round_robin import generate_pairings, rank_all_players
+from bot_training.round_robin import generate_pairings_all_rounds, rank_all_players
 from bot_training.swiss_tournament import update_round_results
 from bot_training.utils import breed_offspring_from_pool
 
@@ -30,9 +30,11 @@ if __name__ == '__main__':
     for i in range(n_players):
         curr_results[i] = []
 
+    all_pairings = generate_pairings_all_rounds(list(range(n_players)))
+
     for i in range(n_rounds):
         print(f'Round {i + 1} started: {datetime.strftime(datetime.now(), "%Y-%m-%d %H:%M:%S")}', flush=True)
-        pairings_for_round = generate_pairings(curr_results)
+        pairings_for_round = all_pairings[i + 1]
         print(f'Pairings for round {i + 1}:\n{json.dumps(pairings_for_round, indent=4)}')
         config_pairings = [(player_configs[pairing[0]], player_configs[pairing[1]], N_GAMES_PER_MATCH) for pairing in pairings_for_round]
         with mp.Pool(processes=N_PROCESSES) as pool:
