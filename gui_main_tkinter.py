@@ -132,6 +132,8 @@ class ChessGUI:
         self.selected_square = None
         self.square_buttons = {}  # Maps square names to button widgets
         self.photo_images = {}  # Keep references to prevent garbage collection
+        self.game_ended = False  # Track if game has ended
+        self.game_ended_by_bot = False  # Track if bot made the game-ending move
         
         # Create main window
         self.window = tk.Tk()
@@ -355,8 +357,11 @@ class ChessGUI:
         self.input_prompt.config(text=self.create_input_move_prompt())
         self.to_move_label.config(text=self.get_side_to_move_text())
     
-    def handle_game_end(self, last_move_msg: str, game_end_text: str):
+    def handle_game_end(self, last_move_msg: str, game_end_text: str, ended_by_bot: bool = False):
         """Handle game end state"""
+        self.game_ended = True
+        self.game_ended_by_bot = ended_by_bot
+        
         self.update_all_squares()
         self.output_label.config(text=last_move_msg)
         self.to_move_label.config(text='Game is over.')
@@ -378,7 +383,7 @@ class ChessGUI:
         if game_end_check == 'N':
             self.update_after_move(res)
         else:
-            self.handle_game_end(res, game_end_check)
+            self.handle_game_end(res, game_end_check, ended_by_bot=True)
     
     def flip_board(self):
         """Flip the board orientation"""
@@ -433,8 +438,17 @@ class ChessGUI:
     def restart_game(self):
         """Restart the game"""
         if messagebox.askyesno("Restart", "Are you sure you want to restart?"):
+            # Remember if board was flipped before restart
+            was_flipped = self.game.current_position.is_flipped()
+            
             self.game.restart_game()
             self.selected_square = None
+            self.game_ended = False
+            self.game_ended_by_bot = False
+            
+            # Restore the flip state if it was flipped before
+            if was_flipped and not self.game.current_position.is_flipped():
+                self.game.current_position.flip_position()
             
             # Show input widgets if hidden
             if not self.input_prompt.winfo_ismapped():
@@ -444,6 +458,9 @@ class ChessGUI:
             
             self.game_end_label.config(text='')
             
+            # Update display (just update images, board layout unchanged)
+            self.update_all_squares()
+            
             # Update display
             if self.playing_against_bot and self.bot_color == 'w':
                 self.output_label.config(text='Game restarted.')
@@ -451,20 +468,31 @@ class ChessGUI:
             else:
                 self.output_label.config(text='Game restarted.')
             
-            self.update_all_squares()
             self.input_entry.delete(0, tk.END)
             self.input_prompt.config(text=self.create_input_move_prompt())
             self.to_move_label.config(text=self.get_side_to_move_text())
     
     def take_back_move(self):
         """Take back the last move"""
-        if not self.playing_against_bot:
+        # Special case: playing against bot as white at move 1
+        if self.playing_against_bot and self.bot_color == 'w' and self.game.current_position.move_number == 1:
+            self.output_label.config(text='Nothing to take back.')
+            return
+        
+        # If game has ended, use special logic
+        if self.game_ended:
+            # Always take back 1 move
+            text = self.game.take_back_last_move(silent=True)
+            # If bot ended the game, take back a second move
+            if self.playing_against_bot and self.game_ended_by_bot:
+                text = self.game.take_back_last_move(silent=True)
+            self.update_after_takeback(text)
+        # Normal case: game is still ongoing
+        elif not self.playing_against_bot:
             text = self.game.take_back_last_move(silent=True)
             self.update_after_takeback(text)
-        elif self.playing_against_bot and self.bot_color == 'w' and self.game.current_position.move_number == 1:
-            self.output_label.config(text='Nothing to take back.')
         else:
-            # Take back two moves (player + bot)
+            # Playing against bot, take back two moves
             self.game.take_back_last_move(silent=True)
             text = self.game.take_back_last_move(silent=True)
             self.update_after_takeback(text)
@@ -472,6 +500,8 @@ class ChessGUI:
     def update_after_takeback(self, text: str):
         """Update UI after taking back a move"""
         self.selected_square = None
+        self.game_ended = False
+        self.game_ended_by_bot = False
         
         # Show input widgets if hidden
         if not self.input_prompt.winfo_ismapped():
