@@ -8,7 +8,6 @@ package-mode = false
 
 [tool.poetry.dependencies]
 python = ">=3.12,<3.13"
-PySimpleGUI = "^5.0.6"
 pillow = "^12.1.0"
 
 [tool.poetry.group.dev.dependencies]

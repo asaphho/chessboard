@@ -205,17 +205,6 @@ packaging = ">=22.0"
 setuptools = ">=42.0.0"
 
 [[package]]
-name = "pysimplegui"
-version = "5.0.8.3"
-description = "PySimpleGUI is now located on a private PyPI server.  Please add to your pip command: --extra-index-url https://PySimpleGUI.net/install"
-optional = false
-python-versions = ">=3.6"
-files = [
-    {file = "pysimplegui-5.0.8.3-py3-none-any.whl", hash = "sha256:67e35ad6dd76e9369051261114f4711308e87815a0488f7fa28b37c29a546f8b"},
-    {file = "pysimplegui-5.0.8.3.tar.gz", hash = "sha256:4c77436f527b6ee5c6e097a07028c83d85dc2513bcb51b78c9bfcc1b55123bd1"},
-]
-
-[[package]]
 name = "pywin32-ctypes"
 version = "0.2.3"
 description = "A (partial) reimplementation of pywin32 using ctypes/cffi"
@@ -249,4 +238,4 @@ type = ["importlib_metadata (>=7.0.2)", "jaraco.develop (>=7.21)", "mypy (==1.18
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.12,<3.13"
-content-hash = "0fa6ecf08e4e80151abb16924b161875d118f843c8b58cf568a5462e49bff972"
+content-hash = "e78d705fe3aedaf1e23227378760cb2b56ab747eae17a31b7cf4e7e98cf31c14"
