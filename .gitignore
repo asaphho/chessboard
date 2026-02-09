@@ -3,7 +3,6 @@ classes/__pycache__
 utils/__pycache__
 images/__pycache__
 gui/__pycache__
-gui_main.spec
 build
 dist
 version/__pycache__
@@ -14,3 +13,4 @@ simple_bot/opposition_bot
 simple_bot/bot1/__pycache__
 test
 bot_training/__pycache__
+*.spec
