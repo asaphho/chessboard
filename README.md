@@ -40,9 +40,7 @@ cd chessboard
 pip install -r requirements.txt
 ```
 
-If you wish to compile the gui_main.py script into an executable on your own system, you need to install the dependencies. 
-Additionally, you need a [license to use PySimpleGUI](https://docs.pysimplegui.com/en/latest/documentation/installing_licensing/license_keys/).
-You will also need to install [pyinstaller](https://pypi.org/project/pyinstaller/).
+If you wish to compile the gui_main.py script into an executable on your own system, you need to install the dependencies, including [pyinstaller](https://pypi.org/project/pyinstaller/).
 
 Once these are settled, navigate to the project folder:
 ```bash
@@ -72,12 +70,11 @@ cd /.../chessboard
 python main.py
 ```
 
-If you wish to run gui_main.py, you need to install the dependencies and possess a PySimpleGUI license (see [Installation](#installation)).
+If you wish to run gui_main.py, you need to install the dependencies.
 
 ## Executable Release
 
 The GUI is also available as a standalone executable. You can download the latest release from the [Releases page](https://github.com/asaphho/chessboard/releases).
-You will not need to install pyinstaller, PySimpleGUI, or get a PySimpleGUI license to use the executable.
 
 To use the executable:
 1. Download the appropriate file for your operating system.
@@ -85,9 +82,9 @@ To use the executable:
 
 ## Dependencies
 
-This project uses the following main dependencies:
-- PySimpleGUI (Hobbyist License)
-- Pyinstaller as a development dependency
+This project uses the following dependencies:
+- pillow
+- PyInstaller as a development dependency
 
 ## License
 
@@ -95,7 +92,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## Acknowledgements
 
-- This project uses [PySimpleGUI](https://github.com/PySimpleGUI/PySimpleGUI) under a Hobbyist License.
 Image assets are sourced from Wikimedia Commons. Specific attributions:
   - By Cburnett - Own work, Public Domain, https://commons.wikimedia.org/w/index.php?curid=1496742
   - By Cburnett - Own work, Public Domain, https://commons.wikimedia.org/w/index.php?curid=1496741
