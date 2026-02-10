@@ -11,6 +11,7 @@ simple_bot/__pycache__
 simple_bot/training_bot
 simple_bot/opposition_bot
 simple_bot/bot1/__pycache__
+simple_bot/bot2/__pycache__
 test
 bot_training/__pycache__
 *.spec
