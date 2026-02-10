@@ -609,7 +609,7 @@ def quick_evaluate(position: Position, bot_params: Dict[int, float] = None) -> D
                     if promotion_square not in opposing_squares_occupied and promotion_square not in opposing_square_covering_piece_dict:
                         threat_contributing_pieces[f'P{sq}'] = [promotion_threat_score * overwhelming_material_multiplier]
                     elif promotion_square not in opposing_squares_occupied and promotion_square in opposing_square_covering_piece_dict:
-                        if promotion_square in own_square_covering_piece_dict or detect_battery_or_x_ray(promotion_square, sq, square_piece_dict, side_evaluating_for, True):
+                        if promotion_square in own_square_covering_piece_dict or detect_battery_or_x_ray(promotion_square, f'P{sq}', square_piece_dict, side_evaluating_for, True):
                             threat_contributing_pieces[f'P{sq}'] = [promotion_threat_score * overwhelming_material_multiplier]
 
         elif piece.upper() == 'K':
