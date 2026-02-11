@@ -1,7 +1,7 @@
 from classes.bot import Bot
 from classes.game import Game
 from typing import Dict
-from simple_bot.bot1.evaluation import quick_evaluate
+from simple_bot.bot1.evaluation import quick_evaluate as quick_evaluate1
 from datetime import datetime
 
 
@@ -66,7 +66,8 @@ def run_match(bot1: Bot, bot2: Bot, n_rounds: int = 12, print_moves: bool = Fals
     return result
 
 
-def compare_configs(config1: Dict[int, float], config2: Dict[int, float], n_rounds: int = 6) -> str:
-    bot1 = Bot(evaluation_func=quick_evaluate, bot_params=config1, fluctuation=0.12)
-    bot2 = Bot(evaluation_func=quick_evaluate, bot_params=config2, fluctuation=0.12)
+def compare_configs(config1: Dict[int, float], config2: Dict[int, float], n_rounds: int = 6,
+                    evaluation_func=quick_evaluate1) -> str:
+    bot1 = Bot(evaluation_func=evaluation_func, bot_params=config1, fluctuation=0.12)
+    bot2 = Bot(evaluation_func=evaluation_func, bot_params=config2, fluctuation=0.12)
     return run_match(bot1, bot2, n_rounds=n_rounds)
