@@ -11,6 +11,7 @@ from version import software_version
 from classes.game import Game
 from typing import List, Dict
 from PIL import Image, ImageTk
+import platform
 
 UNHANDLED_ERROR_MESSAGE = 'Something went wrong. :( Immediately after closing this popup, please submit an issue on https://github.com/asaphho/chessboard with the moves of the game up to this point, and describe what you attempted to do.'
 
@@ -38,6 +39,7 @@ class MainMenuWindow:
         self.window = tk.Tk()
         self.window.title(TITLE)
         self.window.geometry("300x150")
+        set_window_icon(self.window)
         
         tk.Label(self.window, text="Select an option to continue.").pack(pady=10)
         
@@ -78,6 +80,7 @@ class BotMenuWindow:
         self.window = tk.Tk()
         self.window.title(TITLE)
         self.window.geometry("300x150")
+        set_window_icon(self.window)
         
         # Color selection
         tk.Label(self.window, text="Play as:").pack(pady=10)
@@ -139,6 +142,7 @@ class ChessGUI:
         # Create main window
         self.window = tk.Tk()
         self.window.title(TITLE)
+        set_window_icon(self.window)
         
         # Create UI elements
         self.create_widgets()
@@ -568,6 +572,28 @@ def get_image_path_from_square(position: Position, square: str, highlight: bool 
     hl_suffix = '_hl' if highlight else ''
     filename = f'{square_color}_{piece}{hl_suffix}.png'
     return get_path_to_image(filename)
+
+
+def set_window_icon(window: tk.Tk) -> None:
+    try:
+        system = platform.system()
+        if system == 'Windows':
+            icon_path = get_path_to_image('icon.ico')
+            window.iconbitmap(icon_path)
+        elif system == 'Darwin':
+            try:
+                icon_path = get_path_to_image('icon.icns')
+                window.iconbitmap(icon_path)
+            except:
+                icon_path = get_path_to_image('icon.png')
+                icon_image = tk.PhotoImage(file=icon_path)
+                window.iconphoto(False, icon_image)
+        else:
+            icon_path = get_path_to_image('icon.png')
+            icon_image = tk.PhotoImage(file=icon_path)
+            window.iconphoto(False, icon_image)
+    except:
+        pass
 
 
 def main():
