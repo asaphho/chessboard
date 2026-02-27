@@ -6716,12 +6716,19 @@
       "g7g6",
       "d7d6",
       "e7e5",
-      "e7e6"
+      "e7e6",
+      "b7b5"
    ],
    "rnbqkb1r/pp2pppp/3p1n2/2pP4/2P5/8/PP2PPPP/RNBQKBNR w KQkq -": [
       "b1c3"
    ],
    "rnbqkb1r/pp2pppp/3p1n2/2pP4/2P5/2N5/PP2PPPP/R1BQKBNR b KQkq -": [
       "g7g6"
+   ],
+   "rnbqkb1r/pp1ppp1p/5np1/2pP4/2P5/8/PP2PPPP/RNBQKBNR w KQkq -": [
+      "b1c3"
+   ],
+   "rnbqkb1r/pp1ppp1p/5np1/2pP4/2P5/2N5/PP2PPPP/R1BQKBNR b KQkq -": [
+      "f8g7"
    ]
 }
