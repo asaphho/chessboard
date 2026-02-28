@@ -6726,9 +6726,138 @@
       "g7g6"
    ],
    "rnbqkb1r/pp1ppp1p/5np1/2pP4/2P5/8/PP2PPPP/RNBQKBNR w KQkq -": [
-      "b1c3"
+      "b1c3",
+      "g2g3"
    ],
    "rnbqkb1r/pp1ppp1p/5np1/2pP4/2P5/2N5/PP2PPPP/R1BQKBNR b KQkq -": [
       "f8g7"
+   ],
+   "rnbqk2r/pp1pppbp/5np1/2pP4/2P5/2N5/PP2PPPP/R1BQKBNR w KQkq -": [
+      "g2g3",
+      "e2e4"
+   ],
+   "rnbqk2r/pp1pppbp/5np1/2pP4/2P5/2N3P1/PP2PP1P/R1BQKBNR b KQkq -": [
+      "e8g8"
+   ],
+   "rnbq1rk1/pp1pppbp/5np1/2pP4/2P5/2N3P1/PP2PP1P/R1BQKBNR w KQ -": [
+      "f1g2"
+   ],
+   "rnbq1rk1/pp1pppbp/5np1/2pP4/2P5/2N3P1/PP2PPBP/R1BQK1NR b KQ -": [
+      "d7d6"
+   ],
+   "rnbq1rk1/pp2ppbp/3p1np1/2pP4/2P5/2N3P1/PP2PPBP/R1BQK1NR w KQ -": [
+      "g1f3"
+   ],
+   "rnbq1rk1/pp2ppbp/3p1np1/2pP4/2P5/2N2NP1/PP2PPBP/R1BQK2R b KQ -": [
+      "e7e6"
+   ],
+   "rnbq1rk1/pp3pbp/3ppnp1/2pP4/2P5/2N2NP1/PP2PPBP/R1BQK2R w KQ -": [
+      "e1g1"
+   ],
+   "rnbq1rk1/pp3pbp/3ppnp1/2pP4/2P5/2N2NP1/PP2PPBP/R1BQ1RK1 b - -": [
+      "e6d5"
+   ],
+   "rnbq1rk1/pp3pbp/3p1np1/2pp4/2P5/2N2NP1/PP2PPBP/R1BQ1RK1 w - -": [
+      "c4d5"
+   ],
+   "rnbq1rk1/pp3pbp/3pPnp1/2p5/2P5/2N2NP1/PP2PPBP/R1BQK2R b KQ -": [
+      "c8e6"
+   ],
+   "rn1q1rk1/pp3pbp/3pbnp1/2p3N1/2P5/2N3P1/PP2PPBP/R1BQK2R b KQ -": [
+      "e6c4"
+   ],
+   "rn1q1rk1/pB3pbp/3p1np1/2p3N1/2b5/2N3P1/PP2PP1P/R1BQK2R b KQ -": [
+      "b8d7"
+   ],
+   "B2q1rk1/p2n1pbp/3p1np1/2p3N1/2b5/2N3P1/PP2PP1P/R1BQK2R b KQ -": [
+      "d8a8"
+   ],
+   "rnbqk2r/pp1pppbp/5np1/2pP4/2P5/6P1/PP2PP1P/RNBQKBNR w KQkq -": [
+      "f1g2"
+   ],
+   "rnbqk2r/pp2ppbp/3p1np1/2pP4/2P5/6P1/PP2PPBP/RNBQK1NR w KQkq -": [
+      "g1f3"
+   ],
+   "rnbq1rk1/pp2ppbp/3p1np1/2pP4/2P5/5NP1/PP2PPBP/RNBQK2R w KQ -": [
+      "e1g1"
+   ],
+   "rnbq1rk1/pp3pbp/3ppnp1/2pP4/2P5/5NP1/PP2PPBP/RNBQ1RK1 w - -": [
+      "d5e6"
+   ],
+   "rn1q1rk1/pp3pbp/3pbnp1/2p5/2P5/5NP1/PP2PPBP/RNBQ1RK1 w - -": [
+      "f3g5"
+   ],
+   "rn1q1rk1/pp3pbp/3p1np1/2p3N1/2b5/6P1/PP2PPBP/RNBQ1RK1 w - -": [
+      "g2b7"
+   ],
+   "r2q1rk1/pB1n1pbp/3p1np1/2p3N1/2b5/6P1/PP2PP1P/RNBQ1RK1 w - -": [
+      "b1a3"
+   ],
+   "rnbqkb1r/pp1ppp1p/5np1/2pP4/2P5/6P1/PP2PP1P/RNBQKBNR b KQkq -": [
+      "f8g7"
+   ],
+   "rnbqk2r/pp1pppbp/5np1/2pP4/2P5/6P1/PP2PPBP/RNBQK1NR b KQkq -": [
+      "d7d6"
+   ],
+   "rnbqk2r/pp2ppbp/3p1np1/2pP4/2P5/5NP1/PP2PPBP/RNBQK2R b KQkq -": [
+      "b7b5"
+   ],
+   "rnbqk2r/p3ppbp/3p1np1/1ppP4/2P5/5NP1/PP2PPBP/RNBQK2R w KQkq b6": [
+      "c4b5"
+   ],
+   "rnbqk2r/p3ppbp/3p1np1/1PpP4/8/5NP1/PP2PPBP/RNBQK2R b KQkq -": [
+      "a7a6"
+   ],
+   "rnbqk2r/4ppbp/p2p1np1/1PpP4/8/5NP1/PP2PPBP/RNBQK2R w KQkq -": [
+      "b5a6"
+   ],
+   "rnbqk2r/4ppbp/P2p1np1/2pP4/8/5NP1/PP2PPBP/RNBQK2R b KQkq -": [
+      "c8a6"
+   ],
+   "rnbqk2r/pp1pppbp/5np1/2pP4/2P1P3/2N5/PP3PPP/R1BQKBNR b KQkq e3": [
+      "d7d6"
+   ],
+   "rnbqk2r/pp2ppbp/3p1np1/2pP4/2P1P3/2N5/PP3PPP/R1BQKBNR w KQkq -": [
+      "g1f3",
+      "f1e2"
+   ],
+   "rnbqk2r/pp2ppbp/3p1np1/2pP4/2P1PP2/2N5/PP4PP/R1BQKBNR b KQkq f3": [
+      "e8g8"
+   ],
+   "rnbq1rk1/pp2ppbp/3p1np1/2pP4/2P1PP2/2N2N2/PP4PP/R1BQKB1R b KQ -": [
+      "b7b5"
+   ],
+   "rnbq1rk1/p3ppbp/3p1np1/1PpP4/4PP2/2N2N2/PP4PP/R1BQKB1R b KQ -": [
+      "a7a6"
+   ],
+   "rnbqk2r/pp2ppbp/3p1np1/2pP4/2P1P3/2N5/PP2BPPP/R1BQK1NR b KQkq -": [
+      "e8g8"
+   ],
+   "rnbq1rk1/pp2ppbp/3p1np1/2pP4/2P1P3/2N5/PP2BPPP/R1BQK1NR w KQ -": [
+      "c1g5"
+   ],
+   "rnbqk2r/pp2ppbp/3p1np1/2pP4/2P1P3/2N2N2/PP3PPP/R1BQKB1R b KQkq -": [
+      "e8g8"
+   ],
+   "rnbq1rk1/pp2ppbp/3p1np1/2pP4/2P1P3/2N2N2/PP3PPP/R1BQKB1R w KQ -": [
+      "h2h3"
+   ],
+   "rnbq1rk1/pp2ppbp/3p1np1/2pP4/2P1P3/2N2N2/PP2BPPP/R1BQK2R b KQ -": [
+      "e7e6"
+   ],
+   "rnbq1rk1/pp3pbp/3ppnp1/2pP4/2P1P3/2N2N2/PP2BPPP/R1BQ1RK1 b - -": [
+      "f8e8"
+   ],
+   "rnbqr1k1/pp3pbp/3ppnp1/2pP4/2P1P3/2N5/PP1NBPPP/R1BQ1RK1 b - -": [
+      "b8a6"
+   ],
+   "rnbqr1k1/pp3pbp/3ppnp1/2pP4/2P1PB2/2N2N2/PP2BPPP/R2Q1RK1 b - -": [
+      "e6d5"
+   ],
+   "rnbqr1k1/pp3pbp/3p1np1/2pp4/2P1PB2/2N2N2/PP2BPPP/R2Q1RK1 w - -": [
+      "e4d5"
+   ],
+   "rnbqr1k1/pp3pbp/3p1np1/2pP4/2P2B2/2N2N2/PP2BPPP/R2Q1RK1 b - -": [
+      "f6e4"
    ]
 }
